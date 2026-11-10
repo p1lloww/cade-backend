@@ -58,27 +58,29 @@ Para zerar o banco local: `docker compose down -v`.
 
 ## Estrutura do código
 
-Monólito modular: cada módulo do documento de requisitos é um pacote em `br.ucsal.cade`, e o `package-info.java` de cada um descreve sua responsabilidade.
+Monólito modular (D10). Cada módulo dos requisitos é um pacote em `br.ucsal.cade`, com as camadas `api` (o único pacote visível para outros módulos), `controller`, `service` e `persistence`. O código é em inglês (D11); a correspondência com os termos dos requisitos está no [glossário](docs/GLOSSARIO.md).
 
-| Pacote | Módulo |
-|---|---|
-| `acesso` | M1 Acesso |
-| `achados` | M2 Achados |
-| `perdas` | M3 Perdas |
-| `cruzamento` | M4 Cruzamento |
-| `retirada` | M5 Convocação e retirada |
-| `avisos` | M6 Avisos |
-| `prazos` | M7 Prazos e destino |
-| `publico` | M8 Página pública |
-| `administracao` | M9 Administração |
-| `demo` | M10 Modo demonstração |
-| `compartilhado` | Configuração e código comum, sem regra de negócio |
+| Pacote | Módulo | Pode depender de |
+|---|---|---|
+| `access` | M1 Acesso | — |
+| `founditems` | M2 Achados | — |
+| `lossreports` | M3 Perdas | — |
+| `matching` | M4 Cruzamento | founditems, lossreports |
+| `pickup` | M5 Convocação e retirada | founditems, lossreports, matching |
+| `notifications` | M6 Avisos | access, lossreports, pickup |
+| `retention` | M7 Prazos e destino | founditems |
+| `publicpage` | M8 Página pública | founditems |
+| `administration` | M9 Administração | access |
+| `demo` | M10 Modo demonstração | access, founditems, lossreports |
+| `shared` | Núcleo compartilhado (histórico, eventos, erros, e-mail, segurança, relógio, web) | nenhum módulo |
 
-Dentro de cada módulo: `dominio` (entidades, estados, regras), `aplicacao` (serviços), `web` (controllers e DTOs) e `infra` (repositórios e integrações).
+O teste `ModuleBoundariesTest` (ArchUnit) garante essas regras: acesso entre módulos só pela `api` e nas direções da tabela, sem ciclos, e camadas na ordem `controller → service → persistence`.
+
+Documentos de apoio em `docs/`: [requisitos](docs/requisitos.md), [decisões](docs/DECISOES.md) e [glossário](docs/GLOSSARIO.md).
 
 ## Como contribuir
 
-A `main` é protegida. Crie uma branch (`feat/...`, `fix/...`, `docs/...`), abra um Pull Request citando a issue (`Closes #N`) e peça a revisão de outro integrante. O merge só acontece com 1 aprovação.
+A `main` é protegida. Crie uma branch (`feat/...`, `fix/...`, `docs/...`), abra um Pull Request citando o card (`Closes #N`) e peça a revisão de outro integrante. O merge só acontece com 1 aprovação.
 
 ## Testes
 

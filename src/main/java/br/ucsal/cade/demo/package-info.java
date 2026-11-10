@@ -1,12 +1,6 @@
 /**
- * M10 Modo demonstração: usuários fictícios, login direto e dados de exemplo, ativos só no profile "demo".
+ * Módulo Modo demonstração (M10, D10).
  *
- * <p>Subpacotes, criados conforme a necessidade:
- * <ul>
- *   <li>{@code dominio}: entidades, estados e regras de negócio;</li>
- *   <li>{@code aplicacao}: serviços e casos de uso;</li>
- *   <li>{@code web}: controllers e DTOs;</li>
- *   <li>{@code infra}: repositórios e integrações externas.</li>
- * </ul>
+ * <p>Usuários fictícios, login direto e dados de exemplo, ativos só no profile "demo".
  */
 package br.ucsal.cade.demo;

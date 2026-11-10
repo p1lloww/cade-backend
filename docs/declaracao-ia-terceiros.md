@@ -12,7 +12,7 @@ Houve uso de IA? (X) Sim ( ) Não
 
 | Ferramenta ou modelo | Finalidade ou tarefa | Parte afetada | Revisão e validação realizadas |
 |---|---|---|---|
-| Claude (Claude Code) | Revisão do documento de requisitos e da stack; criação da estrutura inicial dos repositórios | Documento de requisitos v3; estrutura inicial do back-end e do front-end | Revisado pela equipe; build e testes executados |
+| Claude (Claude Code) | Revisão do documento de requisitos e da stack; criação da estrutura inicial dos repositórios, do backlog e da organização do Project (modelo do SCEA) | Documento de requisitos v3; estrutura inicial do back-end e do front-end | Revisado pela equipe; build e testes executados |
 
 ## 2. Componentes e recursos de terceiros
 
@@ -24,6 +24,7 @@ Houve uso de componentes de terceiros? (X) Sim ( ) Não
 | PostgreSQL | https://www.postgresql.org | 17, PostgreSQL License | Banco de dados |
 | Mailpit | https://github.com/axllent/mailpit | 1.27, MIT | Captura de e-mails em desenvolvimento |
 | Testcontainers | https://testcontainers.com | MIT | Banco temporário nos testes |
+| ArchUnit | https://www.archunit.org | 1.4.1, Apache 2.0 | Teste das fronteiras entre módulos (D10) |
 | Angular | https://angular.dev | 22, MIT | Framework do front-end |
 
 ## 3. Materiais ou código preexistentes

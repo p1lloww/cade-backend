@@ -1,0 +1,37 @@
+# Fills "Dependências" and "Aguardando" on Project #4 so the "Prontas para começar" view
+# shows which cards have every dependency done. Script: .github/scripts/project_dependencies.py
+#
+# Runs when an issue is closed or reopened here, every 30 minutes (covers cards moved to
+# "Concluído" without closing the issue, issues of the front-end repo and edits to "Depende de"),
+# and by hand from the Actions tab.
+
+name: Dependências do Project
+
+on:
+  issues:
+    types: [closed, reopened]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Runs one at a time; a run that is waiting is enough to catch the latest changes.
+concurrency:
+  group: project-dependencies
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Atualizar dependências
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Atualizar campos do Project
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+        run: python3 .github/scripts/project_dependencies.py

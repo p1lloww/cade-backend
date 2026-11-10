@@ -56,6 +56,30 @@ docker compose up -d postgres mailpit
 
 Para zerar o banco local: `docker compose down -v`.
 
+## Estrutura do código
+
+Monólito modular: cada módulo do documento de requisitos é um pacote em `br.ucsal.cade`, e o `package-info.java` de cada um descreve sua responsabilidade.
+
+| Pacote | Módulo |
+|---|---|
+| `acesso` | M1 Acesso |
+| `achados` | M2 Achados |
+| `perdas` | M3 Perdas |
+| `cruzamento` | M4 Cruzamento |
+| `retirada` | M5 Convocação e retirada |
+| `avisos` | M6 Avisos |
+| `prazos` | M7 Prazos e destino |
+| `publico` | M8 Página pública |
+| `administracao` | M9 Administração |
+| `demo` | M10 Modo demonstração |
+| `compartilhado` | Configuração e código comum, sem regra de negócio |
+
+Dentro de cada módulo: `dominio` (entidades, estados, regras), `aplicacao` (serviços), `web` (controllers e DTOs) e `infra` (repositórios e integrações).
+
+## Como contribuir
+
+A `main` é protegida. Crie uma branch (`feat/...`, `fix/...`, `docs/...`), abra um Pull Request citando a issue (`Closes #N`) e peça a revisão de outro integrante. O merge só acontece com 1 aprovação.
+
 ## Testes
 
 ```bash

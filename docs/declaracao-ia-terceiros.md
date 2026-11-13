@@ -13,6 +13,7 @@ Houve uso de IA? (X) Sim ( ) Não
 | Ferramenta ou modelo | Finalidade ou tarefa | Parte afetada | Revisão e validação realizadas |
 |---|---|---|---|
 | Claude (Claude Code) | Revisão do documento de requisitos e da stack; criação da estrutura inicial dos repositórios, do backlog e da organização do Project (modelo do SCEA) | Documento de requisitos v3; estrutura inicial do back-end e do front-end | Revisado pela equipe; build e testes executados |
+| Claude (Claude Code) | Implementação do ACE-01: entidade de usuário, perfis, criação do administrador inicial e testes | Módulo `access` (persistência e serviço), `shared.security.Role`, `shared.time` | Revisão no PR; testes com Testcontainers executados |
 
 ## 2. Componentes e recursos de terceiros
 

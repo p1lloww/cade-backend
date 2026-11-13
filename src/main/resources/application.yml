@@ -28,11 +28,13 @@ management:
         include: health
 
 cade:
-  dominio-email-permitido: ucsal.edu.br
+  allowed-email-domain: ucsal.edu.br
+  initial-admin:
+    email: ${ADMIN_EMAIL:}
   cors:
-    origens-permitidas: ${CORS_ORIGINS:http://localhost:4200}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
   jwt:
-    segredo: ${JWT_SECRET:troque-este-segredo-local-com-pelo-menos-32-caracteres}
-    validade: 8h
+    secret: ${JWT_SECRET:change-this-local-secret-to-at-least-32-characters}
+    ttl: 8h
   email:
-    remetente: ${MAIL_FROM:cade@localhost}
+    from: ${MAIL_FROM:cade@localhost}

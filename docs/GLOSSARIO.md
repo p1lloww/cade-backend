@@ -23,7 +23,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Requisitos | Código |
 |---|---|
 | Usuário | `User` |
-| Perfil (estudante, funcionário, administrador) | `Role` (`STUDENT`, `STAFF`, `ADMIN`) |
+| Perfil (estudante, funcionário, administrador) | `Role` (`STUDENT`, `STAFF`, `ADMIN`), em `shared.security` porque `@RequiresRole` é usada por todos os módulos |
+| Administrador inicial (criado na instalação) | `InitialAdminInitializer` (variável `ADMIN_EMAIL`) |
 | Código de login | `LoginCode` |
 | Objeto achado | `FoundItem` |
 | Situação do objeto (Disponível, Reservado, Devolvido, Não reclamado, Destinado) | `FoundItemStatus` (`AVAILABLE`, `RESERVED`, `RETURNED`, `UNCLAIMED`, `DISPOSED`) |

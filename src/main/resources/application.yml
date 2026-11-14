@@ -29,6 +29,10 @@ management:
 
 cade:
   allowed-email-domain: ucsal.edu.br
+  login-code:
+    ttl: 10m
+    max-attempts: 5
+    resend-interval: 1m
   initial-admin:
     email: ${ADMIN_EMAIL:}
   cors:

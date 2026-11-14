@@ -24,16 +24,15 @@ class InitialAdminInitializer implements ApplicationRunner {
 
     private final UserRepository users;
     private final Clock clock;
+    private final InstitutionalEmailPolicy emailPolicy;
     private final String adminEmail;
-    private final String allowedDomain;
 
-    InitialAdminInitializer(UserRepository users, Clock clock,
-                            @Value("${cade.initial-admin.email:}") String adminEmail,
-                            @Value("${cade.allowed-email-domain}") String allowedDomain) {
+    InitialAdminInitializer(UserRepository users, Clock clock, InstitutionalEmailPolicy emailPolicy,
+                            @Value("${cade.initial-admin.email:}") String adminEmail) {
         this.users = users;
         this.clock = clock;
+        this.emailPolicy = emailPolicy;
         this.adminEmail = adminEmail;
-        this.allowedDomain = allowedDomain;
     }
 
     @Override
@@ -44,8 +43,8 @@ class InitialAdminInitializer implements ApplicationRunner {
             return;
         }
         String email = User.normalize(adminEmail);
-        if (!email.endsWith("@" + allowedDomain)) {
-            throw new IllegalStateException("ADMIN_EMAIL must be an @" + allowedDomain
+        if (!emailPolicy.accepts(email)) {
+            throw new IllegalStateException("ADMIN_EMAIL must be an @" + emailPolicy.domain()
                     + " address, because login works through a code sent to that address.");
         }
         users.findByEmail(email).ifPresentOrElse(user -> {

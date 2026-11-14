@@ -10,38 +10,25 @@ import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.TooManyRequestsException;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.time.MutableClock;
+import br.ucsal.cade.shared.time.MutableClockConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.Duration;
-import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @RecordApplicationEvents
-@Import({TestcontainersConfiguration.class, LoginServiceTest.ClockConfiguration.class})
+@Import({TestcontainersConfiguration.class, MutableClockConfiguration.class})
 class LoginServiceTest {
 
     private static final String INVALID_CODE = "Código inválido ou expirado. Confira o código ou solicite um novo.";
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class ClockConfiguration {
-
-        @Bean
-        @Primary
-        MutableClock mutableClock() {
-            return new MutableClock(Instant.parse("2026-11-14T12:00:00Z"));
-        }
-    }
 
     @Autowired
     private LoginService service;

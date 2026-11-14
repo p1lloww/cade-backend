@@ -1,4 +1,4 @@
-package br.ucsal.cade.access.persistence;
+package br.ucsal.cade.access.persistence.user;
 
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.shared.security.Role;

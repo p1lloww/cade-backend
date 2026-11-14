@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import(TestcontainersConfiguration.class)
 class InitialAdminInitializerTest {
 
+    private static final InstitutionalEmailPolicy POLICY = new InstitutionalEmailPolicy("ucsal.edu.br");
+
     @Autowired
     private UserRepository users;
 
@@ -42,7 +44,7 @@ class InitialAdminInitializerTest {
     @Test
     void promotesAnExistingAccountInsteadOfCreatingAnother() {
         users.save(User.newStudent("promovido@ucsal.edu.br", Instant.parse("2026-11-13T12:00:00Z")));
-        var other = new InitialAdminInitializer(users, clock, "promovido@ucsal.edu.br", "ucsal.edu.br");
+        var other = new InitialAdminInitializer(users, clock, POLICY, "promovido@ucsal.edu.br");
 
         other.run(null);
 
@@ -53,7 +55,7 @@ class InitialAdminInitializerTest {
 
     @Test
     void refusesAnAdminEmailOutsideTheInstitutionalDomain() {
-        var other = new InitialAdminInitializer(users, clock, "admin@gmail.com", "ucsal.edu.br");
+        var other = new InitialAdminInitializer(users, clock, POLICY, "admin@gmail.com");
 
         assertThatThrownBy(() -> other.run(null))
                 .isInstanceOf(IllegalStateException.class)

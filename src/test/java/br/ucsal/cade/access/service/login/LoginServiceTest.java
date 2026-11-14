@@ -3,7 +3,7 @@ package br.ucsal.cade.access.service.login;
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.access.api.event.LoginCodeRequestedEvent;
 import br.ucsal.cade.access.persistence.logincode.LoginCode;
-import br.ucsal.cade.access.persistence.logincode.LoginCodeRepository;
+import br.ucsal.cade.access.persistence.logincode.LoginCodeStore;
 import br.ucsal.cade.access.persistence.user.User;
 import br.ucsal.cade.access.persistence.user.UserRepository;
 import br.ucsal.cade.shared.exception.BadRequestException;
@@ -15,10 +15,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +41,10 @@ class LoginServiceTest {
     private LoginService service;
 
     @Autowired
-    private LoginCodeRepository codes;
+    private LoginCodeStore codes;
+
+    @Autowired
+    private StringRedisTemplate redis;
 
     @Autowired
     private UserRepository users;
@@ -51,7 +61,7 @@ class LoginServiceTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Use o seu e-mail institucional @ucsal.edu.br.");
 
-        assertThat(codes.findFirstByEmailOrderByCreatedAtDesc("aluno@gmail.com")).isEmpty();
+        assertThat(redis.keys("cade:*aluno@gmail.com")).isEmpty();
         assertThat(events.stream(LoginCodeRequestedEvent.class)).isEmpty();
     }
 
@@ -60,21 +70,22 @@ class LoginServiceTest {
         String code = requestCode(" Hash@UCSAL.edu.br ");
 
         assertThat(code).matches("\\d{6}");
-        LoginCode stored = codes.findFirstByEmailOrderByCreatedAtDesc("hash@ucsal.edu.br").orElseThrow();
-        assertThat(stored.getExpiresAt()).isEqualTo(clock.instant().plus(Duration.ofMinutes(10)));
+        LoginCode stored = codes.find("hash@ucsal.edu.br").orElseThrow();
+        assertThat(stored.codeHash()).doesNotContain(code);
+        assertThat(stored.expiresAt()).isEqualTo(clock.instant().plus(Duration.ofMinutes(10)));
         assertThat(lastEvent("hash@ucsal.edu.br").toString()).doesNotContain(code);
     }
 
     @Test
     void allowsOnlyOneCodePerMinutePerEmail() {
         requestCode("reenvio@ucsal.edu.br");
-        clock.advance(Duration.ofSeconds(45));
 
         assertThatThrownBy(() -> service.requestCode("reenvio@ucsal.edu.br"))
-                .isInstanceOfSatisfying(TooManyRequestsException.class,
-                        e -> assertThat(e.retryAfter()).isEqualTo(Duration.ofSeconds(15)));
+                .isInstanceOfSatisfying(TooManyRequestsException.class, e -> assertThat(e.retryAfter())
+                        .isPositive()
+                        .isLessThanOrEqualTo(Duration.ofMinutes(1)));
 
-        clock.advance(Duration.ofSeconds(15));
+        expireCooldown("reenvio@ucsal.edu.br");
         requestCode("reenvio@ucsal.edu.br");
     }
 
@@ -86,6 +97,16 @@ class LoginServiceTest {
 
         assertThat(user.getId()).isNotNull();
         assertThat(user.getRole()).isEqualTo(Role.STUDENT);
+    }
+
+    @Test
+    void aSuccessfulLoginDeletesEverythingKeptForTheEmail() {
+        String code = requestCode("limpeza@ucsal.edu.br");
+
+        service.exchangeCode("limpeza@ucsal.edu.br", code);
+
+        assertThat(redis.keys("cade:*limpeza@ucsal.edu.br")).isEmpty();
+        requestCode("limpeza@ucsal.edu.br");
     }
 
     @Test
@@ -108,9 +129,9 @@ class LoginServiceTest {
     }
 
     @Test
-    void refusesAnExpiredCode() {
+    void refusesACodeThatNoLongerExists() {
         String code = requestCode("expirado@ucsal.edu.br");
-        clock.advance(Duration.ofMinutes(10));
+        redis.delete("cade:login-code:expirado@ucsal.edu.br");
 
         assertThatThrownBy(() -> service.exchangeCode("expirado@ucsal.edu.br", code))
                 .isInstanceOf(BadRequestException.class)
@@ -118,15 +139,14 @@ class LoginServiceTest {
     }
 
     @Test
-    void keepsTheAttemptCountEvenThoughTheRequestFails() {
+    void keepsTheAttemptCountAfterAWrongCode() {
         String code = requestCode("tentativa@ucsal.edu.br");
 
         assertThatThrownBy(() -> service.exchangeCode("tentativa@ucsal.edu.br", wrong(code)))
                 .isInstanceOf(BadRequestException.class);
 
-        assertThat(codes.findFirstByEmailOrderByCreatedAtDesc("tentativa@ucsal.edu.br"))
-                .get()
-                .extracting(LoginCode::getAttempts)
+        assertThat(codes.find("tentativa@ucsal.edu.br")).get()
+                .extracting(LoginCode::attempts)
                 .isEqualTo(1);
     }
 
@@ -144,9 +164,31 @@ class LoginServiceTest {
     }
 
     @Test
+    void parallelGuessesCannotGoPastTheAttemptLimit() throws Exception {
+        String code = requestCode("paralelo@ucsal.edu.br");
+
+        List<Boolean> results = runInParallel(20, () -> succeeds("paralelo@ucsal.edu.br", wrong(code)));
+
+        assertThat(results).containsOnly(false);
+        assertThat(codes.find("paralelo@ucsal.edu.br")).get()
+                .extracting(LoginCode::attempts)
+                .isEqualTo(20);
+        assertThat(succeeds("paralelo@ucsal.edu.br", code)).isFalse();
+    }
+
+    @Test
+    void twoParallelRequestsWithTheRightCodeLogInOnlyOnce() throws Exception {
+        String code = requestCode("duplo@ucsal.edu.br");
+
+        List<Boolean> results = runInParallel(2, () -> succeeds("duplo@ucsal.edu.br", code));
+
+        assertThat(results).containsExactlyInAnyOrder(true, false);
+    }
+
+    @Test
     void aNewCodeReplacesThePreviousOne() {
         String first = requestCode("troca@ucsal.edu.br");
-        clock.advance(Duration.ofMinutes(1));
+        expireCooldown("troca@ucsal.edu.br");
         String second = requestCode("troca@ucsal.edu.br");
 
         if (!first.equals(second)) {
@@ -174,6 +216,35 @@ class LoginServiceTest {
                 .filter(event -> event.email().equals(email))
                 .reduce((first, second) -> second)
                 .orElseThrow();
+    }
+
+    /** Does what Redis does when the one-minute waiting time is over. */
+    private void expireCooldown(String email) {
+        redis.delete("cade:login-code-cooldown:" + email);
+    }
+
+    private boolean succeeds(String email, String code) {
+        try {
+            service.exchangeCode(email, code);
+            return true;
+        } catch (BadRequestException e) {
+            return false;
+        }
+    }
+
+    private static <T> List<T> runInParallel(int times, Callable<T> task) throws Exception {
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<T>> futures = executor.invokeAll(IntStream.range(0, times).mapToObj(i -> task).toList());
+            return futures.stream().map(LoginServiceTest::await).toList();
+        }
+    }
+
+    private static <T> T await(Future<T> future) {
+        try {
+            return future.get();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static String wrong(String code) {

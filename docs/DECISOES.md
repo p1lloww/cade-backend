@@ -118,7 +118,15 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Decisão (10/11/2026):** **Cadê?** Repositórios `cade-backend` e `cade-frontend`; pacote `br.ucsal.cade`.
 - **Situação:** fechada.
 
+## D16 — Códigos de login no Redis, não no banco
+- **Decisão (14/11/2026):** os códigos de login e o tempo de espera entre envios ficam no Redis (contêiner do Compose), com expiração própria; nada disso vai para o PostgreSQL. Por e-mail existem no máximo duas chaves: `cade:login-code:<email>` (o código atual, 10 min) e `cade:login-code-cooldown:<email>` (1 min). Depois de um login válido, as duas são apagadas.
+- **Motivo:** são dados que perdem o valor assim que o código é usado ou expira. No Redis eles somem sozinhos, sem tabela crescendo nem rotina de limpeza.
+- **Como as regras da D03 ficam garantidas:** o código novo sobrescreve o anterior (só o último vale); a tentativa é contada (`HINCRBY` num script Lua) antes da comparação, para palpites em paralelo não furarem o limite de 5; o código é apagado por um único `DEL`, e só a requisição que o apagou recebe o token (uso único).
+- **Consequências:** mais um serviço no Compose e nos testes (Testcontainers). O `requestCode` não abre transação no banco, então o listener que envia o e-mail (AVI-01) precisa de `@TransactionalEventListener(fallbackExecution = true)`. Se o Redis cair, ninguém consegue pedir código; os usuários já logados continuam, porque o JWT não depende dele.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
 - **10/11/2026 — D01 a D15 registradas:** stack, login, e-mail, eventos, banco, repositórios, hospedagem, módulos, idioma do código, fluxo de PR, backlog, problema e nome, decididos na reunião de definição do projeto.
+- **14/11/2026 — D16 registrada:** códigos de login no Redis, na implementação do ACE-02.

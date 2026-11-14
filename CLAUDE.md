@@ -11,25 +11,25 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D15 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D16 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
 ## Comandos
 
 ```bash
-docker compose up -d postgres mailpit   # dependências para desenvolver
-./mvnw spring-boot:run                  # API em http://localhost:8080
-./mvnw verify                           # build + testes (precisa do Docker: Testcontainers)
-./mvnw test -Dtest=ModuleBoundariesTest # só o teste de fronteiras dos módulos
-docker compose up -d --build            # tudo em contêiner, como na entrega
-docker compose down -v                  # zera o banco local
+docker compose up -d postgres redis mailpit # dependências para desenvolver
+./mvnw spring-boot:run                      # API em http://localhost:8080
+./mvnw verify                               # build + testes (precisa do Docker: Testcontainers)
+./mvnw test -Dtest=ModuleBoundariesTest     # só o teste de fronteiras dos módulos
+docker compose up -d --build                # tudo em contêiner, como na entrega
+docker compose down -v                      # zera o banco local
 ```
 
 E-mails enviados em desenvolvimento aparecem no Mailpit: http://localhost:8025.
 
 ## Stack
 
-Java 25, Spring Boot 4.1 (Web MVC, Security, OAuth2 Resource Server para o JWT, Data JPA, Mail, Validation, Actuator), PostgreSQL 17, Docker Compose, Testcontainers e ArchUnit. O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`, D06); não há Flyway. Configurações sensíveis vêm de variáveis de ambiente (ver `.env.example`).
+Java 25, Spring Boot 4.1 (Web MVC, Security, OAuth2 Resource Server para o JWT, Data JPA, Data Redis, Mail, Validation, Actuator), PostgreSQL 17, Redis 8 (códigos de login, D16), Docker Compose, Testcontainers e ArchUnit. O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`, D06); não há Flyway. Configurações sensíveis vêm de variáveis de ambiente (ver `.env.example`).
 
 ## Arquitetura (D10)
 
@@ -53,7 +53,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 - **Entre módulos:** só pela `api`, só nas direções da tabela, referência por id (sem chave estrangeira cruzando módulos). Para avisar que algo aconteceu, publique um evento. O `ModuleBoundariesTest` (ArchUnit) quebra o build se essas regras forem violadas; mudar a tabela exige registrar na D10.
 - **Histórico (RF43):** publique o evento de `shared.audit` na mesma transação da ação; `administration` grava.
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
-- **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09).
+- **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam no Redis, nunca no banco (D16).
 - **Privacidade:** foto, descrição interna, detalhes reservados e local exato de um objeto nunca vão para estudantes nem visitantes (RN03).
 
 ## Convenções

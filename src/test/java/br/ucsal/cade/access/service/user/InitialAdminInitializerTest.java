@@ -1,8 +1,8 @@
-package br.ucsal.cade.access.service;
+package br.ucsal.cade.access.service.user;
 
 import br.ucsal.cade.TestcontainersConfiguration;
-import br.ucsal.cade.access.persistence.User;
-import br.ucsal.cade.access.persistence.UserRepository;
+import br.ucsal.cade.access.persistence.user.User;
+import br.ucsal.cade.access.persistence.user.UserRepository;
 import br.ucsal.cade.shared.security.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

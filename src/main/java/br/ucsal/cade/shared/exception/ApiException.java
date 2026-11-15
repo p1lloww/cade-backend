@@ -1,5 +1,6 @@
 package br.ucsal.cade.shared.exception;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -14,4 +15,9 @@ public abstract class ApiException extends RuntimeException {
     }
 
     public abstract HttpStatus status();
+
+    /** Headers the response must carry besides the error body; none by default. */
+    public HttpHeaders headers() {
+        return HttpHeaders.EMPTY;
+    }
 }

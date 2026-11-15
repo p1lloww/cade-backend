@@ -11,20 +11,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
-/** HTTP contract and documentation of the passwordless login (RF01, D02, D03). */
+/** OpenAPI documentation of the passwordless login (RF01, D02, D03); the routes are in {@link AuthController}. */
 @Tag(name = "Authentication", description = """
         Passwordless login. The user asks for a one-time code, receives it at the institutional e-mail and \
         exchanges it for an access token (JWT). There is no sign-up: the first login creates a student account.""")
 @SecurityRequirements
-@RequestMapping("/auth")
 public interface AuthApi {
 
     @Operation(
@@ -70,8 +65,7 @@ public interface AuthApi {
                               "detail": "Um código acabou de ser enviado. Aguarde um minuto para pedir outro.",
                               "instance": "/auth/login-code"
                             }""")))
-    @PostMapping(path = "/login-code", consumes = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Void> requestLoginCode(@Valid @RequestBody LoginCodeRequest request);
+    ResponseEntity<Void> requestLoginCode(LoginCodeRequest request);
 
     @Operation(
             summary = "Exchange the code for an access token",
@@ -104,6 +98,5 @@ public interface AuthApi {
                                       "instance": "/auth/token",
                                       "errors": { "code": "O código tem 6 dígitos." }
                                     }""")}))
-    @PostMapping(path = "/token", consumes = MediaType.APPLICATION_JSON_VALUE)
-    TokenResponse issueToken(@Valid @RequestBody TokenRequest request);
+    TokenResponse issueToken(TokenRequest request);
 }

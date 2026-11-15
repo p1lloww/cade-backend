@@ -14,4 +14,8 @@ public record LoginCodeRequest(
         @Email(message = "Informe um e-mail válido.")
         @Size(max = 254, message = "O e-mail é longo demais.")
         String email) {
+
+    public LoginCodeRequest {
+        email = email == null ? null : email.strip();
+    }
 }

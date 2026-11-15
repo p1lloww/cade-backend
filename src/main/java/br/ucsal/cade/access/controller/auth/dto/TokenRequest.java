@@ -21,6 +21,10 @@ public record TokenRequest(
         @Pattern(regexp = "\\d{6}", message = "O código tem 6 dígitos.")
         String code) {
 
+    public TokenRequest {
+        email = email == null ? null : email.strip();
+    }
+
     @Override
     public String toString() {
         return "TokenRequest[email=" + email + ", code=******]";

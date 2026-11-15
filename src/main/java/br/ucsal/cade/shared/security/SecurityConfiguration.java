@@ -18,10 +18,11 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfiguration {
 
     /**
-     * Routes open to anyone: getting a token, the health check, and {@code /error}, where Spring forwards failed
-     * requests; without it, a 400 on a public route would turn into a 401.
+     * Routes open to anyone: getting a token, the health check, the API documentation, and {@code /error}, where
+     * Spring forwards failed requests; without it, a 400 on a public route would turn into a 401.
      */
-    private static final String[] PUBLIC_ROUTES = {"/auth/**", "/actuator/health", "/error"};
+    private static final String[] PUBLIC_ROUTES = {
+            "/auth/**", "/actuator/health", "/error", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"};
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

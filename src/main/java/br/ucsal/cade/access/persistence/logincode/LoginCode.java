@@ -26,17 +26,11 @@ public record LoginCode(String email, String codeHash, Instant createdAt, Instan
         Objects.requireNonNull(expiresAt);
     }
 
-    /**
-     * A new code for the given e-mail, with no attempts yet.
-     *
-     * @param codeHash hash of the raw code
-     * @param ttl      how long the code stays valid
-     */
+    /** A new code for the given e-mail, with no attempts yet. */
     public static LoginCode issue(String email, String codeHash, Instant now, Duration ttl) {
         return new LoginCode(email, codeHash, now, now.plus(ttl), 0);
     }
 
-    /** Whether the code typed by the user is this one. */
     public boolean matches(String rawCode, PasswordEncoder encoder) {
         return rawCode != null && encoder.matches(rawCode, codeHash);
     }

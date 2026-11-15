@@ -11,8 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class LoginConfiguration {
 
     /**
-     * Hashes login codes before they are stored (D03). BCrypt is slow on purpose, so a leaked table cannot be
-     * reversed by trying all one million codes in a few milliseconds.
+     * Hashes login codes before they are stored (D03). BCrypt is slow on purpose, so a leaked Redis dump cannot
+     * be reversed by trying all one million codes in a few milliseconds.
      */
     @Bean
     PasswordEncoder loginCodeEncoder() {

@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * A login code was issued and must be e-mailed to its owner (RF01). Published by the access module; the notifications
- * module sends the e-mail after the commit (AVI-01).
+ * module sends the e-mail asynchronously (AVI-01).
  *
  * <p>This is the only place where the raw code exists: it is never stored and is hidden from {@link #toString()} so
  * it cannot leak into logs.

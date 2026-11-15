@@ -11,7 +11,8 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D16 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D17 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/login-codigos-redis.md`: como os códigos de login ficam no Redis e por que há scripts Lua (D16).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
 ## Comandos
@@ -25,11 +26,11 @@ docker compose up -d --build                # tudo em contêiner, como na entreg
 docker compose down -v                      # zera o banco local
 ```
 
-E-mails enviados em desenvolvimento aparecem no Mailpit: http://localhost:8025.
+E-mails enviados em desenvolvimento aparecem no Mailpit: http://localhost:8025. A documentação da API fica no Swagger: http://localhost:8080/swagger-ui.html (D17).
 
 ## Stack
 
-Java 25, Spring Boot 4.1 (Web MVC, Security, OAuth2 Resource Server para o JWT, Data JPA, Data Redis, Mail, Validation, Actuator), PostgreSQL 17, Redis 8 (códigos de login, D16), Docker Compose, Testcontainers e ArchUnit. O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`, D06); não há Flyway. Configurações sensíveis vêm de variáveis de ambiente (ver `.env.example`).
+Java 25, Spring Boot 4.1 (Web MVC, Security, OAuth2 Resource Server para o JWT, Data JPA, Data Redis, Mail, Validation, Actuator), PostgreSQL 17, Redis 8 (códigos de login, D16), springdoc-openapi (Swagger, D17), Docker Compose, Testcontainers e ArchUnit. O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`, D06); não há Flyway. Configurações sensíveis vêm de variáveis de ambiente (ver `.env.example`).
 
 ## Arquitetura (D10)
 

@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Marks which Project #4 cards have all their dependencies done.
+"""Moves closed cards to "Concluído" and marks which Project #4 cards have all their dependencies done.
 
 Usage: project_dependencies.py [--dry-run]
 
-Reads every card of the Project (both repos), takes the codes in "Depende de" and fills:
+First, every card whose issue is closed goes to "Concluído" (the Project does not do it by itself, and a card
+left in "Backlog" after the issue closes hides the progress). Reopening an issue does not move the card back:
+whoever reopens it moves the card by hand.
+
+Then it reads every card of the Project (both repos), takes the codes in "Depende de" and fills:
   - "Dependências": Liberada (all done), Bloqueada (something pending) or Sem dependências;
   - "Aguardando": the codes still pending, e.g. "ACE-02, GES-01".
 A dependency counts as done when its card is in "Concluído" or its issue is closed.
-Only these two fields are written, and only when the value changes.
+Only "Status", "Dependências" and "Aguardando" are written, and only when the value changes.
 
 Needs GH_TOKEN with the "project" scope: the default GITHUB_TOKEN cannot reach a user Project.
 """
@@ -104,9 +108,28 @@ def value(item, key, attr):
     return (item[key] or {}).get(attr) or ""
 
 
+def close_done_cards(project_id, fields, items, dry_run):
+    """Moves every card whose issue is closed to "Concluído". Returns how many cards changed."""
+    status_field = fields["Status"]
+    done_option = next(o["id"] for o in status_field["options"] if o["name"] == DONE_STATUS)
+    changed = 0
+    for item in items:
+        if item["content"]["state"] != "CLOSED" or value(item, "status", "name") == DONE_STATUS:
+            continue
+        changed += 1
+        label = item["content"]["title"].split("]")[0].lstrip("[")
+        print(f"{label}: issue fechada -> {DONE_STATUS}")
+        if not dry_run:
+            graphql(SET_VALUE, project=project_id, item=item["id"], field=status_field["id"],
+                    value={"singleSelectOptionId": done_option})
+        item["status"] = {"name": DONE_STATUS}
+    return changed
+
+
 def main():
     dry_run = "--dry-run" in sys.argv
     project_id, fields, items = load_project()
+    closed = close_done_cards(project_id, fields, items, dry_run)
 
     done = {}
     for item in items:
@@ -141,7 +164,8 @@ def main():
         else:
             graphql(CLEAR_VALUE, **ids, field=fields["Aguardando"]["id"])
 
-    print(f"{changed} card(s) {'a atualizar' if dry_run else 'atualizado(s)'} de {len(items)}")
+    verb = "a atualizar" if dry_run else "atualizado(s)"
+    print(f"Status: {closed} card(s) {verb}; dependências: {changed} card(s) {verb} de {len(items)}")
 
 
 if __name__ == "__main__":

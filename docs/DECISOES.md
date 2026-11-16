@@ -108,6 +108,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - Cards nascem sem responsável; cada integrante se atribui ao puxar o card. 1 responsável por card e no máximo 2 cards "Em andamento" por pessoa.
   - Puxar primeiro os cards de P1 e do **caminho crítico**, olhando a view "Prontas para começar" (dependências concluídas).
   - Os campos "Dependências" e "Aguardando" são preenchidos pela Action "Dependências do Project" (GES-02); não editar à mão.
+  - **Complemento (16/11/2026):** a mesma Action move para "Concluído" todo card cuja issue foi fechada, inclusive pelo `Closes #N` de um PR. Reabrir a issue não devolve o card: quem reabre move o card à mão.
 - **Situação:** fechada.
 
 ## D14 — Problema mantém a evidência S6

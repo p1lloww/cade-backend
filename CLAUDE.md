@@ -11,26 +11,33 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D17 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
-- `docs/login-codigos-redis.md`: como os códigos de login ficam no Redis e por que há scripts Lua (D16).
+- `docs/DECISOES.md`: decisões D01–D18 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
 ## Comandos
 
 ```bash
-docker compose up -d postgres redis mailpit # dependências para desenvolver
-./mvnw spring-boot:run                      # API em http://localhost:8080
-./mvnw verify                               # build + testes (precisa do Docker: Testcontainers)
-./mvnw test -Dtest=ModuleBoundariesTest     # só o teste de fronteiras dos módulos
-docker compose up -d --build                # tudo em contêiner, como na entrega
-docker compose down -v                      # zera o banco local
+cp .env.example .env                    # uma vez; preencha o JWT_SECRET (openssl rand -base64 48)
+docker compose up -d postgres mailpit   # dependências para desenvolver
+./mvnw spring-boot:run                  # API em http://localhost:8080 (lê o .env)
+./mvnw verify                           # build + testes (precisa do Docker: Testcontainers)
+./mvnw test -Dtest=ModuleBoundariesTest # só o teste de fronteiras dos módulos
+docker compose up -d --build            # tudo em contêiner, como na entrega
+docker compose down -v                  # zera o banco local
 ```
+
+Sem `JWT_SECRET` a aplicação não sobe, de propósito: não há chave padrão. Os testes usam uma chave própria em `src/test/resources/config/application.yml`.
+
+O CI (`.github/workflows/ci.yml`) roda `./mvnw verify` em todo PR para a `main`, e o check `build` é obrigatório para mesclar.
+
+**Banco "sujo":** o `ddl-auto: update` só acrescenta tabelas e colunas; não apaga nem renomeia. Depois de puxar uma mudança que remove ou renomeia campo de entidade, um erro de banco estranho (como "null value in column ...") quase sempre se resolve com `docker compose down -v`. O CI não pega esse problema, porque o Testcontainers sempre começa com um banco limpo. Antes da mostra, suba o banco do zero.
 
 E-mails enviados em desenvolvimento aparecem no Mailpit: http://localhost:8025. A documentação da API fica no Swagger: http://localhost:8080/swagger-ui.html (D17).
 
 ## Stack
 
-Java 25, Spring Boot 4.1 (Web MVC, Security, OAuth2 Resource Server para o JWT, Data JPA, Data Redis, Mail, Validation, Actuator), PostgreSQL 17, Redis 8 (códigos de login, D16), springdoc-openapi (Swagger, D17), Docker Compose, Testcontainers e ArchUnit. O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`, D06); não há Flyway. Configurações sensíveis vêm de variáveis de ambiente (ver `.env.example`).
+Java 25, Spring Boot 4.1 (Web MVC, Security, OAuth2 Resource Server para o JWT, Data JPA, Mail, Validation, Actuator), PostgreSQL 17, springdoc-openapi (Swagger, D17), Docker Compose, Testcontainers, ArchUnit e GitHub Actions (CI). O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`, D06); não há Flyway. Configurações sensíveis vêm de variáveis de ambiente (ver `.env.example`).
 
 ## Arquitetura (D10)
 
@@ -54,7 +61,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 - **Entre módulos:** só pela `api`, só nas direções da tabela, referência por id (sem chave estrangeira cruzando módulos). Para avisar que algo aconteceu, publique um evento. O `ModuleBoundariesTest` (ArchUnit) quebra o build se essas regras forem violadas; mudar a tabela exige registrar na D10.
 - **Histórico (RF43):** publique o evento de `shared.audit` na mesma transação da ação; `administration` grava.
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
-- **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam no Redis, nunca no banco (D16).
+- **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam na tabela `login_codes` do PostgreSQL, e 15 tentativas erradas seguidas bloqueiam o e-mail por 15 min (D18).
 - **Privacidade:** foto, descrição interna, detalhes reservados e local exato de um objeto nunca vão para estudantes nem visitantes (RN03).
 
 ## Convenções
@@ -66,7 +73,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 
 ## Fluxo de trabalho
 
-- A `main` é protegida (D12): todo trabalho vai numa branch (`feat/...`, `fix/...`, `docs/...`, `chore/...`) e entra por PR com aprovação de outro integrante.
+- A `main` é protegida (D12): todo trabalho vai numa branch (`feat/...`, `fix/...`, `docs/...`, `chore/...`) e entra por PR **direto para a `main`** (não há `develop`), com aprovação de outro integrante e o CI passando. O merge é sempre squash, e a branch é apagada ao mesclar.
 - Cada PR resolve um card e cita `Closes #N`. Os cards têm código no título (`[ACE-02]`) e as dependências no campo "Depende de" (D13).
 - Mantenha `docs/declaracao-ia-terceiros.md` atualizada quando a IA ajudar numa parte relevante ou quando entrar uma biblioteca nova.
 - Não fazer commit, push, criar issues ou convidar pessoas sem a equipe pedir.

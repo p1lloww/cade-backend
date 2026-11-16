@@ -14,7 +14,8 @@ Houve uso de IA? (X) Sim ( ) Não
 |---|---|---|---|
 | Claude (Claude Code) | Revisão do documento de requisitos e da stack; criação da estrutura inicial dos repositórios, do backlog e da organização do Project (modelo do SCEA) | Documento de requisitos v3; estrutura inicial do back-end e do front-end | Revisado pela equipe; build e testes executados |
 | Claude (Claude Code) | Implementação do ACE-01: entidade de usuário, perfis, criação do administrador inicial e testes | Módulo `access` (persistência e serviço), `shared.security.Role`, `shared.time` | Revisão no PR; testes com Testcontainers executados |
-| Claude (Claude Code) | Implementação do ACE-02: login por código no Redis, emissão e validação do JWT, endpoints de login, tratador de erros, documentação no Swagger e testes | Módulo `access` (persistência, serviço, controller), `shared.security`, `shared.exception`, `shared.web`; `docs/login-codigos-redis.md` | Revisão no PR; testes com Testcontainers (PostgreSQL e Redis) executados |
+| Claude (Claude Code) | Implementação do ACE-02 (versão inicial): login por código no Redis, emissão e validação do JWT, endpoints de login, tratador de erros, documentação no Swagger e testes | Módulo `access` (persistência, serviço, controller), `shared.security`, `shared.exception`, `shared.web`; `docs/login-codigos-redis.md` | Revisão no PR; testes com Testcontainers (PostgreSQL e Redis) executados |
+| Claude (Claude Code) | Revisão do ACE-01/ACE-02 e CI: troca do Redis pelo PostgreSQL, bloqueio contra força bruta, chave do JWT obrigatória, rotas públicas explícitas, erros 401/403/500 como `ProblemDetail`, workflow de CI e automação do Status no Project | `access.persistence.logincode`, `access.service.login`, `shared.security`, `shared.web.error`; `.github/`; `docs/` | Revisão no PR; `./mvnw verify` local e no CI; aplicação executada sem e com `JWT_SECRET` |
 
 ## 2. Componentes e recursos de terceiros
 
@@ -24,12 +25,11 @@ Houve uso de componentes de terceiros? (X) Sim ( ) Não
 |---|---|---|---|
 | Spring Boot | https://spring.io/projects/spring-boot | 4.1.2, Apache 2.0 | Framework do back-end; projeto gerado pelo Spring Initializr |
 | PostgreSQL | https://www.postgresql.org | 17, PostgreSQL License | Banco de dados |
-| Redis | https://redis.io | 8, AGPLv3 (uma das licenças do Redis 8); usado sem alterações, como serviço separado | Guarda os códigos de login com expiração (D16) |
-| Spring Data Redis (Lettuce) | https://spring.io/projects/spring-data-redis | Versão do Spring Boot 4.1.2, Apache 2.0 / MIT | Acesso ao Redis |
 | Mailpit | https://github.com/axllent/mailpit | 1.27, MIT | Captura de e-mails em desenvolvimento |
 | springdoc-openapi | https://springdoc.org | 3.0.2, Apache 2.0 | Gera o documento OpenAPI e serve o Swagger UI (D17) |
 | Testcontainers | https://testcontainers.com | MIT | Banco temporário nos testes |
 | ArchUnit | https://www.archunit.org | 1.4.1, Apache 2.0 | Teste das fronteiras entre módulos (D10) |
+| GitHub Actions (`actions/checkout`, `actions/setup-java`, `actions/upload-artifact`) | https://github.com/actions | v7, v6 e v7, MIT | CI: build e testes a cada PR (QUA-01) |
 | Angular | https://angular.dev | 22, MIT | Framework do front-end |
 
 ## 3. Materiais ou código preexistentes

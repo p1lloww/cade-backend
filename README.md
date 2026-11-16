@@ -27,10 +27,12 @@ _A preencher:_ nome completo e turma de cada integrante.
 | Back-end | Java 25 + Spring Boot 4.1 | Linguagem da disciplina; padrões de POOA visíveis no código |
 | Banco | PostgreSQL 17 | Relacional, transações para estados e histórico |
 | Esquema do banco | JPA/Hibernate (`ddl-auto: update`) | Rápido para um MVP; migrations com Flyway ficam como próximo passo |
-| Login | Código de uso único por e-mail @ucsal.edu.br + JWT | Sem senha e sem depender de provedor externo |
+| Login | Código de uso único por e-mail @ucsal.edu.br + JWT | Sem senha e sem depender de provedor externo; códigos na própria base PostgreSQL (D18) |
+| Documentação da API | springdoc-openapi (Swagger UI) | O front consulta e testa os endpoints sozinho; erros no formato RFC 9457 (D17) |
 | E-mail | Gmail SMTP (Mailpit em desenvolvimento) | Grátis e simples; Mailpit captura os e-mails localmente |
 | Assíncrono | Eventos do Spring + Virtual Threads | O cadastro responde na hora; cruzamento e e-mails rodam em paralelo |
 | Infra | Docker Compose | Banco, Mailpit e back-end com um comando |
+| CI | GitHub Actions | Build e testes em todo PR; o merge exige o CI passando |
 
 ## Pré-requisitos
 
@@ -42,21 +44,26 @@ _A preencher:_ nome completo e turma de cada integrante.
 ### Tudo pelo Docker
 
 ```bash
-cp .env.example .env    # opcional: ajuste os valores
+cp .env.example .env    # preencha o JWT_SECRET: openssl rand -base64 48
 docker compose up -d --build
 ```
 
+O `JWT_SECRET` é obrigatório: sem ele o back-end não sobe, porque não existe chave padrão (uma chave publicada aqui permitiria a qualquer um forjar um token de administrador).
+
 - API: http://localhost:8080 (saúde em `/actuator/health`)
+- Documentação da API (Swagger): http://localhost:8080/swagger-ui.html
 - E-mails capturados (Mailpit): http://localhost:8025
 
 ### Desenvolvimento (back-end pela IDE ou pelo Maven)
 
 ```bash
 docker compose up -d postgres mailpit
-./mvnw spring-boot:run
+./mvnw spring-boot:run    # lê o mesmo .env
 ```
 
 Para zerar o banco local: `docker compose down -v`.
+
+O esquema é gerado pelo Hibernate (`ddl-auto: update`), que só **acrescenta** tabelas e colunas: um campo removido ou renomeado deixa a coluna antiga no banco. Se aparecer um erro de banco estranho depois de puxar mudanças (por exemplo, `null value in column ...`), zere o banco com o comando acima. Antes de uma demonstração, suba o banco do zero.
 
 ## Estrutura do código
 
@@ -104,7 +111,8 @@ _A preencher._
 
 ## Limitações conhecidas e próximos passos
 
-- O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`), sem migrations versionadas.
+- O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`), sem migrations versionadas; o próximo passo seria o Flyway, com o esquema atual como primeira versão.
+- O bloqueio contra tentativas erradas é por e-mail: quem sabe o e-mail de alguém pode bloqueá-lo por 15 minutos (D18).
 - Os eventos ficam na memória da aplicação: se o back-end cair entre o commit e o processamento, aquele evento se perde.
 
 ## Fontes, licenças, componentes de terceiros e uso de IA

@@ -99,6 +99,10 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 ## D12 — Proteção da main e fluxo de PR
 - **Decisão (10/11/2026):** ruleset "Proteção da main" nos dois repositórios: todo código entra por Pull Request com 1 aprovação de outro integrante; force push e exclusão da `main` bloqueados. O papel admin (p1lloww) pode contornar a regra; mesmo assim, o padrão é branch + PR.
 - **Próximo passo:** quando os pipelines existirem (QUA-01 e QUA-02), o check do CI passa a ser obrigatório no ruleset.
+- **Complemento (16/11/2026):**
+  - O check `build` do CI (QUA-01) passou a ser obrigatório no ruleset do back-end.
+  - Os dois repositórios aceitam só **squash merge** (um commit por card na `main`) e apagam a branch ao mesclar.
+  - **Não há branch `develop`:** todo PR vai direto para a `main`. A `develop` criada no ACE-01/ACE-02 deixava PRs entrarem sem revisão (ela não tinha proteção) e impedia o `Closes #N` de fechar as issues; foi removida.
 - **Situação:** fechada.
 
 ## D13 — Organização do backlog
@@ -119,18 +123,34 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Decisão (10/11/2026):** **Cadê?** Repositórios `cade-backend` e `cade-frontend`; pacote `br.ucsal.cade`.
 - **Situação:** fechada.
 
-## D16 — Códigos de login no Redis, não no banco
+## D16 — Códigos de login no Redis, não no banco (substituída pela D18)
 - **Decisão (14/11/2026):** os códigos de login e o tempo de espera entre envios ficam no Redis (contêiner do Compose), com expiração própria; nada disso vai para o PostgreSQL. Por e-mail existem no máximo duas chaves: `cade:login-code:<email>` (o código atual, 10 min) e `cade:login-code-cooldown:<email>` (1 min). Depois de um login válido, as duas são apagadas.
 - **Motivo:** são dados que perdem o valor assim que o código é usado ou expira. No Redis eles somem sozinhos, sem tabela crescendo nem rotina de limpeza.
 - **Como as regras da D03 ficam garantidas:** o código novo sobrescreve o anterior (só o último vale); a tentativa é contada (`HINCRBY` num script Lua) antes da comparação, para palpites em paralelo não furarem o limite de 5; o código é apagado por um único `DEL`, e só a requisição que o apagou recebe o token (uso único).
 - **Consequências:** mais um serviço no Compose e nos testes (Testcontainers). O `requestCode` não abre transação no banco, então o listener que envia o e-mail (AVI-01) precisa de `@TransactionalEventListener(fallbackExecution = true)`. Se o Redis cair, ninguém consegue pedir código; os usuários já logados continuam, porque o JWT não depende dele.
-- **Detalhes:** chaves, fluxos e o motivo dos scripts Lua estão em [login-codigos-redis.md](login-codigos-redis.md).
-- **Situação:** fechada.
+- **Detalhes:** chaves, fluxos e o motivo dos scripts Lua estavam em `login-codigos-redis.md`, hoje [login-codigos.md](login-codigos.md) (versão PostgreSQL).
+- **Situação:** substituída pela D18 em 16/11/2026.
 
 ## D17 — Documentação da API no Swagger e erros no formato RFC 9457
 - **Decisão (15/11/2026):** a API é documentada com o springdoc-openapi: o Swagger UI fica em `/swagger-ui.html` e o documento OpenAPI em `/v3/api-docs`, os dois públicos. A documentação de cada controller fica numa interface (`AuthApi`, por exemplo), com as anotações do OpenAPI; as rotas e a validação ficam no controller que a implementa. Todos os erros saem como `ProblemDetail` (RFC 9457, `application/problem+json`): `detail` traz a mensagem para o usuário e, nos erros de validação, `errors` traz a mensagem de cada campo.
 - **Motivo:** o front-end consulta e testa os endpoints sem depender de quem fez o back-end, e trata todo erro do mesmo jeito. Separar a documentação na interface deixa o controller curto.
 - **Consequências:** toda rota nova documenta respostas e exemplos de erro na interface do controller. Uma exceção de negócio nova estende `ApiException` e não precisa mexer no `ApiExceptionHandler`.
+- **Complemento (16/11/2026):** os 401 e 403 do Spring Security e os erros inesperados (500) também saem como `ProblemDetail`. O 500 traz uma mensagem neutra; o detalhe técnico vai só para o log.
+- **Situação:** fechada.
+
+## D18 — Códigos de login no PostgreSQL e bloqueio contra força bruta (substitui a D16)
+- **Decisão (16/11/2026):** os códigos de login saem do Redis e vão para a tabela `login_codes` do PostgreSQL, com uma linha por e-mail (o e-mail é a chave). O Redis sai do projeto. Além das regras da D03, um e-mail que erra 15 códigos seguidos, somando todos os códigos (o equivalente a 3 códigos travados), fica **bloqueado por 15 minutos**: não pode pedir código novo, e o código atual deixa de valer. Um login válido zera a contagem.
+- **Motivo:** para um MVP, o Redis era um serviço a mais para subir no deploy (D08), para os testes e para explicar no pitch, e se ele caísse ninguém conseguia logar. A tabela não cresce (um código novo sobrescreve a linha) e o PostgreSQL garante as mesmas regras com comandos atômicos. O bloqueio reduz os palpites possíveis contra um e-mail de cerca de 7.200 para cerca de 1.300 por dia.
+- **Como as regras ficam garantidas:**
+  - código novo com `INSERT ... ON CONFLICT DO UPDATE ... WHERE` a espera passou e não há bloqueio;
+  - tentativa contada com `UPDATE ... RETURNING` antes da comparação;
+  - uso único com `DELETE` que confere o hash.
+  - A hora vem sempre do `Clock` da aplicação, nunca do `now()` do banco, para os testes controlarem o tempo.
+- **Consequências:**
+  - Os métodos do `LoginService` não abrem transação, porque um rollback desfaria a tentativa contada.
+  - Como o `requestCode` não tem transação, o listener que envia o e-mail (AVI-01) precisa de `@TransactionalEventListener(fallbackExecution = true)`.
+  - Quem sabe o e-mail de alguém pode bloqueá-lo por 15 min errando de propósito; para o MVP, a proteção contra adivinhação vale mais.
+- **Detalhes:** colunas, comandos, fluxos e testes em [login-codigos.md](login-codigos.md).
 - **Situação:** fechada.
 
 ---
@@ -139,3 +159,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **10/11/2026 — D01 a D15 registradas:** stack, login, e-mail, eventos, banco, repositórios, hospedagem, módulos, idioma do código, fluxo de PR, backlog, problema e nome, decididos na reunião de definição do projeto.
 - **14/11/2026 — D16 registrada:** códigos de login no Redis, na implementação do ACE-02.
 - **15/11/2026 — D17 registrada:** Swagger com springdoc e erros no formato RFC 9457, na implementação do ACE-02.
+- **16/11/2026 — Revisão do ACE-01/ACE-02:** D18 registrada e D16 marcada como substituída (Redis → PostgreSQL, bloqueio contra força bruta); complementos na D12 (check do CI obrigatório, só squash merge, sem `develop`), na D13 (a Action move para "Concluído" o card com a issue fechada) e na D17 (401, 403 e 500 também como `ProblemDetail`).

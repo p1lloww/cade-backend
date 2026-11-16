@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -40,9 +39,6 @@ class AuthControllerTest {
 
     @Autowired
     private JwtDecoder decoder;
-
-    @Autowired
-    private StringRedisTemplate redis;
 
     @Autowired
     private MutableClock clock;
@@ -133,7 +129,7 @@ class AuthControllerTest {
     @Test
     void refusesAnExpiredCode() throws Exception {
         String code = requestCode("expirado@ucsal.edu.br");
-        redis.delete("cade:login-code:expirado@ucsal.edu.br");
+        clock.advance(Duration.ofMinutes(10));
 
         exchange("expirado@ucsal.edu.br", code)
                 .andExpect(status().isBadRequest())

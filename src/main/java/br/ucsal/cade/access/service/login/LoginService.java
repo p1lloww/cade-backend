@@ -13,13 +13,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.OptionalInt;
 
 /**
  * Passwordless login (RF01, D02, D03): sends a one-time code to an institutional e-mail and exchanges a valid code
  * for the account. Issuing the access token is not done here.
+ *
+ * <p>No method here opens a transaction: each step is a single atomic statement of {@link LoginCodeStore}, and a
+ * refused attempt must stay counted even though the method ends with an exception (D18).
  */
 @Service
 public class LoginService {
@@ -28,6 +33,10 @@ public class LoginService {
 
     private static final String INVALID_CODE_MESSAGE =
             "Código inválido ou expirado. Confira o código ou solicite um novo.";
+    private static final String RESEND_MESSAGE =
+            "Um código acabou de ser enviado. Aguarde um minuto para pedir outro.";
+    private static final String BLOCKED_MESSAGE =
+            "Muitas tentativas com código errado. Aguarde alguns minutos para pedir um novo código.";
 
     private final LoginCodeStore codes;
     private final UserRepository users;
@@ -56,55 +65,75 @@ public class LoginService {
      * previous one of the same e-mail.
      *
      * @throws BadRequestException      if the e-mail is not institutional
-     * @throws TooManyRequestsException if the last code was issued less than the resend interval ago
+     * @throws TooManyRequestsException if the last code was issued less than the resend interval ago, or the e-mail
+     *                                  is blocked after too many wrong attempts
      */
     public void requestCode(String rawEmail) {
         String email = User.normalize(rawEmail);
         if (!emailPolicy.accepts(email)) {
             throw new BadRequestException("Use o seu e-mail institucional @" + emailPolicy.domain() + ".");
         }
-        if (!codes.startCooldown(email, properties.resendInterval())) {
-            throw new TooManyRequestsException(
-                    "Um código acabou de ser enviado. Aguarde um minuto para pedir outro.",
-                    codes.cooldownRemaining(email));
-        }
+        Instant now = clock.instant();
+        // Cheap check first, so a refused request does not pay for the BCrypt hash. The save below is the one that
+        // decides when two requests arrive together.
+        codes.find(email).ifPresent(current -> refuseIfWaiting(current, now));
 
         String code = generator.generate();
-        LoginCode issued = LoginCode.issue(email, encoder.encode(code), clock.instant(), properties.ttl());
-        codes.save(issued, properties.ttl());
+        LoginCode issued = LoginCode.issue(email, encoder.encode(code), now, properties.ttl());
+        if (!codes.save(issued, properties.resendInterval())) {
+            codes.find(email).ifPresent(current -> refuseIfWaiting(current, now));
+            throw new TooManyRequestsException(RESEND_MESSAGE, properties.resendInterval());
+        }
         events.publishEvent(new LoginCodeRequestedEvent(email, code, issued.expiresAt()));
     }
 
     /**
      * Checks the code typed by the user and returns the account, creating it as a student on the first login. On
-     * success, the code and the resend waiting time of the e-mail are deleted.
+     * success, the code and the wrong attempts of the e-mail are deleted.
      *
-     * <p>The attempt is counted before the comparison and the code is deleted by a single Redis command, so
-     * parallel requests can neither go past the attempt limit nor use the same code twice.
+     * <p>The attempt is counted before the comparison and the code is deleted by a single statement, so parallel
+     * requests can neither go past the attempt limit nor use the same code twice. Wrong attempts add up across
+     * codes, and too many of them block the e-mail for a while (D18).
      *
      * @throws BadRequestException with the same message for every kind of failure, so an attacker cannot tell a
      *                             wrong code from an expired or locked one
      */
-    @Transactional
     public User exchangeCode(String rawEmail, String rawCode) {
         String email = User.normalize(rawEmail);
-        LoginCode code = codes.find(email).orElseThrow(() -> refused("no code: never requested, expired or used"));
+        Instant now = clock.instant();
+        LoginCode code = codes.find(email)
+                .filter(current -> current.isValidAt(now))
+                .orElseThrow(() -> refused("no valid code: never requested, expired, used or blocked"));
 
-        long attempt = codes.registerAttempt(email);
-        if (attempt < 0) {
-            throw refused("code expired during the check");
+        OptionalInt attempt = codes.registerAttempt(email, now);
+        if (attempt.isEmpty()) {
+            throw refused("code expired or replaced during the check");
         }
-        if (attempt > properties.maxAttempts()) {
+        if (attempt.getAsInt() > properties.maxAttempts()) {
             throw refused("too many attempts");
         }
         if (!code.matches(rawCode, encoder)) {
+            if (codes.registerFailure(email, now, properties.maxFailures(), properties.blockDuration())) {
+                log.warn("E-mail blocked for {} after {} wrong login attempts.",
+                        properties.blockDuration(), properties.maxFailures());
+            }
             throw refused("wrong code");
         }
-        if (!codes.consume(email)) {
+        if (!codes.consume(email, code.codeHash())) {
             throw refused("code already used by a concurrent request");
         }
         return users.findByEmail(email)
-                .orElseGet(() -> users.save(User.newStudent(email, clock.instant())));
+                .orElseGet(() -> users.save(User.newStudent(email, now)));
+    }
+
+    private void refuseIfWaiting(LoginCode current, Instant now) {
+        if (current.isBlockedAt(now)) {
+            throw new TooManyRequestsException(BLOCKED_MESSAGE, Duration.between(now, current.blockedUntil()));
+        }
+        Instant resendAllowedAt = current.createdAt().plus(properties.resendInterval());
+        if (now.isBefore(resendAllowedAt)) {
+            throw new TooManyRequestsException(RESEND_MESSAGE, Duration.between(now, resendAllowedAt));
+        }
     }
 
     private static BadRequestException refused(String reason) {

@@ -27,7 +27,8 @@ public interface AuthApi {
             description = """
                     Sends a six-digit code to the e-mail. The code is valid for 10 minutes, can be used once and \
                     replaces any code sent before to the same e-mail. Only @ucsal.edu.br e-mails are accepted, and \
-                    each e-mail can ask for one code per minute.
+                    each e-mail can ask for one code per minute. After 15 wrong codes in a row (3 codes locked), \
+                    the e-mail is blocked for 15 minutes.
 
                     The e-mail is sent after the response, so `202` means the code was issued, not delivered.""")
     @ApiResponse(responseCode = "202", description = "Code issued; it will arrive at the e-mail shortly.")
@@ -52,19 +53,29 @@ public interface AuthApi {
                                       "instance": "/auth/login-code",
                                       "errors": { "email": "Informe um e-mail válido." }
                                     }""")}))
-    @ApiResponse(responseCode = "429", description = "A code was sent less than a minute ago.",
+    @ApiResponse(responseCode = "429",
+            description = "A code was sent less than a minute ago, or the e-mail is blocked after too many wrong codes.",
             headers = @Header(name = "Retry-After", description = "Seconds to wait before asking again.",
                     schema = @Schema(type = "integer", example = "42")),
             content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = ProblemDetail.class),
-                    examples = @ExampleObject(value = """
-                            {
-                              "type": "about:blank",
-                              "title": "Too Many Requests",
-                              "status": 429,
-                              "detail": "Um código acabou de ser enviado. Aguarde um minuto para pedir outro.",
-                              "instance": "/auth/login-code"
-                            }""")))
+                    examples = {
+                            @ExampleObject(name = "Waiting time", value = """
+                                    {
+                                      "type": "about:blank",
+                                      "title": "Too Many Requests",
+                                      "status": 429,
+                                      "detail": "Um código acabou de ser enviado. Aguarde um minuto para pedir outro.",
+                                      "instance": "/auth/login-code"
+                                    }"""),
+                            @ExampleObject(name = "Blocked", value = """
+                                    {
+                                      "type": "about:blank",
+                                      "title": "Too Many Requests",
+                                      "status": 429,
+                                      "detail": "Muitas tentativas com código errado. Aguarde alguns minutos para pedir um novo código.",
+                                      "instance": "/auth/login-code"
+                                    }""")}))
     ResponseEntity<Void> requestLoginCode(LoginCodeRequest request);
 
     @Operation(

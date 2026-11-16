@@ -1,117 +1,171 @@
 package br.ucsal.cade.access.persistence.logincode;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.OptionalInt;
 
 /**
- * Login codes in Redis. Each e-mail has at most two keys, both with an expiry, so nothing is left behind:
+ * Login codes in the {@code login_codes} table (D18). The table itself is created by Hibernate from
+ * {@link LoginCode} (D06); this class only runs SQL on it.
  *
- * <ul>
- *   <li>{@code cade:login-code:<email>}: hash with the current code; a new code overwrites the previous one, so only
- *       the latest is valid;</li>
- *   <li>{@code cade:login-code-cooldown:<email>}: exists while a new code cannot be requested yet.</li>
- * </ul>
+ * <p>Every operation that checks a rule and changes the row is a single SQL statement. PostgreSQL locks the row while
+ * the statement runs, so two concurrent requests cannot both pass a check: parallel guesses cannot go past the
+ * attempt limit, and the same code cannot be used twice. The statements run outside any surrounding transaction on
+ * purpose: a refused attempt throws an exception, and a rollback would undo the attempt it just counted.
  *
- * <p>Operations that read and change a key run as a single Redis command or Lua script, so two concurrent requests
- * cannot both pass a check.
+ * <p>The current time is always a parameter, taken from the application {@code Clock}, and never {@code now()} of
+ * the database, so tests can move the clock forward to check expiry and blocks.
  */
 @Repository
 public class LoginCodeStore {
 
-    private static final String CODE_PREFIX = "cade:login-code:";
-    private static final String COOLDOWN_PREFIX = "cade:login-code-cooldown:";
+    /**
+     * Inserts the code, or overwrites the code of the e-mail, unless the e-mail is still waiting: the last code was
+     * issued less than the resend interval ago, or the e-mail is blocked. Wrong attempts and blocks are kept.
+     */
+    private static final String SAVE = """
+            INSERT INTO login_codes (email, code_hash, created_at, expires_at, attempts, failures, blocked_until)
+            VALUES (:email, :codeHash, :createdAt, :expiresAt, 0, 0, NULL)
+            ON CONFLICT (email) DO UPDATE
+               SET code_hash = EXCLUDED.code_hash,
+                   created_at = EXCLUDED.created_at,
+                   expires_at = EXCLUDED.expires_at,
+                   attempts = 0
+             WHERE login_codes.created_at <= :resendAllowedFrom
+               AND (login_codes.blocked_until IS NULL OR login_codes.blocked_until <= :createdAt)
+            """;
 
-    private static final String CODE_HASH = "codeHash";
-    private static final String CREATED_AT = "createdAt";
-    private static final String EXPIRES_AT = "expiresAt";
-    private static final String ATTEMPTS = "attempts";
+    private static final String FIND = """
+            SELECT email, code_hash, created_at, expires_at, attempts, failures, blocked_until
+              FROM login_codes
+             WHERE email = :email
+            """;
 
-    /** Replaces the code of the e-mail and sets its expiry in one step. */
-    private static final RedisScript<Long> SAVE = RedisScript.of("""
-            redis.call('DEL', KEYS[1])
-            redis.call('HSET', KEYS[1], 'codeHash', ARGV[1], 'createdAt', ARGV[2], 'expiresAt', ARGV[3], 'attempts', 0)
-            return redis.call('PEXPIRE', KEYS[1], ARGV[4])
-            """, Long.class);
+    /** Counts one attempt on a code that is still valid and returns the new total; no row when there is none. */
+    private static final String REGISTER_ATTEMPT = """
+            UPDATE login_codes
+               SET attempts = attempts + 1
+             WHERE email = :email AND expires_at > :now
+            RETURNING attempts
+            """;
 
     /**
-     * Counts one attempt and returns the new total, or -1 when there is no code. A plain HINCRBY would create a
-     * key with no expiry if the code had just expired.
+     * Counts one wrong attempt for the e-mail. When the count reaches the limit, it blocks the e-mail, ends the
+     * current code and starts the count again. On the right side of SET, PostgreSQL always reads the values from
+     * before the update, so every CASE sees the same {@code failures}.
      */
-    private static final RedisScript<Long> REGISTER_ATTEMPT = RedisScript.of("""
-            if redis.call('EXISTS', KEYS[1]) == 0 then
-                return -1
-            end
-            return redis.call('HINCRBY', KEYS[1], 'attempts', 1)
-            """, Long.class);
+    private static final String REGISTER_FAILURE = """
+            UPDATE login_codes
+               SET failures      = CASE WHEN failures + 1 >= :maxFailures THEN 0 ELSE failures + 1 END,
+                   blocked_until = CASE WHEN failures + 1 >= :maxFailures THEN :blockedUntil ELSE blocked_until END,
+                   expires_at    = CASE WHEN failures + 1 >= :maxFailures THEN :now ELSE expires_at END
+             WHERE email = :email
+            RETURNING blocked_until IS NOT NULL AND blocked_until > :now
+            """;
 
-    private final StringRedisTemplate redis;
+    /** Deletes the row only if it still holds the code that was checked. */
+    private static final String CONSUME = """
+            DELETE FROM login_codes
+             WHERE email = :email AND code_hash = :codeHash
+            """;
 
-    LoginCodeStore(StringRedisTemplate redis) {
-        this.redis = redis;
+    private final JdbcClient jdbc;
+
+    LoginCodeStore(DataSource dataSource) {
+        this.jdbc = JdbcClient.create(dataSource);
     }
 
     /**
-     * Starts the waiting time before the next code can be requested.
+     * Stores a new code, replacing the previous one of the same e-mail.
      *
-     * @return {@code false} if a waiting time is already running for this e-mail
+     * @param resendInterval minimum time since the previous code of the e-mail
+     * @return {@code false} if nothing was stored because the e-mail is still waiting or is blocked; the caller reads
+     *         the row with {@link #find(String)} to tell which
      */
-    public boolean startCooldown(String email, Duration interval) {
-        return Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(COOLDOWN_PREFIX + email, "1", interval));
+    public boolean save(LoginCode code, Duration resendInterval) {
+        return jdbc.sql(SAVE)
+                .param("email", code.email())
+                .param("codeHash", code.codeHash())
+                .param("createdAt", utc(code.createdAt()))
+                .param("expiresAt", utc(code.expiresAt()))
+                .param("resendAllowedFrom", utc(code.createdAt().minus(resendInterval)))
+                .update() == 1;
     }
 
-    /** Time left before the e-mail can request another code; zero if it already can. */
-    public Duration cooldownRemaining(String email) {
-        Long millis = redis.getExpire(COOLDOWN_PREFIX + email, TimeUnit.MILLISECONDS);
-        return millis == null || millis < 0 ? Duration.ZERO : Duration.ofMillis(millis);
-    }
-
-    /** Stores the code, replacing the previous one of the same e-mail; Redis deletes it when {@code ttl} is over. */
-    public void save(LoginCode code, Duration ttl) {
-        redis.execute(SAVE, List.of(CODE_PREFIX + code.email()),
-                code.codeHash(), code.createdAt().toString(), code.expiresAt().toString(),
-                String.valueOf(ttl.toMillis()));
-    }
-
-    /** The current code of the e-mail; empty if it was never requested, has expired or was already used. */
+    /** The row of the e-mail, even if its code has expired; empty if there is none. */
     public Optional<LoginCode> find(String email) {
-        Map<Object, Object> fields = redis.opsForHash().entries(CODE_PREFIX + email);
-        if (fields.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(new LoginCode(email,
-                (String) fields.get(CODE_HASH),
-                Instant.parse((String) fields.get(CREATED_AT)),
-                Instant.parse((String) fields.get(EXPIRES_AT)),
-                Integer.parseInt((String) fields.get(ATTEMPTS))));
+        return jdbc.sql(FIND)
+                .param("email", email)
+                .query(LoginCodeStore::toLoginCode)
+                .optional();
     }
 
     /**
      * Counts one attempt before the code is compared, so parallel guesses cannot all see the old count.
      *
-     * @return the number of attempts including this one, or -1 if the code no longer exists
+     * @return the number of attempts including this one, or empty if the code no longer exists or has expired
      */
-    public long registerAttempt(String email) {
-        Long attempts = redis.execute(REGISTER_ATTEMPT, List.of(CODE_PREFIX + email));
-        return attempts == null ? -1 : attempts;
+    public OptionalInt registerAttempt(String email, Instant now) {
+        return jdbc.sql(REGISTER_ATTEMPT)
+                .param("email", email)
+                .param("now", utc(now))
+                .query(Integer.class)
+                .optional()
+                .map(OptionalInt::of)
+                .orElse(OptionalInt.empty());
     }
 
     /**
-     * Deletes everything kept for the e-mail after a successful login: the code and the waiting time.
+     * Counts one wrong attempt for the e-mail and blocks it once the count reaches {@code maxFailures}.
+     *
+     * @return {@code true} if the e-mail is blocked after this attempt
+     */
+    public boolean registerFailure(String email, Instant now, int maxFailures, Duration blockDuration) {
+        return jdbc.sql(REGISTER_FAILURE)
+                .param("email", email)
+                .param("now", utc(now))
+                .param("maxFailures", maxFailures)
+                .param("blockedUntil", utc(now.plus(blockDuration)))
+                .query(Boolean.class)
+                .optional()
+                .orElse(false);
+    }
+
+    /**
+     * Deletes the row of the e-mail after a successful login, which also clears its wrong attempts.
      *
      * @return {@code true} only for the request that actually deleted the code, so a code is used once even when
      *         two requests with the right code arrive together
      */
-    public boolean consume(String email) {
-        boolean deleted = Boolean.TRUE.equals(redis.delete(CODE_PREFIX + email));
-        redis.delete(COOLDOWN_PREFIX + email);
-        return deleted;
+    public boolean consume(String email, String codeHash) {
+        return jdbc.sql(CONSUME)
+                .param("email", email)
+                .param("codeHash", codeHash)
+                .update() == 1;
+    }
+
+    /** The PostgreSQL driver takes {@code OffsetDateTime}, not {@code Instant}. */
+    private static OffsetDateTime utc(Instant instant) {
+        return instant.atOffset(ZoneOffset.UTC);
+    }
+
+    private static Instant instant(ResultSet row, String column) throws SQLException {
+        OffsetDateTime value = row.getObject(column, OffsetDateTime.class);
+        return value == null ? null : value.toInstant();
+    }
+
+    private static LoginCode toLoginCode(ResultSet row, int rowNumber) throws SQLException {
+        return new LoginCode(row.getString("email"), row.getString("code_hash"),
+                instant(row, "created_at"), instant(row, "expires_at"),
+                row.getInt("attempts"), row.getInt("failures"), instant(row, "blocked_until"));
     }
 }

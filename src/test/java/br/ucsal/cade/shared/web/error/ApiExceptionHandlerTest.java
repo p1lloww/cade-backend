@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -40,6 +43,16 @@ class ApiExceptionHandlerTest {
 
         @PostMapping("/validated")
         void validated(@Valid @RequestBody Body body) {
+        }
+
+        @PostMapping("/forbidden")
+        void forbidden() {
+            throw new AccessDeniedException("role STUDENT cannot do this");
+        }
+
+        @PostMapping("/unexpected")
+        void unexpected() {
+            throw new IllegalStateException("connection refused: postgres:5432");
         }
     }
 
@@ -70,6 +83,23 @@ class ApiExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(ApiExceptionHandler.INVALID_FIELDS_MESSAGE))
                 .andExpect(jsonPath("$.errors.name").value("Informe o nome."));
+    }
+
+    @Test
+    void turnsADeniedAccessIntoA403ProblemDetail() throws Exception {
+        mvc.perform(post("/forbidden"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value(ApiExceptionHandler.FORBIDDEN_MESSAGE));
+    }
+
+    @Test
+    void turnsAnUnexpectedErrorIntoA500WithoutLeakingItsDetails() throws Exception {
+        mvc.perform(post("/unexpected"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value(ApiExceptionHandler.UNEXPECTED_MESSAGE))
+                .andExpect(content().string(not(containsString("postgres"))));
     }
 
     @Test

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -32,6 +33,8 @@ import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,10 +70,13 @@ class ResourceServerTest {
     private MutableClock clock;
 
     @Test
-    void refusesARequestWithoutToken() throws Exception {
+    void refusesARequestWithoutTokenWithAProblemDetail() throws Exception {
         mvc.perform(get("/test/probe"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(header().string("WWW-Authenticate", startsWith("Bearer")));
+                .andExpect(header().string("WWW-Authenticate", startsWith("Bearer")))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.detail").value("Entre com o seu e-mail institucional para continuar."));
     }
 
     @Test
@@ -94,7 +100,9 @@ class ResourceServerTest {
         String forged = parts[0] + "." + forgedPayload + "." + parts[2];
 
         mvc.perform(get("/test/probe").header("Authorization", "Bearer " + forged))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", startsWith("Bearer error=\"invalid_token\"")))
+                .andExpect(jsonPath("$.status").value(401));
     }
 
     @Test
@@ -129,9 +137,14 @@ class ResourceServerTest {
     }
 
     @Test
-    void leavesTheAuthRoutesOpen() throws Exception {
-        mvc.perform(get("/auth/does-not-exist"))
-                .andExpect(status().isNotFound());
+    void opensOnlyTheLoginRoutesUnderAuth() throws Exception {
+        mvc.perform(post("/auth/login-code").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/auth/token").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(get("/auth/me"))
+                .andExpect(status().isUnauthorized());
     }
 
     /** A token valid for eight hours from now, as the access module would issue it, with optional changes. */

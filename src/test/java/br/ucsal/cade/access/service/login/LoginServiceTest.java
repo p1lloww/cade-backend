@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
@@ -44,9 +43,6 @@ class LoginServiceTest {
     private LoginCodeStore codes;
 
     @Autowired
-    private StringRedisTemplate redis;
-
-    @Autowired
     private UserRepository users;
 
     @Autowired
@@ -61,7 +57,7 @@ class LoginServiceTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Use o seu e-mail institucional @ucsal.edu.br.");
 
-        assertThat(redis.keys("cade:*aluno@gmail.com")).isEmpty();
+        assertThat(codes.find("aluno@gmail.com")).isEmpty();
         assertThat(events.stream(LoginCodeRequestedEvent.class)).isEmpty();
     }
 
@@ -105,7 +101,7 @@ class LoginServiceTest {
 
         service.exchangeCode("limpeza@ucsal.edu.br", code);
 
-        assertThat(redis.keys("cade:*limpeza@ucsal.edu.br")).isEmpty();
+        assertThat(codes.find("limpeza@ucsal.edu.br")).isEmpty();
         requestCode("limpeza@ucsal.edu.br");
     }
 
@@ -129,9 +125,9 @@ class LoginServiceTest {
     }
 
     @Test
-    void refusesACodeThatNoLongerExists() {
+    void refusesAnExpiredCode() {
         String code = requestCode("expirado@ucsal.edu.br");
-        redis.delete("cade:login-code:expirado@ucsal.edu.br");
+        clock.advance(Duration.ofMinutes(10));
 
         assertThatThrownBy(() -> service.exchangeCode("expirado@ucsal.edu.br", code))
                 .isInstanceOf(BadRequestException.class)
@@ -205,6 +201,59 @@ class LoginServiceTest {
                 .hasMessage(INVALID_CODE);
     }
 
+    @Test
+    void wrongAttemptsAddUpAcrossCodesAndBlockTheEmailAfterThreeLockedCodes() {
+        String email = "forca-bruta@ucsal.edu.br";
+        for (int codeNumber = 1; codeNumber <= 3; codeNumber++) {
+            String code = requestCode(email);
+            for (int i = 0; i < 5; i++) {
+                assertThat(succeeds(email, wrong(code))).isFalse();
+            }
+            expireCooldown(email);
+        }
+
+        assertThatThrownBy(() -> service.requestCode(email))
+                .isInstanceOfSatisfying(TooManyRequestsException.class, e -> {
+                    assertThat(e).hasMessageContaining("Muitas tentativas com código errado");
+                    assertThat(e.retryAfter()).isPositive().isLessThanOrEqualTo(Duration.ofMinutes(15));
+                });
+    }
+
+    @Test
+    void theBlockAlsoEndsTheCurrentCodeAndLastsFifteenMinutes() {
+        String email = "bloqueado@ucsal.edu.br";
+        for (int codeNumber = 1; codeNumber <= 3; codeNumber++) {
+            String code = requestCode(email);
+            for (int i = 0; i < 5; i++) {
+                succeeds(email, wrong(code));
+            }
+            if (codeNumber < 3) {
+                expireCooldown(email);
+            }
+        }
+        String lastCode = lastEvent(email).code();
+        assertThat(succeeds(email, lastCode)).isFalse();
+
+        clock.advance(Duration.ofMinutes(15));
+
+        String code = requestCode(email);
+        assertThat(service.exchangeCode(email, code).getEmail()).isEqualTo(email);
+    }
+
+    @Test
+    void aSuccessfulLoginClearsTheWrongAttempts() {
+        String email = "recomeco@ucsal.edu.br";
+        String code = requestCode(email);
+        for (int i = 0; i < 4; i++) {
+            succeeds(email, wrong(code));
+        }
+
+        service.exchangeCode(email, code);
+
+        requestCode(email);
+        assertThat(codes.find(email)).get().extracting(LoginCode::failures).isEqualTo(0);
+    }
+
     /** Requests a code and returns the raw value, read from the published event as the e-mail sender would. */
     private String requestCode(String email) {
         service.requestCode(email);
@@ -218,9 +267,9 @@ class LoginServiceTest {
                 .orElseThrow();
     }
 
-    /** Does what Redis does when the one-minute waiting time is over. */
+    /** Lets the one-minute waiting time between two codes pass. */
     private void expireCooldown(String email) {
-        redis.delete("cade:login-code-cooldown:" + email);
+        clock.advance(Duration.ofMinutes(1));
     }
 
     private boolean succeeds(String email, String code) {

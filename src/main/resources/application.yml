@@ -1,6 +1,9 @@
 spring:
   application:
     name: cade-backend
+  config:
+    # Reads the .env of the project root, so `./mvnw spring-boot:run` gets the same variables as Docker Compose.
+    import: optional:file:.env[.properties]
   threads:
     virtual:
       enabled: true
@@ -8,10 +11,6 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/cade}
     username: ${DB_USER:cade}
     password: ${DB_PASSWORD:cade}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: update
@@ -37,12 +36,16 @@ cade:
     ttl: 10m
     max-attempts: 5
     resend-interval: 1m
+    block-after-locked-codes: 3
+    block-duration: 15m
   initial-admin:
     email: ${ADMIN_EMAIL:}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
   jwt:
-    secret: ${JWT_SECRET:change-this-local-secret-to-at-least-32-characters}
+    # No default on purpose: without JWT_SECRET the application does not start, instead of signing tokens with a
+    # key that is public in this repository.
+    secret: ${JWT_SECRET}
     ttl: 8h
   email:
     from: ${MAIL_FROM:cade@localhost}

@@ -14,16 +14,6 @@ services:
       interval: 5s
       retries: 10
 
-  # Códigos de login e limites de pedidos: dados que expiram sozinhos (D16)
-  redis:
-    image: redis:8-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      retries: 10
-
   # Captura os e-mails em desenvolvimento: interface em http://localhost:8025
   mailpit:
     image: axllent/mailpit:v1.27
@@ -35,17 +25,14 @@ services:
     build: .
     env_file:
       - path: .env
-        required: false
+        required: true
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/cade
-      REDIS_HOST: redis
       MAIL_HOST: ${MAIL_HOST:-mailpit}
     ports:
       - "8080:8080"
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       mailpit:
         condition: service_started

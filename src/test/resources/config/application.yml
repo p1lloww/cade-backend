@@ -1,0 +1,7 @@
+# Settings only for the tests. Spring reads classpath:/config/application.yml on top of the main application.yml,
+# so only what is here changes (a file named application.yml at the root of src/test/resources would replace the
+# main one entirely).
+cade:
+  jwt:
+    # Test-only key: the main application.yml has no default, so the application does not start without JWT_SECRET.
+    secret: test-only-secret-never-used-outside-the-tests-0123456789

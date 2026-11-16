@@ -1,5 +1,7 @@
 # Cadê? — Achados e Perdidos UCSal
 
+[![CI](https://github.com/p1lloww/cade-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/p1lloww/cade-backend/actions/workflows/ci.yml)
+
 > **Status:** em desenvolvimento (POOALAB 2026.2). As seções marcadas com _A preencher_ são completadas ao longo do projeto.
 
 O Cadê? liga o estudante que perdeu um objeto à sala de achados e perdidos da UCSal. O estudante registra a perda online, a sala cadastra o que chega e o sistema cruza os dois lados, sugerindo ao funcionário só os pares prováveis. A conferência e a entrega continuam presenciais, no balcão.
@@ -80,7 +82,7 @@ Documentos de apoio em `docs/`: [requisitos](docs/requisitos.md), [decisões](do
 
 ## Como contribuir
 
-A `main` é protegida. Crie uma branch (`feat/...`, `fix/...`, `docs/...`), abra um Pull Request citando o card (`Closes #N`) e peça a revisão de outro integrante. O merge só acontece com 1 aprovação.
+A `main` é protegida. Crie uma branch (`feat/...`, `fix/...`, `docs/...`), abra um Pull Request para a `main` citando o card (`Closes #N`) e peça a revisão de outro integrante. O merge só acontece com 1 aprovação e com o CI passando.
 
 ## Testes
 
@@ -89,6 +91,8 @@ A `main` é protegida. Crie uma branch (`feat/...`, `fix/...`, `docs/...`), abra
 ```
 
 Os testes de integração sobem um PostgreSQL temporário com Testcontainers, então o Docker precisa estar rodando.
+
+O CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) roda o mesmo `./mvnw verify` a cada push e a cada Pull Request para a `main`. Um PR com o build quebrado não pode ser mesclado.
 
 ## Dados de teste e demonstração
 

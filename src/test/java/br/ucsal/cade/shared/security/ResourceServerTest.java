@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -86,7 +87,8 @@ class ResourceServerTest {
         mvc.perform(get("/test/probe").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(SUBJECT))
-                .andExpect(jsonPath("$.authorities[0]").value("ROLE_STAFF"));
+                // Spring Security 7 also adds FACTOR_BEARER (how the user authenticated), in no fixed order.
+                .andExpect(jsonPath("$.authorities", hasItem("ROLE_STAFF")));
     }
 
     @Test

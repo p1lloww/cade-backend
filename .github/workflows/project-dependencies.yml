@@ -1,5 +1,6 @@
-# Fills "Dependências" and "Aguardando" on Project #4 so the "Prontas para começar" view
-# shows which cards have every dependency done. Script: .github/scripts/project_dependencies.py
+# Moves cards whose issue was closed to "Concluído", then fills "Dependências" and "Aguardando" on
+# Project #4 so the "Prontas para começar" view shows which cards have every dependency done.
+# Script: .github/scripts/project_dependencies.py
 #
 # Runs when an issue is closed or reopened here, every 30 minutes (covers cards moved to
 # "Concluído" without closing the issue, issues of the front-end repo and edits to "Depende de"),

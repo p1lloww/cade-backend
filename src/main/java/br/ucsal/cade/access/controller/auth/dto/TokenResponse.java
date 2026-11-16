@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record TokenResponse(
 
         @Schema(description = "Signed JWT carrying the account id (`sub`), e-mail and role.",
-                example = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIuLi4ifQ.c2lnbmF0dXJl")
+                example = "<signed JWT>")
         String accessToken,
 
         @Schema(description = "Always `Bearer`.", example = "Bearer")

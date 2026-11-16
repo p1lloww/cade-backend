@@ -1,0 +1,50 @@
+# Builds the back end and runs every test (unit, Testcontainers and ArchUnit) on each push to main and on
+# each Pull Request to main (QUA-01, D12). The "build" job is a required check of the "Proteção da main"
+# ruleset, so a PR that breaks the build cannot be merged.
+#
+# Testcontainers uses the Docker that comes with the ubuntu-latest runner; nothing else needs to be set up.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to the same PR cancels the run still going for the old commit; runs on main always finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configurar o JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Build e testes
+        run: ./mvnw -B -ntp verify
+
+      # Only when something failed: the test reports explain which test broke and why.
+      - name: Guardar os relatórios dos testes
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: relatorios-dos-testes
+          path: target/surefire-reports/
+          retention-days: 7

@@ -4,15 +4,15 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A login code was issued and must be e-mailed to its owner (RF01). Published by the access module; the notifications
- * module sends the e-mail asynchronously (AVI-01).
+ * Um código de login foi emitido e precisa ser enviado por e-mail ao dono (RF01). Publicado pelo módulo de acesso; o
+ * módulo de avisos envia o e-mail de forma assíncrona (AVI-01).
  *
- * <p>This is the only place where the raw code exists: it is never stored and is hidden from {@link #toString()} so
- * it cannot leak into logs.
+ * <p>É o único lugar onde o código puro existe: ele nunca é guardado e fica fora do {@link #toString()}, para não
+ * vazar em logs.
  *
- * @param email     normalized institutional e-mail
- * @param code      the raw six-digit code
- * @param expiresAt when the code stops being valid, to show in the e-mail
+ * @param email     e-mail institucional normalizado
+ * @param code      o código puro de seis dígitos
+ * @param expiresAt quando o código deixa de valer, para mostrar no e-mail
  */
 public record LoginCodeRequestedEvent(String email, String code, Instant expiresAt) {
 

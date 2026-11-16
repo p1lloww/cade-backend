@@ -254,7 +254,7 @@ class LoginServiceTest {
         assertThat(codes.find(email)).get().extracting(LoginCode::failures).isEqualTo(0);
     }
 
-    /** Requests a code and returns the raw value, read from the published event as the e-mail sender would. */
+    /** Pede um código e devolve o valor puro, lido no evento publicado como faria quem envia o e-mail. */
     private String requestCode(String email) {
         service.requestCode(email);
         return lastEvent(User.normalize(email)).code();
@@ -267,7 +267,7 @@ class LoginServiceTest {
                 .orElseThrow();
     }
 
-    /** Lets the one-minute waiting time between two codes pass. */
+    /** Deixa passar a espera de um minuto entre dois códigos. */
     private void expireCooldown(String email) {
         clock.advance(Duration.ofMinutes(1));
     }

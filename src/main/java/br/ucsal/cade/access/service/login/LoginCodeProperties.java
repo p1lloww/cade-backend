@@ -8,14 +8,14 @@ import org.springframework.validation.annotation.Validated;
 import java.time.Duration;
 
 /**
- * Login code rules (D03, D18), from {@code cade.login-code.*}. Checked on startup: a missing or invalid value stops
- * the application instead of failing on the first login.
+ * Regras do código de login (D03, D18), de {@code cade.login-code.*}. Conferidas na subida: um valor ausente ou
+ * inválido impede a aplicação de subir, em vez de falhar no primeiro login.
  *
- * @param ttl                   how long a code stays valid
- * @param maxAttempts           wrong attempts allowed per code
- * @param resendInterval        minimum time between two codes for the same e-mail
- * @param blockAfterLockedCodes how many codes an e-mail may lock by running out of attempts before it is blocked
- * @param blockDuration         how long a blocked e-mail cannot ask for a code
+ * @param ttl                   por quanto tempo um código vale
+ * @param maxAttempts           tentativas erradas permitidas por código
+ * @param resendInterval        tempo mínimo entre dois códigos para o mesmo e-mail
+ * @param blockAfterLockedCodes quantos códigos um e-mail pode travar, esgotando as tentativas, antes de ser bloqueado
+ * @param blockDuration         por quanto tempo um e-mail bloqueado não pode pedir código
  */
 @Validated
 @ConfigurationProperties("cade.login-code")
@@ -26,7 +26,7 @@ public record LoginCodeProperties(
         @Min(1) int blockAfterLockedCodes,
         @NotNull Duration blockDuration) {
 
-    /** Wrong attempts, adding up across codes, that block the e-mail. */
+    /** Tentativas erradas, somando todos os códigos, que bloqueiam o e-mail. */
     public int maxFailures() {
         return maxAttempts * blockAfterLockedCodes;
     }

@@ -22,13 +22,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Turns errors into RFC 9457 problem details ({@code application/problem+json}), so the front end reads every error
- * the same way: {@code detail} holds the message to show and, on validation errors, {@code errors} maps each field
- * to its message.
+ * Transforma os erros em problem details da RFC 9457 ({@code application/problem+json}), para o front-end ler todo
+ * erro do mesmo jeito: {@code detail} traz a mensagem a mostrar e, nos erros de validação, {@code errors} liga cada
+ * campo à sua mensagem.
  *
- * <p>Besides the business errors, it also answers the 401 and 403 of Spring Security (forwarded here by the
- * {@code SecurityConfiguration}) and any unexpected error, which becomes a 500 with a neutral message: the details
- * go only to the log, never to the user.
+ * <p>Além dos erros de negócio, responde também os 401 e 403 do Spring Security (encaminhados para cá pelo
+ * {@code SecurityConfiguration}) e qualquer erro inesperado, que vira um 500 com mensagem neutra: os detalhes vão só
+ * para o log, nunca para o usuário.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -48,8 +48,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Missing, expired or invalid token. The {@code WWW-Authenticate} header was already set by the bearer entry
-     * point, so only the body is added here.
+     * Token ausente, vencido ou inválido. O cabeçalho {@code WWW-Authenticate} já foi definido pelo entry point do
+     * bearer, então aqui só entra o corpo.
      */
     @ExceptionHandler(AuthenticationException.class)
     ResponseEntity<ProblemDetail> handleAuthentication(AuthenticationException exception) {
@@ -57,14 +57,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, UNAUTHORIZED_MESSAGE));
     }
 
-    /** Valid token, but the role cannot do this; also thrown by role checks inside controllers. */
+    /** Token válido, mas o perfil não pode fazer isso; também lançado pelas checagens de perfil nos controllers. */
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE));
     }
 
-    /** Anything no other handler knows: a bug or a service down. Spring's own errors keep their handlers above. */
+    /** Tudo o que nenhum outro tratador conhece: um bug ou um serviço fora do ar. Os erros do Spring mantêm os tratadores acima. */
     @ExceptionHandler(Exception.class)
     ResponseEntity<ProblemDetail> handleUnexpected(Exception exception) {
         log.error("Unexpected error", exception);

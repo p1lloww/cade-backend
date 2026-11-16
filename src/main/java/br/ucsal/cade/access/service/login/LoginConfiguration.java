@@ -11,8 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class LoginConfiguration {
 
     /**
-     * Hashes login codes before they are stored (D03). BCrypt is slow on purpose, so a leaked database dump cannot
-     * be reversed by trying all one million codes in a few milliseconds.
+     * Calcula o hash dos códigos de login antes de guardá-los (D03). O BCrypt é lento de propósito: assim, um dump
+     * vazado do banco não é revertido testando o milhão de códigos em poucos milissegundos.
      */
     @Bean
     PasswordEncoder loginCodeEncoder() {

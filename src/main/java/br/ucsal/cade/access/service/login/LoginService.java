@@ -20,11 +20,11 @@ import java.time.Instant;
 import java.util.OptionalInt;
 
 /**
- * Passwordless login (RF01, D02, D03): sends a one-time code to an institutional e-mail and exchanges a valid code
- * for the account. Issuing the access token is not done here.
+ * Login sem senha (RF01, D02, D03): envia um código de uso único a um e-mail institucional e troca um código válido
+ * pela conta. A emissão do token de acesso não é feita aqui.
  *
- * <p>No method here opens a transaction: each step is a single atomic statement of {@link LoginCodeStore}, and a
- * refused attempt must stay counted even though the method ends with an exception (D18).
+ * <p>Nenhum método daqui abre transação: cada passo é um único comando atômico do {@link LoginCodeStore}, e uma
+ * tentativa recusada precisa continuar contada mesmo que o método termine com exceção (D18).
  */
 @Service
 public class LoginService {
@@ -61,12 +61,12 @@ public class LoginService {
     }
 
     /**
-     * Issues a new code and publishes {@link LoginCodeRequestedEvent} so it is e-mailed. The new code replaces any
-     * previous one of the same e-mail.
+     * Emite um código novo e publica o {@link LoginCodeRequestedEvent} para ele ser enviado por e-mail. O código novo
+     * substitui qualquer código anterior do mesmo e-mail.
      *
-     * @throws BadRequestException      if the e-mail is not institutional
-     * @throws TooManyRequestsException if the last code was issued less than the resend interval ago, or the e-mail
-     *                                  is blocked after too many wrong attempts
+     * @throws BadRequestException      se o e-mail não é institucional
+     * @throws TooManyRequestsException se o último código foi emitido há menos que o intervalo de reenvio, ou se o
+     *                                  e-mail está bloqueado por tentativas erradas demais
      */
     public void requestCode(String rawEmail) {
         String email = User.normalize(rawEmail);
@@ -74,8 +74,8 @@ public class LoginService {
             throw new BadRequestException("Use o seu e-mail institucional @" + emailPolicy.domain() + ".");
         }
         Instant now = clock.instant();
-        // Cheap check first, so a refused request does not pay for the BCrypt hash. The save below is the one that
-        // decides when two requests arrive together.
+        // Conferência barata primeiro, para uma requisição recusada não pagar o hash do BCrypt. Quem decide quando duas
+        // requisições chegam juntas é o save logo abaixo.
         codes.find(email).ifPresent(current -> refuseIfWaiting(current, now));
 
         String code = generator.generate();
@@ -88,15 +88,15 @@ public class LoginService {
     }
 
     /**
-     * Checks the code typed by the user and returns the account, creating it as a student on the first login. On
-     * success, the code and the wrong attempts of the e-mail are deleted.
+     * Confere o código digitado pelo usuário e devolve a conta, criando-a como estudante no primeiro login. Em caso de
+     * sucesso, o código e as tentativas erradas do e-mail são apagados.
      *
-     * <p>The attempt is counted before the comparison and the code is deleted by a single statement, so parallel
-     * requests can neither go past the attempt limit nor use the same code twice. Wrong attempts add up across
-     * codes, and too many of them block the e-mail for a while (D18).
+     * <p>A tentativa é contada antes da comparação e o código é apagado por um único comando, então requisições em
+     * paralelo não furam o limite de tentativas nem usam o mesmo código duas vezes. As tentativas erradas somam de
+     * um código para o outro, e erros demais bloqueiam o e-mail por um tempo (D18).
      *
-     * @throws BadRequestException with the same message for every kind of failure, so an attacker cannot tell a
-     *                             wrong code from an expired or locked one
+     * @throws BadRequestException com a mesma mensagem para todo tipo de falha, para quem ataca não distinguir um
+     *                             código errado de um vencido ou travado
      */
     public User exchangeCode(String rawEmail, String rawCode) {
         String email = User.normalize(rawEmail);

@@ -20,24 +20,25 @@ import java.time.Clock;
 import java.time.Duration;
 
 /**
- * Signing and checking of access tokens with HMAC-SHA256 (D02). The back end is both the authorization server that
- * issues tokens and the resource server that checks them, so a single symmetric key is enough; with an external
- * provider such as Google, tokens would be signed with its private key and checked with its public keys instead.
+ * Assinatura e conferência dos tokens de acesso com HMAC-SHA256 (D02). O back-end é ao mesmo tempo o servidor de
+ * autorização, que emite os tokens, e o servidor de recursos, que os confere, então uma única chave simétrica basta;
+ * com um provedor externo como o Google, os tokens seriam assinados com a chave privada dele e conferidos com as chaves
+ * públicas.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(JwtProperties.class)
 public class JwtConfiguration {
 
-    /** Used to issue tokens. */
+    /** Usado para emitir os tokens. */
     @Bean
     JwtEncoder jwtEncoder(JwtProperties properties) {
         return new NimbusJwtEncoder(new ImmutableSecret<>(signingKey(properties)));
     }
 
     /**
-     * Used by the resource server on every request. Besides the signature, it checks that the token was issued by
-     * this back end and has not expired. Expiry uses the application clock, with no tolerance, because the same
-     * machine issues and checks the token.
+     * Usado pelo servidor de recursos em toda requisição. Além da assinatura, confere se o token foi emitido por este
+     * back-end e se não venceu. A validade usa o relógio da aplicação, sem tolerância, porque a mesma máquina emite e
+     * confere o token.
      */
     @Bean
     JwtDecoder jwtDecoder(JwtProperties properties, Clock clock) {

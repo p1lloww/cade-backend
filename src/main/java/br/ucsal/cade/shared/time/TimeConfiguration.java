@@ -7,8 +7,8 @@ import java.time.Clock;
 import java.time.ZoneId;
 
 /**
- * Application clock in the Salvador time zone. Anything that needs the current time gets the {@link Clock} injected,
- * so deadline tests can use a fixed clock.
+ * Relógio da aplicação no fuso de Salvador. Tudo que precisa da hora atual recebe o {@link Clock} por injeção, para os
+ * testes de prazo poderem usar um relógio controlado.
  */
 @Configuration(proxyBeanMethods = false)
 public class TimeConfiguration {

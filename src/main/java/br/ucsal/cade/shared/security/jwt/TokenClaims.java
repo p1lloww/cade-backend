@@ -1,18 +1,18 @@
 package br.ucsal.cade.shared.security.jwt;
 
 /**
- * Contents of the access token that both sides must agree on: the access module writes them when it issues a token
- * and the resource server reads them on every request.
+ * Conteúdo do token de acesso em que os dois lados precisam concordar: o módulo de acesso escreve ao emitir o token,
+ * e o servidor de recursos lê em toda requisição.
  */
 public final class TokenClaims {
 
-    /** Value of the standard {@code iss} claim; a token from any other issuer is refused. */
+    /** Valor da claim padrão {@code iss}; um token de qualquer outro emissor é recusado. */
     public static final String ISSUER = "cade-backend";
 
-    /** Custom claim with the account e-mail. */
+    /** Claim própria com o e-mail da conta. */
     public static final String EMAIL = "email";
 
-    /** Custom claim with the {@link br.ucsal.cade.shared.security.Role} name, e.g. {@code STUDENT}. */
+    /** Claim própria com o nome do {@link br.ucsal.cade.shared.security.Role}, por exemplo {@code STUDENT}. */
     public static final String ROLE = "role";
 
     private TokenClaims() {

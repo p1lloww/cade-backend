@@ -4,9 +4,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 /**
- * Business error that reaches the user. The message is shown in the front end, so it is written in Portuguese;
- * each subclass fixes the HTTP status. A single handler turns any subclass into an error response, so a new kind of
- * error needs no change in the handler.
+ * Erro de negócio que chega ao usuário. A mensagem aparece no front-end, por isso é escrita em português; cada
+ * subclasse fixa o status HTTP. Um único tratador transforma qualquer subclasse numa resposta de erro, então um tipo
+ * novo de erro não exige mudança no tratador.
  */
 public abstract class ApiException extends RuntimeException {
 
@@ -16,7 +16,7 @@ public abstract class ApiException extends RuntimeException {
 
     public abstract HttpStatus status();
 
-    /** Headers the response must carry besides the error body; none by default. */
+    /** Cabeçalhos que a resposta precisa levar além do corpo do erro; nenhum por padrão. */
     public HttpHeaders headers() {
         return HttpHeaders.EMPTY;
     }

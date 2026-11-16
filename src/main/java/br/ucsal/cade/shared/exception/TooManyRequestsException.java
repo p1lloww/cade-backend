@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import java.time.Duration;
 import java.util.Objects;
 
-/** The client must wait before trying again (HTTP 429), as told by the {@code Retry-After} header. */
+/** O cliente precisa esperar antes de tentar de novo (HTTP 429), pelo tempo do cabeçalho {@code Retry-After}. */
 public class TooManyRequestsException extends ApiException {
 
     private final Duration retryAfter;
@@ -21,7 +21,7 @@ public class TooManyRequestsException extends ApiException {
         return HttpStatus.TOO_MANY_REQUESTS;
     }
 
-    /** {@code Retry-After} in whole seconds, rounded up so the client never retries too early. */
+    /** {@code Retry-After} em segundos inteiros, arredondado para cima, para o cliente nunca tentar cedo demais. */
     @Override
     public HttpHeaders headers() {
         long seconds = retryAfter.plusNanos(999_999_999).toSeconds();

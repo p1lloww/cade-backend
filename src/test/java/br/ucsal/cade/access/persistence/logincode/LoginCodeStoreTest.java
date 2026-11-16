@@ -12,7 +12,7 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The SQL of {@link LoginCodeStore} against a real PostgreSQL, with the table created by Hibernate from the entity. */
+/** O SQL do {@link LoginCodeStore} contra um PostgreSQL de verdade, com a tabela criada pelo Hibernate a partir da entidade. */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TestcontainersConfiguration.class, LoginCodeStore.class})

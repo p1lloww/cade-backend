@@ -9,13 +9,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * API documentation served by springdoc: the OpenAPI document at {@code /v3/api-docs} and the Swagger UI at
- * {@code /swagger-ui.html}. Every operation requires the access token unless it declares otherwise.
+ * Documentação da API servida pelo springdoc: o documento OpenAPI em {@code /v3/api-docs} e o Swagger UI em
+ * {@code /swagger-ui.html}. Toda operação exige o token de acesso, a menos que declare o contrário.
  */
 @Configuration(proxyBeanMethods = false)
 public class OpenApiConfiguration {
 
-    /** Name of the security scheme that operations reference in {@code @SecurityRequirement}. */
+    /** Nome do esquema de segurança que as operações citam no {@code @SecurityRequirement}. */
     public static final String BEARER_AUTH = "bearer-jwt";
 
     @Bean

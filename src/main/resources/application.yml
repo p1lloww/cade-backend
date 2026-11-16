@@ -8,6 +8,10 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/cade}
     username: ${DB_USER:cade}
     password: ${DB_PASSWORD:cade}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: update
@@ -29,6 +33,10 @@ management:
 
 cade:
   allowed-email-domain: ucsal.edu.br
+  login-code:
+    ttl: 10m
+    max-attempts: 5
+    resend-interval: 1m
   initial-admin:
     email: ${ADMIN_EMAIL:}
   cors:

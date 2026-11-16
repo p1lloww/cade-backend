@@ -23,8 +23,13 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Requisitos | Código |
 |---|---|
 | Usuário | `User` |
-| Perfil (estudante, funcionário, administrador) | `Role` (`STUDENT`, `STAFF`, `ADMIN`) |
-| Código de login | `LoginCode` |
+| Perfil (estudante, funcionário, administrador) | `Role` (`STUDENT`, `STAFF`, `ADMIN`), em `shared.security` porque `@RequiresRole` é usada por todos os módulos |
+| Administrador inicial (criado na instalação) | `InitialAdminInitializer` (variável `ADMIN_EMAIL`) |
+| Código de login | `LoginCode` (tabela `login_codes`), gravado pelo `LoginCodeStore` (D18) |
+| Bloqueio por tentativas erradas | `LoginCode.blockedUntil`, `LoginCodeStore.registerFailure` (D18) |
+| Tempo de espera entre envios de código | `resend-interval` (`LoginCodeProperties.resendInterval`), conferido pelo `LoginCodeStore.save` |
+| Token de acesso (JWT) | `AccessToken`, emitido pelo `AccessTokenIssuer` |
+| Mensagem de erro da API | `ProblemDetail`, montado pelo `ApiExceptionHandler` (D17) |
 | Objeto achado | `FoundItem` |
 | Situação do objeto (Disponível, Reservado, Devolvido, Não reclamado, Destinado) | `FoundItemStatus` (`AVAILABLE`, `RESERVED`, `RETURNED`, `UNCLAIMED`, `DISPOSED`) |
 | Caixa do mês (local de guarda) | `StorageBox` |

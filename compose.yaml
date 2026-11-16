@@ -25,7 +25,7 @@ services:
     build: .
     env_file:
       - path: .env
-        required: false
+        required: true
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/cade
       MAIL_HOST: ${MAIL_HOST:-mailpit}

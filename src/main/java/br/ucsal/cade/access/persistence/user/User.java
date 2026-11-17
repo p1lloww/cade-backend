@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * User account (RF02). Identified by the institutional e-mail, with no password (D02), and a single role.
+ * Conta de usuário (RF02). Identificada pelo e-mail institucional, sem senha (D02), e com um único perfil.
  */
 @Entity
 @Table(name = "users")
@@ -45,22 +45,22 @@ public class User {
         this.createdAt = Objects.requireNonNull(createdAt);
     }
 
-    /** Account created on the first valid login: every new user starts as a student. */
+    /** Conta criada no primeiro login válido: todo usuário novo começa como estudante. */
     public static User newStudent(String email, Instant now) {
         return new User(email, Role.STUDENT, now);
     }
 
-    /** Administrator account, created at installation. */
+    /** Conta de administrador, criada na instalação. */
     public static User newAdmin(String email, Instant now) {
         return new User(email, Role.ADMIN, now);
     }
 
-    /** E-mails are compared trimmed and case-insensitively. */
+    /** E-mails são comparados sem espaços nas pontas e sem diferenciar maiúsculas e minúsculas. */
     public static String normalize(String email) {
         return Objects.requireNonNull(email).strip().toLowerCase(Locale.ROOT);
     }
 
-    /** Makes this account an administrator; used when creating the initial administrator. */
+    /** Torna esta conta administradora; usado na criação do administrador inicial. */
     public void promoteToAdmin() {
         this.role = Role.ADMIN;
     }

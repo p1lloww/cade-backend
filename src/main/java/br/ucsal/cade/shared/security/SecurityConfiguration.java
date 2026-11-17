@@ -17,18 +17,19 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * The back end as an OAuth 2.0 resource server (D09): every request outside the public routes must carry
- * {@code Authorization: Bearer <access token>}. There is no session and no cookie, so CSRF protection is not needed.
+ * O back-end como servidor de recursos OAuth 2.0 (D09): toda requisição fora das rotas públicas precisa levar
+ * {@code Authorization: Bearer <token de acesso>}. Não há sessão nem cookie, então a proteção contra CSRF não é
+ * necessária.
  */
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
 
     /**
-     * Routes open to anyone: getting a token, the health check, the API documentation, and {@code /error}, where
-     * Spring forwards failed requests; without it, a 400 on a public route would turn into a 401.
+     * Rotas abertas a qualquer um: obter o token, a verificação de saúde, a documentação da API e o {@code /error},
+     * para onde o Spring encaminha as requisições que falham; sem ele, um 400 numa rota pública viraria 401.
      *
-     * <p>Each route is listed on its own, never with a wildcard such as {@code /auth/**}: a route added later under
-     * the same path must ask for a token unless someone opens it on purpose here.
+     * <p>Cada rota é listada sozinha, nunca com curinga como {@code /auth/**}: uma rota criada depois no mesmo caminho
+     * precisa exigir token, a menos que alguém a libere aqui de propósito.
      */
     private static final String[] PUBLIC_ROUTES = {
             "/auth/login-code", "/auth/token", "/actuator/health", "/error",
@@ -57,9 +58,9 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Answers a request without a valid token with 401. The standard bearer entry point sets the status and the
-     * {@code WWW-Authenticate} header; then the exception goes to the {@code ApiExceptionHandler}, so the body is a
-     * problem detail like every other error (D17).
+     * Responde 401 a uma requisição sem token válido. O entry point padrão do bearer define o status e o cabeçalho
+     * {@code WWW-Authenticate}; depois a exceção vai para o {@code ApiExceptionHandler}, então o corpo é um problem
+     * detail como todo outro erro (D17).
      */
     private static AuthenticationEntryPoint problemDetailEntryPoint(HandlerExceptionResolver resolver) {
         BearerTokenAuthenticationEntryPoint bearer = new BearerTokenAuthenticationEntryPoint();
@@ -69,7 +70,7 @@ public class SecurityConfiguration {
         };
     }
 
-    /** Same as {@link #problemDetailEntryPoint}, for a valid token whose role cannot open the route (403). */
+    /** O mesmo que o {@link #problemDetailEntryPoint}, para um token válido cujo perfil não abre a rota (403). */
     private static AccessDeniedHandler problemDetailAccessDeniedHandler(HandlerExceptionResolver resolver) {
         BearerTokenAccessDeniedHandler bearer = new BearerTokenAccessDeniedHandler();
         return (request, response, exception) -> {
@@ -79,8 +80,8 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Turns the {@code role} claim into a Spring authority ({@code STUDENT} becomes {@code ROLE_STUDENT}), which
-     * role-based authorization relies on. The account id ({@code sub}) becomes the authentication name.
+     * Transforma a claim {@code role} numa authority do Spring ({@code STUDENT} vira {@code ROLE_STUDENT}), da qual a
+     * autorização por perfil depende. O id da conta ({@code sub}) vira o nome da autenticação.
      */
     private static JwtAuthenticationConverter roleConverter() {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();

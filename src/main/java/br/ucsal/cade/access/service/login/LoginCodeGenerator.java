@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
 
 /**
- * Generates six-digit login codes with {@link SecureRandom} (D03). {@code java.util.Random} is predictable and must
- * not be used for anything that grants access.
+ * Gera códigos de login de seis dígitos com {@link SecureRandom} (D03). O {@code java.util.Random} é previsível e não
+ * pode ser usado em nada que dê acesso.
  */
 @Component
 class LoginCodeGenerator {
@@ -15,7 +15,7 @@ class LoginCodeGenerator {
 
     private final SecureRandom random = new SecureRandom();
 
-    /** A code from {@code 000000} to {@code 999999}, keeping leading zeros. */
+    /** Um código de {@code 000000} a {@code 999999}, mantendo os zeros à esquerda. */
     String generate() {
         return "%06d".formatted(random.nextInt(CODE_RANGE));
     }

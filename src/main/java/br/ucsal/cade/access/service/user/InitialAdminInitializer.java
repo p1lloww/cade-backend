@@ -14,8 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 
 /**
- * Creates the administrator on startup from the {@code ADMIN_EMAIL} variable (requirements, section 2).
- * Safe to run on every startup: if the account already exists, it only makes sure it is an administrator.
+ * Cria o administrador na subida a partir da variável {@code ADMIN_EMAIL} (requisitos, seção 2). Pode rodar em toda
+ * subida: se a conta já existe, só garante que ela seja administradora.
  */
 @Component
 class InitialAdminInitializer implements ApplicationRunner {

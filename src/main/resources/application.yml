@@ -2,7 +2,7 @@ spring:
   application:
     name: cade-backend
   config:
-    # Reads the .env of the project root, so `./mvnw spring-boot:run` gets the same variables as Docker Compose.
+    # Lê o .env da raiz do projeto, para o `./mvnw spring-boot:run` receber as mesmas variáveis do Docker Compose.
     import: optional:file:.env[.properties]
   threads:
     virtual:
@@ -43,8 +43,8 @@ cade:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
   jwt:
-    # No default on purpose: without JWT_SECRET the application does not start, instead of signing tokens with a
-    # key that is public in this repository.
+    # Sem valor padrão de propósito: sem JWT_SECRET a aplicação não sobe, em vez de assinar tokens com uma chave que
+    # está pública neste repositório.
     secret: ${JWT_SECRET}
     ttl: 8h
   email:

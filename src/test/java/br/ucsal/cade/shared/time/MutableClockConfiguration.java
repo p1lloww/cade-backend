@@ -7,8 +7,9 @@ import org.springframework.context.annotation.Primary;
 import java.time.Instant;
 
 /**
- * Replaces the application clock with a {@link MutableClock} that tests can move forward. The bean is shared by
- * every test class that reuses the same context, so tests should compute times from {@code clock.instant()}.
+ * Troca o relógio da aplicação por um {@link MutableClock} que os testes podem adiantar. O bean é compartilhado por
+ * toda classe de teste que reaproveita o mesmo contexto, então os testes calculam as horas a partir de
+ * {@code clock.instant()}.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class MutableClockConfiguration {

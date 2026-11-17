@@ -14,23 +14,24 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
- * Login codes in the {@code login_codes} table (D18). The table itself is created by Hibernate from
- * {@link LoginCode} (D06); this class only runs SQL on it.
+ * Códigos de login na tabela {@code login_codes} (D18). A tabela é criada pelo Hibernate a partir de
+ * {@link LoginCode} (D06); esta classe só executa SQL nela.
  *
- * <p>Every operation that checks a rule and changes the row is a single SQL statement. PostgreSQL locks the row while
- * the statement runs, so two concurrent requests cannot both pass a check: parallel guesses cannot go past the
- * attempt limit, and the same code cannot be used twice. The statements run outside any surrounding transaction on
- * purpose: a refused attempt throws an exception, and a rollback would undo the attempt it just counted.
+ * <p>Toda operação que confere uma regra e altera a linha é um único comando SQL. O PostgreSQL trava a linha durante o
+ * comando, então duas requisições ao mesmo tempo não passam juntas por uma conferência: palpites em paralelo não
+ * furam o limite de tentativas, e o mesmo código não é usado duas vezes. Os comandos rodam fora de qualquer transação
+ * de propósito: uma tentativa recusada lança exceção, e um rollback desfaria a tentativa que acabou de ser contada.
  *
- * <p>The current time is always a parameter, taken from the application {@code Clock}, and never {@code now()} of
- * the database, so tests can move the clock forward to check expiry and blocks.
+ * <p>A hora atual é sempre um parâmetro, vinda do {@code Clock} da aplicação, e nunca o {@code now()} do banco, para
+ * os testes poderem adiantar o relógio e conferir expiração e bloqueio.
  */
 @Repository
 public class LoginCodeStore {
 
     /**
-     * Inserts the code, or overwrites the code of the e-mail, unless the e-mail is still waiting: the last code was
-     * issued less than the resend interval ago, or the e-mail is blocked. Wrong attempts and blocks are kept.
+     * Insere o código, ou sobrescreve o código do e-mail, a não ser que o e-mail ainda esteja esperando: o último
+     * código foi emitido há menos que o intervalo de reenvio, ou o e-mail está bloqueado. As tentativas erradas e os
+     * bloqueios são mantidos.
      */
     private static final String SAVE = """
             INSERT INTO login_codes (email, code_hash, created_at, expires_at, attempts, failures, blocked_until)
@@ -50,7 +51,7 @@ public class LoginCodeStore {
              WHERE email = :email
             """;
 
-    /** Counts one attempt on a code that is still valid and returns the new total; no row when there is none. */
+    /** Conta uma tentativa num código que ainda vale e devolve o novo total; nenhuma linha quando não há código. */
     private static final String REGISTER_ATTEMPT = """
             UPDATE login_codes
                SET attempts = attempts + 1
@@ -59,9 +60,9 @@ public class LoginCodeStore {
             """;
 
     /**
-     * Counts one wrong attempt for the e-mail. When the count reaches the limit, it blocks the e-mail, ends the
-     * current code and starts the count again. On the right side of SET, PostgreSQL always reads the values from
-     * before the update, so every CASE sees the same {@code failures}.
+     * Conta uma tentativa errada do e-mail. Quando a contagem chega ao limite, bloqueia o e-mail, encerra o código
+     * atual e recomeça a contagem. No lado direito do SET, o PostgreSQL sempre lê os valores de antes da alteração,
+     * então todos os CASE veem o mesmo {@code failures}.
      */
     private static final String REGISTER_FAILURE = """
             UPDATE login_codes
@@ -72,7 +73,7 @@ public class LoginCodeStore {
             RETURNING blocked_until IS NOT NULL AND blocked_until > :now
             """;
 
-    /** Deletes the row only if it still holds the code that was checked. */
+    /** Apaga a linha só se ela ainda guarda o código que foi conferido. */
     private static final String CONSUME = """
             DELETE FROM login_codes
              WHERE email = :email AND code_hash = :codeHash
@@ -85,11 +86,11 @@ public class LoginCodeStore {
     }
 
     /**
-     * Stores a new code, replacing the previous one of the same e-mail.
+     * Grava um código novo, substituindo o anterior do mesmo e-mail.
      *
-     * @param resendInterval minimum time since the previous code of the e-mail
-     * @return {@code false} if nothing was stored because the e-mail is still waiting or is blocked; the caller reads
-     *         the row with {@link #find(String)} to tell which
+     * @param resendInterval tempo mínimo desde o código anterior do e-mail
+     * @return {@code false} se nada foi gravado porque o e-mail ainda está esperando ou está bloqueado; quem chamou lê
+     *         a linha com {@link #find(String)} para saber qual dos dois
      */
     public boolean save(LoginCode code, Duration resendInterval) {
         return jdbc.sql(SAVE)
@@ -101,7 +102,7 @@ public class LoginCodeStore {
                 .update() == 1;
     }
 
-    /** The row of the e-mail, even if its code has expired; empty if there is none. */
+    /** A linha do e-mail, mesmo com o código vencido; vazio se não houver. */
     public Optional<LoginCode> find(String email) {
         return jdbc.sql(FIND)
                 .param("email", email)
@@ -110,9 +111,9 @@ public class LoginCodeStore {
     }
 
     /**
-     * Counts one attempt before the code is compared, so parallel guesses cannot all see the old count.
+     * Conta uma tentativa antes de o código ser comparado, para palpites em paralelo não verem todos a contagem antiga.
      *
-     * @return the number of attempts including this one, or empty if the code no longer exists or has expired
+     * @return o número de tentativas contando esta, ou vazio se o código não existe mais ou venceu
      */
     public OptionalInt registerAttempt(String email, Instant now) {
         return jdbc.sql(REGISTER_ATTEMPT)
@@ -125,9 +126,9 @@ public class LoginCodeStore {
     }
 
     /**
-     * Counts one wrong attempt for the e-mail and blocks it once the count reaches {@code maxFailures}.
+     * Conta uma tentativa errada do e-mail e o bloqueia quando a contagem chega a {@code maxFailures}.
      *
-     * @return {@code true} if the e-mail is blocked after this attempt
+     * @return {@code true} se o e-mail ficou bloqueado depois desta tentativa
      */
     public boolean registerFailure(String email, Instant now, int maxFailures, Duration blockDuration) {
         return jdbc.sql(REGISTER_FAILURE)
@@ -141,10 +142,10 @@ public class LoginCodeStore {
     }
 
     /**
-     * Deletes the row of the e-mail after a successful login, which also clears its wrong attempts.
+     * Apaga a linha do e-mail depois de um login válido, o que também zera as tentativas erradas.
      *
-     * @return {@code true} only for the request that actually deleted the code, so a code is used once even when
-     *         two requests with the right code arrive together
+     * @return {@code true} só para a requisição que de fato apagou o código, então um código é usado uma vez mesmo
+     *         quando duas requisições com o código certo chegam juntas
      */
     public boolean consume(String email, String codeHash) {
         return jdbc.sql(CONSUME)
@@ -153,7 +154,7 @@ public class LoginCodeStore {
                 .update() == 1;
     }
 
-    /** The PostgreSQL driver takes {@code OffsetDateTime}, not {@code Instant}. */
+    /** O driver do PostgreSQL aceita {@code OffsetDateTime}, não {@code Instant}. */
     private static OffsetDateTime utc(Instant instant) {
         return instant.atOffset(ZoneOffset.UTC);
     }

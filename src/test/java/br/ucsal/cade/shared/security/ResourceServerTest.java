@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** The back end as a resource server: which requests get in, and what the token turns into. */
+/** O back-end como servidor de recursos: quais requisições entram e no que o token se transforma. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, MutableClockConfiguration.class, ResourceServerTest.ProbeController.class})
@@ -48,7 +48,7 @@ class ResourceServerTest {
 
     private static final String SUBJECT = "6f1c2a1e-0000-4000-8000-000000000001";
 
-    /** A protected route that only exists in this test and echoes what Spring Security saw. */
+    /** Uma rota protegida que só existe neste teste e devolve o que o Spring Security enxergou. */
     @RestController
     static class ProbeController {
 
@@ -87,7 +87,7 @@ class ResourceServerTest {
         mvc.perform(get("/test/probe").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(SUBJECT))
-                // Spring Security 7 also adds FACTOR_BEARER (how the user authenticated), in no fixed order.
+                // O Spring Security 7 também acrescenta FACTOR_BEARER (como o usuário se autenticou), sem ordem fixa.
                 .andExpect(jsonPath("$.authorities", hasItem("ROLE_STAFF")));
     }
 
@@ -149,7 +149,7 @@ class ResourceServerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    /** A token valid for eight hours from now, as the access module would issue it, with optional changes. */
+    /** Um token válido por oito horas a partir de agora, como o módulo de acesso emitiria, com mudanças opcionais. */
     private String token(JwtEncoder signer, Consumer<JwtClaimsSet.Builder> changes) {
         JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
                 .issuer(TokenClaims.ISSUER)

@@ -14,9 +14,9 @@ import java.time.Clock;
 import java.time.Instant;
 
 /**
- * Issues the access token of an authenticated account (D02): the role of the authorization server in OAuth 2.0.
- * The token carries everything the resource server needs, so no database lookup happens on each request; the
- * downside is that a role change only shows up in the next token.
+ * Emite o token de acesso de uma conta autenticada (D02): o papel do servidor de autorização no OAuth 2.0. O token
+ * leva tudo de que o servidor de recursos precisa, então nenhuma requisição consulta o banco; a desvantagem é que uma
+ * mudança de perfil só aparece no próximo token.
  */
 @Component
 public class AccessTokenIssuer {

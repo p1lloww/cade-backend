@@ -7,6 +7,6 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
-    /** Looks up by an already normalized e-mail ({@link User#normalize(String)}). */
+    /** Busca por um e-mail já normalizado ({@link User#normalize(String)}). */
     Optional<User> findByEmail(String email);
 }

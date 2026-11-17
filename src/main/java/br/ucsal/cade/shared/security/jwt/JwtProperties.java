@@ -9,11 +9,11 @@ import org.springframework.validation.annotation.Validated;
 import java.time.Duration;
 
 /**
- * Access token settings (D02, D09), from {@code cade.jwt.*}.
+ * Configuração do token de acesso (D02, D09), de {@code cade.jwt.*}.
  *
- * @param secret key that signs and verifies tokens with HMAC-SHA256 ({@code JWT_SECRET}); HS256 needs at least
- *               256 bits, so at least 32 characters
- * @param ttl    how long a token stays valid
+ * @param secret chave que assina e confere os tokens com HMAC-SHA256 ({@code JWT_SECRET}); o HS256 precisa de pelo
+ *               menos 256 bits, ou seja, pelo menos 32 caracteres
+ * @param ttl    por quanto tempo um token vale
  */
 @Validated
 @ConfigurationProperties("cade.jwt")

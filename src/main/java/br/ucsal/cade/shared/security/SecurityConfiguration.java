@@ -32,7 +32,7 @@ public class SecurityConfiguration {
      * <p>Cada rota é listada sozinha, nunca com curinga como {@code /auth/**}: uma rota criada depois no mesmo caminho
      * precisa exigir token, a menos que alguém a libere aqui de propósito.
      */
-    private static final String[] PUBLIC_ROUTES = {
+    static final String[] PUBLIC_ROUTES = {
             "/auth/login-code", "/auth/token", "/actuator/health", "/error",
             "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"};
 

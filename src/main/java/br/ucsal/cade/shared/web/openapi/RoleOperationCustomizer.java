@@ -27,9 +27,10 @@ class RoleOperationCustomizer implements OperationCustomizer {
                     .map(Enum::name)
                     .collect(Collectors.joining(", "));
             String description = operation.getDescription() == null ? "" : operation.getDescription() + "\n\n";
-            operation.setDescription(description + "**Roles:** " + roles);
+            operation.setDescription(description + "**Perfis:** " + roles);
             ApiResponses responses = operation.getResponses() == null ? new ApiResponses() : operation.getResponses();
-            responses.putIfAbsent(FORBIDDEN, new ApiResponse().description("The account's role cannot use this route."));
+            responses.putIfAbsent(FORBIDDEN,
+                    new ApiResponse().description("O perfil da conta não pode usar esta rota."));
             operation.setResponses(responses);
         });
         return operation;

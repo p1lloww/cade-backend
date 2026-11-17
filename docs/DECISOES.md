@@ -128,7 +128,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** são dados que perdem o valor assim que o código é usado ou expira. No Redis eles somem sozinhos, sem tabela crescendo nem rotina de limpeza.
 - **Como as regras da D03 ficam garantidas:** o código novo sobrescreve o anterior (só o último vale); a tentativa é contada (`HINCRBY` num script Lua) antes da comparação, para palpites em paralelo não furarem o limite de 5; o código é apagado por um único `DEL`, e só a requisição que o apagou recebe o token (uso único).
 - **Consequências:** mais um serviço no Compose e nos testes (Testcontainers). O `requestCode` não abre transação no banco, então o listener que envia o e-mail (AVI-01) precisa de `@TransactionalEventListener(fallbackExecution = true)`. Se o Redis cair, ninguém consegue pedir código; os usuários já logados continuam, porque o JWT não depende dele.
-- **Detalhes:** chaves, fluxos e o motivo dos scripts Lua estavam em `login-codigos-redis.md`, hoje [login-codigos.md](login-codigos.md) (versão PostgreSQL).
+- **Detalhes:** chaves, fluxos e o motivo dos scripts Lua estavam em `login-codigos-redis.md`, hoje [login-codigos.md](tecnico/login-codigos.md) (versão PostgreSQL).
 - **Situação:** substituída pela D18 em 16/11/2026.
 
 ## D17 — Documentação da API no Swagger e erros no formato RFC 9457
@@ -150,14 +150,14 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - Os métodos do `LoginService` não abrem transação, porque um rollback desfaria a tentativa contada.
   - Como o `requestCode` não tem transação, o listener que envia o e-mail (AVI-01) precisa de `@TransactionalEventListener(fallbackExecution = true)`.
   - Quem sabe o e-mail de alguém pode bloqueá-lo por 15 min errando de propósito; para o MVP, a proteção contra adivinhação vale mais.
-- **Detalhes:** colunas, comandos, fluxos e testes em [login-codigos.md](login-codigos.md).
+- **Detalhes:** colunas, comandos, fluxos e testes em [login-codigos.md](tecnico/login-codigos.md).
 - **Situação:** fechada.
 
 ## D19 — Autorização por perfil com anotação própria e interceptor
 - **Decisão (17/11/2026):** a `@RequiresRole` (o `@RequerPerfil` do RNF05) é lida por reflexão num `HandlerInterceptor` próprio, primeiro no método e depois na classe; a do método substitui a da classe. O administrador atende às rotas de funcionário (`ADMIN(STAFF)` no enum `Role`); ninguém herda as rotas de estudante. Toda rota fora de `PUBLIC_ROUTES` precisa da anotação, e um teste quebra o build quando falta. O Swagger mostra os perfis de cada rota a partir da mesma anotação.
 - **Motivo:** com o `@PreAuthorize` do Spring, a regra viraria texto numa string e a leitura da anotação não seria nossa; a anotação própria fica tipada pelo enum e é conteúdo de POOA (anotações e reflexão). A hierarquia segue a seção 2 dos requisitos. O teste evita que uma rota de funcionário fique aberta a estudantes por esquecimento.
 - **Consequências:** o perfil vem do token, sem consulta ao banco, então uma mudança de perfil (ADM-02) só vale no próximo login.
-- **Detalhes:** fluxo, CORS, exemplos e checklist de rota nova em [autorizacao.md](autorizacao.md).
+- **Detalhes:** fluxo, CORS, exemplos e checklist de rota nova em [autorizacao.md](tecnico/autorizacao.md).
 - **Situação:** fechada.
 
 ---

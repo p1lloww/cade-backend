@@ -12,8 +12,8 @@ Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
 - `docs/DECISOES.md`: decisões D01–D18 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
-- `docs/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
-- `docs/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D19).
+- `docs/tecnico/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
+- `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D19).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
 ## Comandos
@@ -77,5 +77,5 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 
 - A `main` é protegida (D12): todo trabalho vai numa branch (`feat/...`, `fix/...`, `docs/...`, `chore/...`) e entra por PR **direto para a `main`** (não há `develop`), com aprovação de outro integrante e o CI passando. O merge é sempre squash, e a branch é apagada ao mesclar.
 - Cada PR resolve um card e cita `Closes #N`. Os cards têm código no título (`[ACE-02]`) e as dependências no campo "Depende de" (D13).
-- Mantenha `docs/declaracao-ia-terceiros.md` atualizada quando a IA ajudar numa parte relevante ou quando entrar uma biblioteca nova.
+- Mantenha `docs/entrega/declaracao-ia-terceiros.md` atualizada quando a IA ajudar numa parte relevante ou quando entrar uma biblioteca nova.
 - Não fazer commit, push, criar issues ou convidar pessoas sem a equipe pedir.

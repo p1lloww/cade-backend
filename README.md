@@ -14,7 +14,7 @@ Este é o repositório do **back-end**. O front-end está em [cade-frontend](htt
 - **Problema:** os objetos ficam registrados só numa etiqueta presa a eles, em caixas por mês, sem lista pesquisável. Muitos estudantes não sabem que a sala existe.
 - **Proposta:** a sala ganha uma lista pesquisável, e o estudante resolve a distância: registra a perda e só vai à sala quando é convocado.
 
-Detalhes e evidências em [docs/problema-validacao.md](docs/problema-validacao.md) e [docs/definicao-mvp.md](docs/definicao-mvp.md).
+Detalhes e evidências em [docs/entrega/problema-validacao.md](docs/entrega/problema-validacao.md) e [docs/entrega/definicao-mvp.md](docs/entrega/definicao-mvp.md).
 
 ## Integrantes e turma
 
@@ -85,7 +85,7 @@ Monólito modular (D10). Cada módulo dos requisitos é um pacote em `br.ucsal.c
 
 O teste `ModuleBoundariesTest` (ArchUnit) garante essas regras: acesso entre módulos só pela `api` e nas direções da tabela, sem ciclos, e camadas na ordem `controller → service → persistence`.
 
-Documentos de apoio em `docs/`: [requisitos](docs/requisitos.md), [decisões](docs/DECISOES.md) e [glossário](docs/GLOSSARIO.md).
+Documentos de apoio em `docs/` (índice em [docs/README.md](docs/README.md)): [requisitos](docs/requisitos.md), [decisões](docs/DECISOES.md) e [glossário](docs/GLOSSARIO.md).
 
 ## Como contribuir
 
@@ -118,4 +118,4 @@ _A preencher._
 
 ## Fontes, licenças, componentes de terceiros e uso de IA
 
-Ver [docs/declaracao-ia-terceiros.md](docs/declaracao-ia-terceiros.md).
+Ver [docs/entrega/declaracao-ia-terceiros.md](docs/entrega/declaracao-ia-terceiros.md).

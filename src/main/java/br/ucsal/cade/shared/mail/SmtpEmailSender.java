@@ -32,7 +32,9 @@ public class SmtpEmailSender implements EmailSender {
         mail.setText(message.body());
 
         try {
+            log.debug("Sending e-mail to {}: {}", message.to(), message.subject());
             mailSender.send(mail);
+            log.debug("E-mail sent to {}: {}", message.to(), message.subject());
         } catch (MailException e) {
             log.warn("Could not send e-mail to {} ({}): {}", message.to(), message.subject(), e.getMessage());
         }

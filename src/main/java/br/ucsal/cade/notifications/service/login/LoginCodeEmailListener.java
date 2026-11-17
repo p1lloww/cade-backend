@@ -2,6 +2,8 @@ package br.ucsal.cade.notifications.service.login;
 
 import br.ucsal.cade.access.api.event.LoginCodeRequestedEvent;
 import br.ucsal.cade.shared.mail.EmailSender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -16,6 +18,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 public class LoginCodeEmailListener {
 
+    private static final Logger log = LoggerFactory.getLogger(LoginCodeEmailListener.class);
+
     private final EmailSender emailSender;
 
     LoginCodeEmailListener(EmailSender emailSender) {
@@ -25,6 +29,8 @@ public class LoginCodeEmailListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     void on(LoginCodeRequestedEvent event) {
+        // The event's toString hides the code.
+        log.debug("Login code e-mail requested: {}", event);
         emailSender.send(LoginCodeEmail.from(event));
     }
 }

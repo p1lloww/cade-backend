@@ -4,6 +4,7 @@ import br.ucsal.cade.shared.security.jwt.TokenClaims;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,7 +20,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 /**
  * O back-end como servidor de recursos OAuth 2.0 (D09): toda requisição fora das rotas públicas precisa levar
  * {@code Authorization: Bearer <token de acesso>}. Não há sessão nem cookie, então a proteção contra CSRF não é
- * necessária.
+ * necessária. O CORS vem do {@code CrossOriginConfiguration}, e o perfil exigido por rota, da {@code @RequiresRole}.
  */
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
@@ -43,6 +44,7 @@ public class SecurityConfiguration {
         AccessDeniedHandler forbidden = problemDetailAccessDeniedHandler(resolver);
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(PUBLIC_ROUTES).permitAll()

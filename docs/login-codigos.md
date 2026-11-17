@@ -69,6 +69,43 @@ sequenceDiagram
 
 A conferência com `find` antes do hash existe para uma requisição recusada não gastar o BCrypt à toa. Quem decide de verdade é o `save`: se duas requisições passam juntas pela conferência, só uma consegue gravar.
 
+### Envio do e-mail (AVI-01)
+
+O e-mail sai numa thread separada, depois que a requisição já respondeu:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuário
+    participant S as LoginService<br/>(thread da requisição)
+    participant P as Proxy do @Async
+    participant L as LoginCodeEmailListener<br/>(thread task-N)
+    participant M as SmtpEmailSender
+    participant SMTP as Gmail / Mailpit
+
+    S->>P: publishEvent(LoginCodeRequestedEvent)
+    P->>L: entrega a tarefa ao executor (Virtual Thread nova)
+    P-->>S: volta na hora
+    S-->>U: 204 No Content (~100 ms)
+    L->>L: LoginCodeEmail monta assunto e texto (código e hora de expiração)
+    L->>M: send(EmailMessage)
+    M->>SMTP: SMTP (1–3 s no Gmail)
+    alt envio aceito
+        M->>M: log debug "E-mail sent to ..."
+        SMTP-->>U: e-mail com o código
+    else falha (rede, autenticação, servidor fora)
+        M->>M: log warn "Could not send e-mail to ..." (não relança)
+    end
+```
+
+- **Quem consome o evento:** o `LoginCodeEmailListener` (`notifications`), com `@TransactionalEventListener(phase = AFTER_COMMIT, fallbackExecution = true)` + `@Async`. O `access` não conhece o `notifications`: ele só publica o evento (Observer), e a dependência vai de `notifications` para `access.api`, como a D10 permite.
+- **Por que `fallbackExecution = true`:** o `LoginService` publica fora de transação (D18). Sem esse parâmetro, o Spring descartaria o evento em silêncio, porque não haveria commit para esperar.
+- **Por que assíncrono (D05):** a resposta não depende da velocidade do Gmail, e uma falha de e-mail não chega à requisição (RNF08). Com `spring.threads.virtual.enabled`, o executor padrão cria uma Virtual Thread por tarefa. Enquanto espera a rede, a Virtual Thread não prende uma thread do sistema operacional.
+- **Por que funciona:** o `@EnableAsync` da `AsyncConfiguration` (`shared.event`) faz o Spring trocar o listener por um proxy que entrega a chamada ao executor. Sem ele, o `@Async` seria ignorado em silêncio e o e-mail sairia na thread da requisição.
+- **Custo aceito:** se o envio falhar, a tela já mostrou "código enviado". A falha só aparece no log, e a pessoa pede outro código depois de 1 minuto. Se o back-end cair entre a resposta e o envio, o e-mail se perde (D05).
+- **Sigilo:** o código em texto puro só existe no evento e no corpo do e-mail. O `toString` do `LoginCodeRequestedEvent` e o do `EmailMessage` o escondem, e os logs registram só o destinatário e o assunto.
+- **Servidor:** sem `MAIL_HOST` no `.env`, o envio vai para o Mailpit (`localhost:1025`, veja em http://localhost:8025). Para o Gmail, preencha todas as variáveis `MAIL_*` do `.env.example`, com o `MAIL_FROM` igual ao `MAIL_USERNAME`. Para ver os logs de debug, suba com `--logging.level.br.ucsal.cade.shared.mail=DEBUG --logging.level.br.ucsal.cade.notifications=DEBUG`.
+
 ## 4. Fluxo: trocar o código pelo token
 
 ```mermaid
@@ -140,3 +177,6 @@ No bloqueio, o `UPDATE` usa `CASE` nas três colunas (`failures`, `blocked_until
 - `LoginCodeStoreTest` (`@DataJpaTest` com PostgreSQL no Testcontainers): gravação, espera de 1 min, sobrescrita mantendo as tentativas erradas, tentativa só com código válido, bloqueio no limite, e-mail bloqueado sem código novo e `consume` uma vez só e só com o hash conferido.
 - `LoginServiceTest`: as regras da D03 e da D18 pelo serviço, incluindo 20 palpites em paralelo, 2 acertos simultâneos, bloqueio depois de 3 códigos travados e fim do bloqueio depois de 15 min.
 - `AuthControllerTest`: os mesmos casos pelos endpoints, com as respostas HTTP.
+- `LoginCodeEmailTest`: o texto do e-mail tem o código e a hora de expiração no fuso de Salvador.
+- `LoginCodeEmailListenerTest`: o pedido de código chega ao `EmailSender` (mock) por outra thread, mesmo sem transação.
+- `SmtpEmailSenderTest`: remetente, destinatário e assunto da mensagem, e uma falha do SMTP não lança exceção.

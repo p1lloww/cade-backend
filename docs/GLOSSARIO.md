@@ -47,13 +47,16 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Recusa no balcão | `PickupRefusal` |
 | Destino de não reclamado (bazar, descarte, outro) | `Disposal` |
 | Histórico | `AuditEvent` (contrato em `shared.audit`) |
+| E-mail (destinatário, assunto e texto) | `EmailMessage` (`shared.mail`) |
+| Remetente dos e-mails | `cade.email.from` (`EmailProperties`, variável `MAIL_FROM`) |
+| Aviso com o código de login | `LoginCodeEmail`, enviado pelo `LoginCodeEmailListener` ao receber o `LoginCodeRequestedEvent` |
 
 ## Interfaces e anotações citadas nos requisitos
 
 | Requisitos | Código |
 |---|---|
 | `ArmazenamentoFotos` | `PhotoStorage` |
-| `ServicoEmail` | `EmailSender` (`shared.mail`) |
+| `ServicoEmail` | `EmailSender` (`shared.mail`), implementado pelo `SmtpEmailSender` |
 | `PublicadorEventos` | `EventPublisher` (`shared.event`) |
 | `CriterioCompatibilidade` | `CompatibilityCriterion` |
 | `@RequerPerfil` | `@RequiresRole` (`shared.security`) |

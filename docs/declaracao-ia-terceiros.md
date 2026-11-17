@@ -16,6 +16,7 @@ Houve uso de IA? (X) Sim ( ) Não
 | Claude (Claude Code) | Implementação do ACE-01: entidade de usuário, perfis, criação do administrador inicial e testes | Módulo `access` (persistência e serviço), `shared.security.Role`, `shared.time` | Revisão no PR; testes com Testcontainers executados |
 | Claude (Claude Code) | Implementação do ACE-02 (versão inicial): login por código no Redis, emissão e validação do JWT, endpoints de login, tratador de erros, documentação no Swagger e testes | Módulo `access` (persistência, serviço, controller), `shared.security`, `shared.exception`, `shared.web`; `docs/login-codigos-redis.md` | Revisão no PR; testes com Testcontainers (PostgreSQL e Redis) executados |
 | Claude (Claude Code) | Revisão do ACE-01/ACE-02 e CI: troca do Redis pelo PostgreSQL, bloqueio contra força bruta, chave do JWT obrigatória, rotas públicas explícitas, erros 401/403/500 como `ProblemDetail`, workflow de CI e automação do Status no Project | `access.persistence.logincode`, `access.service.login`, `shared.security`, `shared.web.error`; `.github/`; `docs/` | Revisão no PR; `./mvnw verify` local e no CI; aplicação executada sem e com `JWT_SECRET` |
+| Claude (Claude Code) | AVI-01: plano e código de referência do envio de e-mail (`EmailSender` por SMTP, execução assíncrona e e-mail do código de login), revisão e documentação | `shared.mail`, `shared.event`, `notifications.service.login`; `docs/`, `README.md` | Código digitado e revisado pelo integrante; `./mvnw verify` executado |
 
 ## 2. Componentes e recursos de terceiros
 

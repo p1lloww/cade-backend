@@ -114,6 +114,7 @@ _A preencher._
 - O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`), sem migrations versionadas; o próximo passo seria o Flyway, com o esquema atual como primeira versão.
 - O bloqueio contra tentativas erradas é por e-mail: quem sabe o e-mail de alguém pode bloqueá-lo por 15 minutos (D18).
 - Os eventos ficam na memória da aplicação: se o back-end cair entre o commit e o processamento, aquele evento se perde.
+- E-mail que falha no envio só é registrado no log, sem nova tentativa (RNF08): no login, a pessoa pede outro código depois de 1 minuto.
 
 ## Fontes, licenças, componentes de terceiros e uso de IA
 

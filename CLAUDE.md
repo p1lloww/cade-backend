@@ -62,6 +62,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 - **Histórico (RF43):** publique o evento de `shared.audit` na mesma transação da ação; `administration` grava.
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
 - **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam na tabela `login_codes` do PostgreSQL, e 15 tentativas erradas seguidas bloqueiam o e-mail por 15 min (D18).
+- **Autorização (RF02):** todo controller fora das rotas públicas declara `@RequiresRole` (`shared.security.authorization`) na classe ou no método; o administrador atende às rotas de funcionário. O `RouteAuthorizationCoverageTest` quebra o build se faltar. Rota pública nova entra em `SecurityConfiguration.PUBLIC_ROUTES`.
 - **Privacidade:** foto, descrição interna, detalhes reservados e local exato de um objeto nunca vão para estudantes nem visitantes (RN03).
 
 ## Convenções

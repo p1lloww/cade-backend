@@ -31,7 +31,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Token de acesso (JWT) | `AccessToken`, emitido pelo `AccessTokenIssuer` |
 | Mensagem de erro da API | `ProblemDetail`, montado pelo `ApiExceptionHandler` (D17) |
 | Objeto achado | `FoundItem` |
-| Situação do objeto (Disponível, Reservado, Devolvido, Não reclamado, Destinado) | `FoundItemStatus` (`AVAILABLE`, `RESERVED`, `RETURNED`, `UNCLAIMED`, `DISPOSED`) |
+| Situação do objeto (Disponível, Reservado, Devolvido, Não reclamado, Destinado) | `FoundItemStatus`, sealed interface com os records `Available`, `Reserved`, `Returned`, `Unclaimed`, `Disposed` (gravados como `AVAILABLE`, `RESERVED`, `RETURNED`, `UNCLAIMED`, `DISPOSED`) |
+| Convocar, liberar, entregar, marcar como não reclamado, destinar (ações sobre o objeto) | `reserve`, `release`, `handOver`, `markUnclaimed`, `dispose` |
+| Transição proibida | `InvalidStatusTransitionException` (HTTP 409, `ConflictException`) |
 | Caixa do mês (local de guarda) | `StorageBox` |
 | Categoria | `Category` |
 | Risco (baixo, médio, alto, documento) | `RiskLevel` (`LOW`, `MEDIUM`, `HIGH`, `DOCUMENT`) |

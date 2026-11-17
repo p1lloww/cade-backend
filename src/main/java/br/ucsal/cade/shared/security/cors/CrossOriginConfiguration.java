@@ -31,7 +31,7 @@ public class CrossOriginConfiguration {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
         configuration.setAllowedHeaders(List.of(
                 HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE, NGROK_SKIP_WARNING));
-        // Sem isso o navegador esconde o header do front, que precisa dele para mostrar a espera do 429 do login.
+
         configuration.setExposedHeaders(List.of(HttpHeaders.RETRY_AFTER));
         configuration.setMaxAge(Duration.ofHours(1));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

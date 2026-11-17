@@ -4,7 +4,7 @@ Registro das decisões da equipe sobre stack, arquitetura e processo. Os requisi
 
 Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a antiga: marque como **substituída** e aponte a nova (ver "Histórico de mudanças" no fim).
 
-Última atualização: 10/11/2026
+Última atualização: 17/11/2026
 
 ---
 
@@ -153,6 +153,13 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** colunas, comandos, fluxos e testes em [login-codigos.md](login-codigos.md).
 - **Situação:** fechada.
 
+## D19 — Autorização por perfil com anotação própria e interceptor
+- **Decisão (17/11/2026):** a `@RequiresRole` (o `@RequerPerfil` do RNF05) é lida por reflexão num `HandlerInterceptor` próprio, primeiro no método e depois na classe; a do método substitui a da classe. O administrador atende às rotas de funcionário (`ADMIN(STAFF)` no enum `Role`); ninguém herda as rotas de estudante. Toda rota fora de `PUBLIC_ROUTES` precisa da anotação, e um teste quebra o build quando falta. O Swagger mostra os perfis de cada rota a partir da mesma anotação.
+- **Motivo:** com o `@PreAuthorize` do Spring, a regra viraria texto numa string e a leitura da anotação não seria nossa; a anotação própria fica tipada pelo enum e é conteúdo de POOA (anotações e reflexão). A hierarquia segue a seção 2 dos requisitos. O teste evita que uma rota de funcionário fique aberta a estudantes por esquecimento.
+- **Consequências:** o perfil vem do token, sem consulta ao banco, então uma mudança de perfil (ADM-02) só vale no próximo login.
+- **Detalhes:** fluxo, CORS, exemplos e checklist de rota nova em [autorizacao.md](autorizacao.md).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -160,3 +167,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **14/11/2026 — D16 registrada:** códigos de login no Redis, na implementação do ACE-02.
 - **15/11/2026 — D17 registrada:** Swagger com springdoc e erros no formato RFC 9457, na implementação do ACE-02.
 - **16/11/2026 — Revisão do ACE-01/ACE-02:** D18 registrada e D16 marcada como substituída (Redis → PostgreSQL, bloqueio contra força bruta); complementos na D12 (check do CI obrigatório, só squash merge, sem `develop`), na D13 (a Action move para "Concluído" o card com a issue fechada) e na D17 (401, 403 e 500 também como `ProblemDetail`).
+- **17/11/2026 — D19 registrada:** autorização por perfil com `@RequiresRole` e interceptor, na implementação do ACE-03.

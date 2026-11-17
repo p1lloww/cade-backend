@@ -7,9 +7,10 @@ import org.springframework.validation.annotation.Validated;
 
 
 /**
- * E-mail settings from {@code cade.email.*}. SMTP host and credentials stay in {@code spring.mail.*} (RNF06).
+ * Configuração de e-mail de {@code cade.email.*}. O servidor SMTP e as credenciais ficam em {@code spring.mail.*}
+ * (RNF06).
  *
- * @param from sender address shown to the recipient; with Gmail it must be the account in MAIL_USERNAME
+ * @param from remetente mostrado ao destinatário; no Gmail, precisa ser a conta de MAIL_USERNAME
  */
 @Validated
 @ConfigurationProperties("cade.email")

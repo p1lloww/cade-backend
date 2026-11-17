@@ -12,7 +12,7 @@ public class LoginCodeEmailTest {
 
     @Test
     void carriesTheCodeAndTheExpiryInSalvadorTime() {
-        // 17:32 UTC is 14:32 in Salvador (UTC-3).
+        // 17:32 UTC são 14:32 em Salvador (UTC-3).
         var event = new LoginCodeRequestedEvent("aluno@ucsal.edu.br", "123456", Instant.parse("2026-11-16T17:32:00Z"));
 
         EmailMessage message = LoginCodeEmail.from(event);

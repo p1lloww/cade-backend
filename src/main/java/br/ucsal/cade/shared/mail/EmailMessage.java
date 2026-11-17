@@ -3,11 +3,11 @@ package br.ucsal.cade.shared.mail;
 import java.util.Objects;
 
 /**
- * A plain-text e-mail ready to be sent.
+ * Um e-mail em texto puro, pronto para envio.
  *
- * @param to      recipient address
- * @param subject subject line
- * @param body    plain-text body; may hold secrets such as a login code, so it is never logged
+ * @param to      endereço do destinatário
+ * @param subject assunto
+ * @param body    corpo em texto puro; pode ter segredos, como um código de login, por isso nunca vai para o log
  */
 public record EmailMessage(String to, String subject, String body) {
 

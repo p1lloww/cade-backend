@@ -1,13 +1,13 @@
 package br.ucsal.cade.shared.mail;
 
 /**
- * Sends e-mails (D04). Modules depend on this interface, never on SMTP, so tests can replace it and the provider can
- * change without touching them.
+ * Envia e-mails (D04). Os módulos dependem desta interface, nunca do SMTP: os testes podem substituí-la e o provedor
+ * pode mudar sem mexer neles.
  */
 public interface EmailSender {
 
     /**
-     * Sends the message. Never throws on delivery failure: the failure is logged and the caller goes on (RNF08).
+     * Envia a mensagem. Nunca lança exceção se o envio falhar: a falha vai para o log e quem chamou segue (RNF08).
      */
     void send(EmailMessage message);
 }

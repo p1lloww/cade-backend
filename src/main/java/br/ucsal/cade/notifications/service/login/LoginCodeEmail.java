@@ -7,7 +7,7 @@ import br.ucsal.cade.shared.time.TimeConfiguration;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Text of the e-mail that carries a login code (RF01).
+ * Texto do e-mail que leva o código de login (RF01).
  */
 public class LoginCodeEmail {
 

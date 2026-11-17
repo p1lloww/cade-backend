@@ -29,7 +29,7 @@ public class LoginCodeEmailListenerTest {
     void emailsTheCodeAfterIsRequested() {
         loginService.requestCode("listener@ucsal.edu.br");
 
-        // @Async: the e-mail goes out on another thread, so wait for it.
+        // @Async: o e-mail sai em outra thread, então é preciso esperar por ele.
         ArgumentCaptor<EmailMessage> sent = ArgumentCaptor.forClass(EmailMessage.class);
         verify(emailSender, timeout(5_000)).send(sent.capture());
         assertThat(sent.getValue().to()).isEqualTo("listener@ucsal.edu.br");

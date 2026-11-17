@@ -8,6 +8,10 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
+/**
+ * Envia e-mails pelo servidor SMTP de {@code spring.mail.*}: Mailpit em desenvolvimento e Gmail em produção (D04). O
+ * log registra só o destinatário e o assunto, nunca o corpo.
+ */
 @Component
 @EnableConfigurationProperties(EmailProperties.class)
 public class SmtpEmailSender implements EmailSender {

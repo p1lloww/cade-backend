@@ -10,10 +10,10 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * E-mails the login code once it is issued (RF01).
+ * Envia por e-mail o código de login assim que ele é emitido (RF01), numa thread separada da requisição (D05).
  *
- * <p>{@code fallbackExecution} is required: {@code LoginService} publishes the event outside a transaction (D18), and
- * without it Spring would silently drop the event.
+ * <p>O {@code fallbackExecution} é necessário: o {@code LoginService} publica o evento fora de transação (D18), e sem
+ * ele o Spring descartaria o evento em silêncio.
  */
 @Component
 public class LoginCodeEmailListener {
@@ -29,7 +29,7 @@ public class LoginCodeEmailListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     void on(LoginCodeRequestedEvent event) {
-        // The event's toString hides the code.
+        // O toString do evento esconde o código.
         log.debug("Login code e-mail requested: {}", event);
         emailSender.send(LoginCodeEmail.from(event));
     }

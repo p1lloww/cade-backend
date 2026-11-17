@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 
-/** Test clock that stands still until a test moves it, to check deadlines without waiting. */
+/** Relógio de teste que fica parado até um teste adiantá-lo, para conferir prazos sem esperar. */
 public class MutableClock extends Clock {
 
     private Instant now;

@@ -153,7 +153,7 @@ class AuthControllerTest {
         return requestCode(email, email);
     }
 
-    /** Asks for a code and reads the raw value from the published event, as the e-mail sender would. */
+    /** Pede um código e lê o valor puro no evento publicado, como faria quem envia o e-mail. */
     private String requestCode(String typedEmail, String normalizedEmail) throws Exception {
         askForCode(typedEmail).andExpect(status().isAccepted());
         return events.stream(LoginCodeRequestedEvent.class)

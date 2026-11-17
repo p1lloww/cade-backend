@@ -2,7 +2,7 @@ package br.ucsal.cade.shared.exception;
 
 import org.springframework.http.HttpStatus;
 
-/** The request breaks a business rule (HTTP 400). */
+/** A requisição viola uma regra de negócio (HTTP 400). */
 public class BadRequestException extends ApiException {
 
     public BadRequestException(String userMessage) {

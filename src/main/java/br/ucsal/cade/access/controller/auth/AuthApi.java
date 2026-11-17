@@ -15,7 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
-/** OpenAPI documentation of the passwordless login (RF01, D02, D03); the routes are in {@link AuthController}. */
+/** Documentação OpenAPI do login sem senha (RF01, D02, D03); as rotas ficam no {@link AuthController}. */
 @Tag(name = "Authentication", description = """
         Passwordless login. The user asks for a one-time code, receives it at the institutional e-mail and \
         exchanges it for an access token (JWT). There is no sign-up: the first login creates a student account.""")

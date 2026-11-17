@@ -12,26 +12,27 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * One-time login code sent to an institutional e-mail (RF01, D02, D03), in the {@code login_codes} table (D18).
+ * Código de login de uso único enviado a um e-mail institucional (RF01, D02, D03), na tabela {@code login_codes}
+ * (D18).
  *
- * <p>There is at most one row per e-mail: a new code overwrites the previous one, so the table never grows past the
- * number of people who ever asked for a code and needs no cleanup. An expired row is simply ignored until the next
- * code overwrites it. A successful login deletes the row.
+ * <p>Há no máximo uma linha por e-mail: um código novo sobrescreve o anterior, então a tabela nunca passa do número de
+ * pessoas que já pediram um código e não precisa de limpeza. Uma linha vencida é só ignorada até o próximo código
+ * sobrescrevê-la. Um login válido apaga a linha.
  *
- * <p>The row also keeps, across codes, the wrong attempts of the e-mail and the end of a block, so asking for a new
- * code does not reset the protection against guessing (D18). Changes are made by the atomic statements of
- * {@link LoginCodeStore}, never by saving this entity.
+ * <p>A linha também guarda, de um código para o outro, as tentativas erradas do e-mail e o fim de um bloqueio, para
+ * que pedir um código novo não zere a proteção contra adivinhação (D18). As mudanças são feitas pelos comandos
+ * atômicos do {@link LoginCodeStore}, nunca salvando esta entidade.
  */
 @Entity
 @Table(name = "login_codes")
 public class LoginCode {
 
-    /** Normalized e-mail the code was sent to. */
+    /** E-mail normalizado para onde o código foi enviado. */
     @Id
     @Column(name = "email")
     private String email;
 
-    /** Hash of the code; the raw code is never stored. */
+    /** Hash do código; o código puro nunca é guardado. */
     @Column(name = "code_hash", nullable = false)
     private String codeHash;
 
@@ -41,15 +42,15 @@ public class LoginCode {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    /** Attempts made with the current code, right or wrong. */
+    /** Tentativas feitas com o código atual, certas ou erradas. */
     @Column(name = "attempts", nullable = false)
     private int attempts;
 
-    /** Wrong attempts of the e-mail since the last block or login, adding up across codes. */
+    /** Tentativas erradas do e-mail desde o último bloqueio ou login, somando todos os códigos. */
     @Column(name = "failures", nullable = false)
     private int failures;
 
-    /** Until when the e-mail cannot ask for a code; {@code null} when it is not blocked. */
+    /** Até quando o e-mail não pode pedir código; {@code null} quando não está bloqueado. */
     @Column(name = "blocked_until")
     private Instant blockedUntil;
 
@@ -67,7 +68,7 @@ public class LoginCode {
         this.blockedUntil = blockedUntil;
     }
 
-    /** A new code for the given e-mail, with no attempts yet. */
+    /** Um código novo para o e-mail, ainda sem tentativas. */
     public static LoginCode issue(String email, String codeHash, Instant now, Duration ttl) {
         return new LoginCode(email, codeHash, now, now.plus(ttl), 0, 0, null);
     }
@@ -76,7 +77,7 @@ public class LoginCode {
         return rawCode != null && encoder.matches(rawCode, codeHash);
     }
 
-    /** Whether the code can still be used at {@code now}; a block also ends the code. */
+    /** Se o código ainda pode ser usado em {@code now}; um bloqueio também encerra o código. */
     public boolean isValidAt(Instant now) {
         return now.isBefore(expiresAt);
     }

@@ -1,19 +1,19 @@
 package br.ucsal.cade.shared.security;
 
 /**
- * Role of an account (RF02). Each account has exactly one role; visitors have no account.
+ * Perfil de uma conta (RF02). Cada conta tem exatamente um perfil; visitantes não têm conta.
  *
- * <p>Lives in the shared kernel because role-based authorization ({@code @RequiresRole}) is used by the
- * controllers of every module, and only the modules listed in D10 may depend on {@code access}.
+ * <p>Fica no núcleo compartilhado porque a autorização por perfil ({@code @RequiresRole}) é usada pelos controllers de
+ * todos os módulos, e só os módulos listados na D10 podem depender de {@code access}.
  */
 public enum Role {
 
-    /** Every new valid login starts as a student. */
+    /** Todo login válido novo começa como estudante. */
     STUDENT,
 
-    /** Granted by an administrator (RF03). */
+    /** Concedido por um administrador (RF03). */
     STAFF,
 
-    /** Created at installation; can do everything staff can, and more. */
+    /** Criado na instalação; faz tudo o que o funcionário faz, e mais. */
     ADMIN
 }

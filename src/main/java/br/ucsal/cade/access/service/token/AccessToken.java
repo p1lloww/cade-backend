@@ -3,10 +3,10 @@ package br.ucsal.cade.access.service.token;
 import java.time.Duration;
 
 /**
- * A signed access token and how long it lasts.
+ * Um token de acesso assinado e por quanto tempo ele vale.
  *
- * @param value     the encoded JWT, sent by the client as {@code Authorization: Bearer <value>}
- * @param expiresIn time until the token expires
+ * @param value     o JWT codificado, enviado pelo cliente como {@code Authorization: Bearer <value>}
+ * @param expiresIn tempo até o token vencer
  */
 public record AccessToken(String value, Duration expiresIn) {
 

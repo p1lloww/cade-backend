@@ -94,7 +94,7 @@ O coração do MVP é o cruzamento: o sistema compara cada perda registrada com 
 1. No balcão, o funcionário confere documento e matrícula e faz a verificação exigida pelo risco do objeto (por exemplo, desbloquear o celular).
 1. O funcionário registra a retirada e o estudante confirma no próprio celular. O registro substitui a assinatura no papel.
 
-![Fluxo principal: 3 raias, do cadastro à retirada](requisitos-fluxo-principal.png)
+![Fluxo principal: 3 raias, do cadastro à retirada](imagens/requisitos-fluxo-principal.png)
 
 O estudante e o funcionário nunca precisam conversar: o sistema junta os dois lados, e só o funcionário decide convocar e entregar.
 

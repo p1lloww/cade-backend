@@ -25,16 +25,16 @@ public class OpenApiConfiguration {
                         .title("Cadê? API")
                         .version("v1")
                         .description("""
-                                Back end of Cadê?, the UCSal lost and found system.
+                                Back-end do Cadê?, o sistema de achados e perdidos da UCSal.
 
-                                To call a protected route, get a token from `POST /auth/token`, click **Authorize** \
-                                and paste it. Errors follow RFC 9457 (`application/problem+json`): `detail` holds \
-                                the message to show to the user."""))
+                                Para chamar uma rota protegida, obtenha um token em `POST /auth/token`, clique em \
+                                **Authorize** e cole o token. Os erros seguem a RFC 9457 \
+                                (`application/problem+json`): `detail` traz a mensagem a mostrar ao usuário."""))
                 .components(new Components().addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT")
-                        .description("Access token from `POST /auth/token`, valid for 8 hours.")))
+                        .description("Token de acesso de `POST /auth/token`, válido por 8 horas.")))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH));
     }
 }

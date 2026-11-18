@@ -4,6 +4,7 @@ import br.ucsal.cade.shared.security.jwt.TokenClaims;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,7 +20,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 /**
  * O back-end como servidor de recursos OAuth 2.0 (D09): toda requisição fora das rotas públicas precisa levar
  * {@code Authorization: Bearer <token de acesso>}. Não há sessão nem cookie, então a proteção contra CSRF não é
- * necessária.
+ * necessária. O CORS vem do {@code CrossOriginConfiguration}, e o perfil exigido por rota, da {@code @RequiresRole}.
  */
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
@@ -31,7 +32,7 @@ public class SecurityConfiguration {
      * <p>Cada rota é listada sozinha, nunca com curinga como {@code /auth/**}: uma rota criada depois no mesmo caminho
      * precisa exigir token, a menos que alguém a libere aqui de propósito.
      */
-    private static final String[] PUBLIC_ROUTES = {
+    static final String[] PUBLIC_ROUTES = {
             "/auth/login-code", "/auth/token", "/actuator/health", "/error",
             "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"};
 
@@ -43,6 +44,7 @@ public class SecurityConfiguration {
         AccessDeniedHandler forbidden = problemDetailAccessDeniedHandler(resolver);
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(PUBLIC_ROUTES).permitAll()
@@ -86,7 +88,7 @@ public class SecurityConfiguration {
     private static JwtAuthenticationConverter roleConverter() {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
         authorities.setAuthoritiesClaimName(TokenClaims.ROLE);
-        authorities.setAuthorityPrefix("ROLE_");
+        authorities.setAuthorityPrefix(Role.AUTHORITY_PREFIX);
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(authorities);
         return converter;

@@ -16,27 +16,28 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 /** Documentação OpenAPI do login sem senha (RF01, D02, D03); as rotas ficam no {@link AuthController}. */
-@Tag(name = "Authentication", description = """
-        Passwordless login. The user asks for a one-time code, receives it at the institutional e-mail and \
-        exchanges it for an access token (JWT). There is no sign-up: the first login creates a student account.""")
+@Tag(name = "Autenticação", description = """
+        Login sem senha. O usuário pede um código de uso único, recebe-o no e-mail institucional e o troca por um \
+        token de acesso (JWT). Não há cadastro: o primeiro login cria uma conta de estudante.""")
 @SecurityRequirements
 public interface AuthApi {
 
     @Operation(
-            summary = "Ask for a login code",
+            summary = "Pedir um código de login",
             description = """
-                    Sends a six-digit code to the e-mail. The code is valid for 10 minutes, can be used once and \
-                    replaces any code sent before to the same e-mail. Only @ucsal.edu.br e-mails are accepted, and \
-                    each e-mail can ask for one code per minute. After 15 wrong codes in a row (3 codes locked), \
-                    the e-mail is blocked for 15 minutes.
+                    Envia um código de seis dígitos ao e-mail. O código vale por 10 minutos, pode ser usado uma vez \
+                    e substitui qualquer código enviado antes ao mesmo e-mail. Só e-mails @ucsal.edu.br são \
+                    aceitos, e cada e-mail pode pedir um código por minuto. Depois de 15 códigos errados seguidos \
+                    (3 códigos travados), o e-mail fica bloqueado por 15 minutos.
 
-                    The e-mail is sent after the response, so `202` means the code was issued, not delivered.""")
-    @ApiResponse(responseCode = "202", description = "Code issued; it will arrive at the e-mail shortly.")
-    @ApiResponse(responseCode = "400", description = "E-mail missing, malformed or outside @ucsal.edu.br.",
+                    O e-mail é enviado depois da resposta, então `202` quer dizer que o código foi gerado, não que \
+                    chegou.""")
+    @ApiResponse(responseCode = "202", description = "Código gerado; ele chega ao e-mail em instantes.")
+    @ApiResponse(responseCode = "400", description = "E-mail ausente, mal formatado ou fora do @ucsal.edu.br.",
             content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = ProblemDetail.class),
                     examples = {
-                            @ExampleObject(name = "Outside the domain", value = """
+                            @ExampleObject(name = "Fora do domínio", value = """
                                     {
                                       "type": "about:blank",
                                       "title": "Bad Request",
@@ -44,7 +45,7 @@ public interface AuthApi {
                                       "detail": "Use o seu e-mail institucional @ucsal.edu.br.",
                                       "instance": "/auth/login-code"
                                     }"""),
-                            @ExampleObject(name = "Invalid field", value = """
+                            @ExampleObject(name = "Campo inválido", value = """
                                     {
                                       "type": "about:blank",
                                       "title": "Bad Request",
@@ -54,13 +55,14 @@ public interface AuthApi {
                                       "errors": { "email": "Informe um e-mail válido." }
                                     }""")}))
     @ApiResponse(responseCode = "429",
-            description = "A code was sent less than a minute ago, or the e-mail is blocked after too many wrong codes.",
-            headers = @Header(name = "Retry-After", description = "Seconds to wait before asking again.",
+            description = "Um código foi enviado há menos de um minuto, ou o e-mail está bloqueado por códigos "
+                    + "errados demais.",
+            headers = @Header(name = "Retry-After", description = "Segundos a esperar antes de pedir de novo.",
                     schema = @Schema(type = "integer", example = "42")),
             content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = ProblemDetail.class),
                     examples = {
-                            @ExampleObject(name = "Waiting time", value = """
+                            @ExampleObject(name = "Espera entre envios", value = """
                                     {
                                       "type": "about:blank",
                                       "title": "Too Many Requests",
@@ -68,7 +70,7 @@ public interface AuthApi {
                                       "detail": "Um código acabou de ser enviado. Aguarde um minuto para pedir outro.",
                                       "instance": "/auth/login-code"
                                     }"""),
-                            @ExampleObject(name = "Blocked", value = """
+                            @ExampleObject(name = "Bloqueado", value = """
                                     {
                                       "type": "about:blank",
                                       "title": "Too Many Requests",
@@ -79,20 +81,21 @@ public interface AuthApi {
     ResponseEntity<Void> requestLoginCode(LoginCodeRequest request);
 
     @Operation(
-            summary = "Exchange the code for an access token",
+            summary = "Trocar o código por um token de acesso",
             description = """
-                    Checks the code sent to the e-mail and returns a JWT valid for 8 hours, carrying the account id \
-                    and role. On the first login, the account is created as a student.
+                    Confere o código enviado ao e-mail e devolve um JWT válido por 8 horas, com o id e o perfil da \
+                    conta. No primeiro login, a conta é criada como estudante.
 
-                    Every code allows 5 attempts; after that, a new code must be requested. A wrong, expired, \
-                    already used or locked code gets the same answer, so it is not possible to tell them apart.""")
-    @ApiResponse(responseCode = "200", description = "Code accepted.",
+                    Cada código permite 5 tentativas; depois disso, é preciso pedir um novo. Um código errado, \
+                    vencido, já usado ou travado recebe a mesma resposta, para não ser possível diferenciá-los.""")
+    @ApiResponse(responseCode = "200", description = "Código aceito.",
             content = @Content(schema = @Schema(implementation = TokenResponse.class)))
-    @ApiResponse(responseCode = "400", description = "Invalid fields, or the code is wrong, expired, used or locked.",
+    @ApiResponse(responseCode = "400",
+            description = "Campos inválidos, ou o código está errado, vencido, já usado ou travado.",
             content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = ProblemDetail.class),
                     examples = {
-                            @ExampleObject(name = "Code refused", value = """
+                            @ExampleObject(name = "Código recusado", value = """
                                     {
                                       "type": "about:blank",
                                       "title": "Bad Request",
@@ -100,7 +103,7 @@ public interface AuthApi {
                                       "detail": "Código inválido ou expirado. Confira o código ou solicite um novo.",
                                       "instance": "/auth/token"
                                     }"""),
-                            @ExampleObject(name = "Invalid field", value = """
+                            @ExampleObject(name = "Campo inválido", value = """
                                     {
                                       "type": "about:blank",
                                       "title": "Bad Request",

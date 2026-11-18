@@ -13,11 +13,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,8 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, MutableClockConfiguration.class, ResourceServerTest.ProbeController.class})
 class ResourceServerTest {
-
-    private static final String SUBJECT = "6f1c2a1e-0000-4000-8000-000000000001";
 
     /** Uma rota protegida que só existe neste teste e devolve o que o Spring Security enxergou. */
     @RestController
@@ -86,7 +81,7 @@ class ResourceServerTest {
 
         mvc.perform(get("/test/probe").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(SUBJECT))
+                .andExpect(jsonPath("$.name").value(TestTokens.SUBJECT))
                 // O Spring Security 7 também acrescenta FACTOR_BEARER (como o usuário se autenticou), sem ordem fixa.
                 .andExpect(jsonPath("$.authorities", hasItem("ROLE_STAFF")));
     }
@@ -96,7 +91,7 @@ class ResourceServerTest {
         String token = token(encoder, claims -> { });
         String[] parts = token.split("\\.");
         String forgedPayload = Base64.getUrlEncoder().withoutPadding().encodeToString(
-                ("{\"iss\":\"cade-backend\",\"sub\":\"" + SUBJECT + "\",\"role\":\"ADMIN\"}")
+                ("{\"iss\":\"cade-backend\",\"sub\":\"" + TestTokens.SUBJECT + "\",\"role\":\"ADMIN\"}")
                         .getBytes(StandardCharsets.UTF_8));
 
         String forged = parts[0] + "." + forgedPayload + "." + parts[2];
@@ -149,16 +144,7 @@ class ResourceServerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    /** Um token válido por oito horas a partir de agora, como o módulo de acesso emitiria, com mudanças opcionais. */
     private String token(JwtEncoder signer, Consumer<JwtClaimsSet.Builder> changes) {
-        JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
-                .issuer(TokenClaims.ISSUER)
-                .subject(SUBJECT)
-                .claim(TokenClaims.ROLE, "STUDENT")
-                .issuedAt(clock.instant())
-                .expiresAt(clock.instant().plus(Duration.ofHours(8)));
-        changes.accept(claims);
-        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-        return signer.encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue();
+        return TestTokens.token(signer, clock.instant(), changes);
     }
 }

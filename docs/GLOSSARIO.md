@@ -64,4 +64,4 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | `ServicoEmail` | `EmailSender` (`shared.mail`), implementado pelo `SmtpEmailSender` |
 | `PublicadorEventos` | `EventPublisher` (`shared.event`) |
 | `CriterioCompatibilidade` | `CompatibilityCriterion` |
-| `@RequerPerfil` | `@RequiresRole` (`shared.security`) |
+| `@RequerPerfil` | `@RequiresRole` (`shared.security.authorization`), meta-anotação de `@PreAuthorize` aplicada pelo Spring Security (D20); o administrador atende às rotas de funcionário (`Role.satisfies`, `RoleHierarchy`) |

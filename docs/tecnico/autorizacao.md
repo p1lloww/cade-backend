@@ -280,7 +280,7 @@ Os arquivos ficam em `shared.security` (porque todos os módulos usam, D10):
 | `Role` | os perfis, a hierarquia (`satisfies`) e o texto de cada perfil na expressão (`getExpressionTemplateValue`) |
 | `authorization/RequiresRole` | a anotação. `@Retention(RUNTIME)` mantém a anotação no programa em execução; sem isso, nem o Spring nem a reflexão a encontrariam. `@Target({TYPE, METHOD})` permite usá-la na classe ou no método. O `@PreAuthorize` em cima dela é o que aplica a regra |
 | `authorization/AuthorizationConfiguration` | liga a segurança por método (`@EnableMethodSecurity`), a troca do `{value}` (`AnnotationTemplateExpressionDefaults`) e a hierarquia (`RoleHierarchy`, gerada a partir de `Role.satisfies`) |
-| `authorization/RoleRequirement` | só métodos estáticos; **a leitura por reflexão**: `getAnnotation(RequiresRole.class)` no método e, se não houver, na classe. Devolve os perfis aceitos, já com a hierarquia aplicada |
+| `authorization/RoleRequirement` | só métodos estáticos; **a leitura por reflexão**: `AnnotatedElementUtils.findMergedAnnotation` no método e, se não houver, na classe, procurando também nas interfaces (como a `AuthApi`) e superclasses. Devolve os perfis aceitos, já com a hierarquia aplicada |
 | `cors/CrossOriginConfiguration`, `cors/CorsProperties` | o CORS da seção 4 |
 | `shared.web.openapi/RoleOperationCustomizer` | lê a mesma anotação e escreve **Perfis:** no Swagger |
 
@@ -294,14 +294,15 @@ public static Optional<Set<Role>> acceptedRoles(HandlerMethod handler) {
 }
 
 private static Optional<RequiresRole> annotationOn(AnnotatedElement element) {
-    return Optional.ofNullable(element.getAnnotation(RequiresRole.class));   // java.lang.reflect
+    return Optional.ofNullable(AnnotatedElementUtils.findMergedAnnotation(element, RequiresRole.class));
 }
 ```
 
 `HandlerMethod` é como o Spring descreve "o método do controller que vai atender esta requisição"; dele saem o
 `Method` e a classe. `AnnotatedElement` é a interface que `Method` e `Class` têm em comum, então o mesmo método serve
-para os dois. A ordem (método antes da classe) é a mesma que o Spring usa no `@PreAuthorize`, então o Swagger e o
-servidor nunca divergem.
+para os dois. A ordem (método antes da classe) e a busca nas interfaces e superclasses são as mesmas que o Spring usa
+no `@PreAuthorize`, então o Swagger e o servidor nunca divergem. Um `getAnnotation` simples não enxergaria uma
+`@RequiresRole` declarada na interface `*Api`: o Spring aplicaria a regra, mas o Swagger e o teste de cobertura não.
 
 **Por que não usar o `@PreAuthorize("hasRole('STAFF')")` direto nos controllers?** Porque aí cada controller teria a
 regra como texto dentro de uma string, e um erro de digitação (`'STAF'`) só apareceria em execução. Com a anotação

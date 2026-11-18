@@ -59,7 +59,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 
 - **Entidades** ficam em `persistence`, com anotações JPA e os métodos de regra sobre o próprio estado (ex.: transições de situação). Regra que depende de outros registros ou módulos fica no `service`.
 - **Entre módulos:** só pela `api`, só nas direções da tabela, referência por id (sem chave estrangeira cruzando módulos). Para avisar que algo aconteceu, publique um evento. O `ModuleBoundariesTest` (ArchUnit) quebra o build se essas regras forem violadas; mudar a tabela exige registrar na D10.
-- **Histórico (RF43):** publique o evento de `shared.audit` na mesma transação da ação; `administration` grava.
+- **Histórico (RF43):** publique o `AuditEvent` de `shared.audit` dentro da transação da ação; o `AuditRecorder` do `administration` grava de forma síncrona e exige transação (`MANDATORY`). Ação do sistema (`@Async`, tarefa agendada) abre a própria `@Transactional` e usa `AuditEvent.SYSTEM_ACTOR` (complemento da D10).
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
 - **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam na tabela `login_codes` do PostgreSQL, e 15 tentativas erradas seguidas bloqueiam o e-mail por 15 min (D18).
 - **Privacidade:** foto, descrição interna, detalhes reservados e local exato de um objeto nunca vão para estudantes nem visitantes (RN03).

@@ -1,6 +1,7 @@
 package br.ucsal.cade.shared.security.authorization;
 
 import br.ucsal.cade.shared.security.Role;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.web.method.HandlerMethod;
 
 import java.lang.reflect.AnnotatedElement;
@@ -31,8 +32,12 @@ public final class RoleRequirement {
                 .map(annotation -> withHierarchy(annotation.value(), handler));
     }
 
+    /**
+     * Procura também nas interfaces (como a {@code AuthApi}) e nas superclasses, do mesmo jeito que o Spring Security
+     * procura o {@code @PreAuthorize}; assim o Swagger e o teste de cobertura enxergam a mesma regra aplicada.
+     */
     private static Optional<RequiresRole> annotationOn(AnnotatedElement element) {
-        return Optional.ofNullable(element.getAnnotation(RequiresRole.class));
+        return Optional.ofNullable(AnnotatedElementUtils.findMergedAnnotation(element, RequiresRole.class));
     }
 
     private static Set<Role> withHierarchy(Role[] required, HandlerMethod handler) {

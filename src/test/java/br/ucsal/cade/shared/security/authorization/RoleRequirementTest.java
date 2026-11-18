@@ -30,6 +30,26 @@ class RoleRequirementTest {
         }
     }
 
+    @RequiresRole(Role.STAFF)
+    interface StaffApi {
+
+        @RequiresRole(Role.STUDENT)
+        void declaredOnTheInterface();
+
+        void inheritedFromTheInterface();
+    }
+
+    static class ApiController implements StaffApi {
+
+        @Override
+        public void declaredOnTheInterface() {
+        }
+
+        @Override
+        public void inheritedFromTheInterface() {
+        }
+    }
+
     static class UnannotatedController {
 
         public void open() {
@@ -51,6 +71,13 @@ class RoleRequirementTest {
     void acceptsAnyOfTheListedRoles() {
         assertThat(acceptedRoles(new StaffController(), "shared"))
                 .containsExactlyInAnyOrder(Role.STUDENT, Role.STAFF, Role.ADMIN);
+    }
+
+    @Test
+    void readsTheAnnotationDeclaredOnTheApiInterface() {
+        assertThat(acceptedRoles(new ApiController(), "declaredOnTheInterface")).containsExactly(Role.STUDENT);
+        assertThat(acceptedRoles(new ApiController(), "inheritedFromTheInterface"))
+                .containsExactlyInAnyOrder(Role.STAFF, Role.ADMIN);
     }
 
     @Test

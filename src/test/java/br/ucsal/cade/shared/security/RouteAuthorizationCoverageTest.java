@@ -45,7 +45,7 @@ class RouteAuthorizationCoverageTest {
             }
             Set<String> patterns = route.getKey().getPatternValues();
             checked.addAll(patterns);
-            if (!publicRoutes.containsAll(patterns) && RoleRequirement.of(handler).isEmpty()) {
+            if (!publicRoutes.containsAll(patterns) && RoleRequirement.acceptedRoles(handler).isEmpty()) {
                 missing.add(patterns + " em " + handler);
             }
         }

@@ -21,8 +21,8 @@ class RoleOperationCustomizer implements OperationCustomizer {
 
     @Override
     public Operation customize(Operation operation, HandlerMethod handler) {
-        RoleRequirement.of(handler).ifPresent(requirement -> {
-            String roles = requirement.acceptedRoles().stream()
+        RoleRequirement.acceptedRoles(handler).ifPresent(accepted -> {
+            String roles = accepted.stream()
                     .sorted()
                     .map(Enum::name)
                     .collect(Collectors.joining(", "));

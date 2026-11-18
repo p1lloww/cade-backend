@@ -14,44 +14,35 @@ import java.util.stream.Collectors;
  * O que a {@link RequiresRole} de uma rota exige, já com a hierarquia de perfis aplicada. Quem aplica a regra é o
  * Spring Security (D20); esta leitura por reflexão serve ao Swagger, para mostrar quem pode usar a rota, e ao teste
  * que exige a anotação em toda rota fora das públicas.
- *
- * @param acceptedRoles todos os perfis que podem usar a rota, por exemplo {@code STAFF} e {@code ADMIN} para uma rota
- *                      marcada com {@code @RequiresRole(Role.STAFF)}
  */
-public record RoleRequirement(Set<Role> acceptedRoles) {
+public final class RoleRequirement {
 
-    public RoleRequirement {
-        acceptedRoles = Set.copyOf(acceptedRoles);
+    private RoleRequirement() {
     }
 
     /**
-     * Lê a anotação do método e, se ele não tiver, a do controller. Vazio quando nenhum dos dois tem, o que só é
-     * permitido nas rotas públicas.
+     * Lê a anotação do método e, se ele não tiver, a do controller, e devolve todos os perfis que podem usar a rota:
+     * {@code STAFF} e {@code ADMIN} para uma rota marcada com {@code @RequiresRole(Role.STAFF)}. Vazio quando nenhum
+     * dos dois tem a anotação, o que só é permitido nas rotas públicas.
      *
      * @throws IllegalStateException se a anotação não lista nenhum perfil, o que fecharia a rota para todos
      */
-    public static Optional<RoleRequirement> of(HandlerMethod handler) {
+    public static Optional<Set<Role>> acceptedRoles(HandlerMethod handler) {
         return annotationOn(handler.getMethod())
                 .or(() -> annotationOn(handler.getBeanType()))
-                .map(annotation -> fromRequired(annotation.value(), handler));
-    }
-
-    /** Se uma conta com {@code role} pode usar a rota. */
-    public boolean admits(Role role) {
-        return acceptedRoles.contains(role);
+                .map(annotation -> withHierarchy(annotation.value(), handler));
     }
 
     private static Optional<RequiresRole> annotationOn(AnnotatedElement element) {
         return Optional.ofNullable(element.getAnnotation(RequiresRole.class));
     }
 
-    private static RoleRequirement fromRequired(Role[] required, HandlerMethod handler) {
+    private static Set<Role> withHierarchy(Role[] required, HandlerMethod handler) {
         if (required.length == 0) {
             throw new IllegalStateException("@RequiresRole without roles on " + handler);
         }
-        Set<Role> accepted = Arrays.stream(Role.values())
+        return Arrays.stream(Role.values())
                 .filter(role -> Arrays.stream(required).anyMatch(role::satisfies))
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
-        return new RoleRequirement(accepted);
     }
 }

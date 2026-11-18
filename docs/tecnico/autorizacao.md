@@ -256,10 +256,8 @@ classDiagram
         getExpressionTemplateValue() String
     }
     class RoleRequirement {
-        <<record>>
-        Set~Role~ acceptedRoles
-        of(HandlerMethod)$ Optional~RoleRequirement~
-        admits(Role) boolean
+        <<utility>>
+        acceptedRoles(HandlerMethod)$ Optional~Set~Role~~
     }
     class AuthorizationConfiguration {
         templateExpressionDefaults()$
@@ -282,17 +280,17 @@ Os arquivos ficam em `shared.security` (porque todos os módulos usam, D10):
 | `Role` | os perfis, a hierarquia (`satisfies`) e o texto de cada perfil na expressão (`getExpressionTemplateValue`) |
 | `authorization/RequiresRole` | a anotação. `@Retention(RUNTIME)` mantém a anotação no programa em execução; sem isso, nem o Spring nem a reflexão a encontrariam. `@Target({TYPE, METHOD})` permite usá-la na classe ou no método. O `@PreAuthorize` em cima dela é o que aplica a regra |
 | `authorization/AuthorizationConfiguration` | liga a segurança por método (`@EnableMethodSecurity`), a troca do `{value}` (`AnnotationTemplateExpressionDefaults`) e a hierarquia (`RoleHierarchy`, gerada a partir de `Role.satisfies`) |
-| `authorization/RoleRequirement` | **a leitura por reflexão**: `getAnnotation(RequiresRole.class)` no método e, se não houver, na classe. Devolve os perfis aceitos, já com a hierarquia aplicada |
+| `authorization/RoleRequirement` | só métodos estáticos; **a leitura por reflexão**: `getAnnotation(RequiresRole.class)` no método e, se não houver, na classe. Devolve os perfis aceitos, já com a hierarquia aplicada |
 | `cors/CrossOriginConfiguration`, `cors/CorsProperties` | o CORS da seção 4 |
 | `shared.web.openapi/RoleOperationCustomizer` | lê a mesma anotação e escreve **Perfis:** no Swagger |
 
 O trecho central da reflexão, em `RoleRequirement`:
 
 ```java
-public static Optional<RoleRequirement> of(HandlerMethod handler) {
+public static Optional<Set<Role>> acceptedRoles(HandlerMethod handler) {
     return annotationOn(handler.getMethod())               // 1. a anotação do método
             .or(() -> annotationOn(handler.getBeanType()))  // 2. senão, a da classe
-            .map(annotation -> fromRequired(annotation.value(), handler));
+            .map(annotation -> withHierarchy(annotation.value(), handler));
 }
 
 private static Optional<RequiresRole> annotationOn(AnnotatedElement element) {

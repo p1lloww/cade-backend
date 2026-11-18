@@ -52,6 +52,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | E-mail (destinatário, assunto e texto) | `EmailMessage` (`shared.mail`) |
 | Remetente dos e-mails | `cade.email.from` (`EmailProperties`, variável `MAIL_FROM`) |
 | Aviso com o código de login | `LoginCodeEmail`, enviado pelo `LoginCodeEmailListener` ao receber o `LoginCodeRequestedEvent` |
+| Registro do histórico | `AuditRecord` (tabela `audit_records`) |
+| Gravação do histórico | `AuditRecorder` (ouvinte síncrono de `AuditEvent`; exige transação aberta) |
+| Autor "sistema" (ação sem pessoa, como tarefa agendada) | `AuditEvent.SYSTEM_ACTOR` |
 
 ## Interfaces e anotações citadas nos requisitos
 

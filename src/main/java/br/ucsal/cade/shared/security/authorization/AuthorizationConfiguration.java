@@ -11,24 +11,18 @@ import org.springframework.security.core.annotation.AnnotationTemplateExpression
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-/**
- * Faz o Spring Security aplicar a {@link RequiresRole} como um {@code @PreAuthorize} (D20): liga a segurança por
- * método, a troca de {@code {value}} pelos perfis da anotação e a hierarquia de {@link Role}.
- */
+/** Faz o Spring Security aplicar a {@link RequiresRole} como {@code @PreAuthorize}, com a hierarquia (D20). */
 @Configuration(proxyBeanMethods = false)
 @EnableMethodSecurity
 public class AuthorizationConfiguration {
 
-    /** Permite que meta-anotações como a {@link RequiresRole} usem os próprios atributos na expressão. */
+    /** Sem ele, o {@code {value}} da {@link RequiresRole} não seria trocado pelos perfis. */
     @Bean
     static AnnotationTemplateExpressionDefaults templateExpressionDefaults() {
         return new AnnotationTemplateExpressionDefaults();
     }
 
-    /**
-     * A hierarquia de {@link Role#satisfies} no formato do Spring ({@code ROLE_ADMIN > ROLE_STAFF}), gerada a partir do
-     * enum para que a regra continue num lugar só.
-     */
+    /** Gerada a partir do {@link Role#satisfies} ({@code ROLE_ADMIN > ROLE_STAFF}), para a regra ficar num lugar só. */
     @Bean
     static RoleHierarchy roleHierarchy() {
         String hierarchy = Arrays.stream(Role.values())

@@ -11,9 +11,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * O que a {@link RequiresRole} de uma rota exige, já com a hierarquia de perfis aplicada. Quem aplica a regra é o
- * Spring Security (D20); esta leitura por reflexão serve ao Swagger, para mostrar quem pode usar a rota, e ao teste
- * que exige a anotação em toda rota fora das públicas.
+ * Lê a {@link RequiresRole} de uma rota por reflexão, para o Swagger e para o teste de cobertura. Quem aplica a regra é
+ * o Spring Security (D20).
  */
 public final class RoleRequirement {
 
@@ -21,11 +20,10 @@ public final class RoleRequirement {
     }
 
     /**
-     * Lê a anotação do método e, se ele não tiver, a do controller, e devolve todos os perfis que podem usar a rota:
-     * {@code STAFF} e {@code ADMIN} para uma rota marcada com {@code @RequiresRole(Role.STAFF)}. Vazio quando nenhum
-     * dos dois tem a anotação, o que só é permitido nas rotas públicas.
+     * Os perfis aceitos, já com a hierarquia: {@code @RequiresRole(Role.STAFF)} devolve {@code STAFF} e {@code ADMIN}.
+     * Vazio quando nem o método nem o controller têm a anotação.
      *
-     * @throws IllegalStateException se a anotação não lista nenhum perfil, o que fecharia a rota para todos
+     * @throws IllegalStateException se a anotação não lista nenhum perfil
      */
     public static Optional<Set<Role>> acceptedRoles(HandlerMethod handler) {
         return annotationOn(handler.getMethod())

@@ -50,7 +50,6 @@ class RouteAuthorizationCoverageTest {
             }
         }
 
-        // Garante que a varredura enxergou os controllers, para o teste não passar sem olhar nada.
         assertThat(checked).contains("/auth/token");
         assertThat(missing).as("rotas sem @RequiresRole e fora das públicas").isEmpty();
     }

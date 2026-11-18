@@ -355,5 +355,4 @@ em português.
 | `RequiresRoleTest` | requisições de verdade (MockMvc) com tokens de cada perfil contra rotas de cada perfil, o que confere a expressão gerada e a hierarquia; o 403 em português; o 401 antes do 403 |
 | `CrossOriginTest` | preflight de origem liberada (com o header do ngrok), de origem desconhecida e com header fora da lista; `Retry-After` exposto |
 | `RouteAuthorizationCoverageTest` | toda rota fora das públicas tem `@RequiresRole` |
-| `RoleDocumentationTest` | o Swagger mostra **Perfis:** e a resposta 403 |
 | `ResourceServerTest` | (do ACE-02) token ausente, adulterado, de outra chave, de outro emissor e vencido |

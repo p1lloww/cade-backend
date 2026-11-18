@@ -10,10 +10,7 @@ import org.springframework.web.method.HandlerMethod;
 
 import java.util.stream.Collectors;
 
-/**
- * Mostra no Swagger quem pode usar cada rota, lendo a mesma {@code @RequiresRole} que o servidor aplica: a lista de
- * perfis entra na descrição, e a resposta 403 é documentada. Assim a documentação nunca diverge da regra.
- */
+/** Mostra no Swagger os perfis e a resposta 403 de cada rota, a partir da mesma {@code @RequiresRole} do servidor. */
 @Component
 class RoleOperationCustomizer implements OperationCustomizer {
 

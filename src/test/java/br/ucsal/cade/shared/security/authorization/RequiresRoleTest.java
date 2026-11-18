@@ -23,17 +23,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * A {@link RequiresRole} numa requisição de verdade, aplicada pelo Spring Security como {@code @PreAuthorize}: cada
- * perfil contra rotas de cada perfil, inclusive o administrador nas rotas de funcionário (hierarquia).
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, MutableClockConfiguration.class,
         RequiresRoleTest.StaffProbeController.class})
 class RequiresRoleTest {
 
-    /** Rotas que só existem neste teste: o controller exige funcionário, e um método o troca por estudante. */
     @RestController
     @RequiresRole(Role.STAFF)
     static class StaffProbeController {

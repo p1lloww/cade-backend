@@ -15,7 +15,7 @@ eles.
 
 | Documento | Conteúdo |
 |---|---|
-| [autorizacao.md](tecnico/autorizacao.md) | CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D09, D19) |
+| [autorizacao.md](tecnico/autorizacao.md) | CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D09, D20) |
 | [login-codigos.md](tecnico/login-codigos.md) | como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18) |
 
 ## `entrega/`: anexos do manual do POOALAB

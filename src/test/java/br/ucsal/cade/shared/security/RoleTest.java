@@ -27,4 +27,10 @@ class RoleTest {
     void turnsIntoTheSpringSecurityAuthority(Role role, String authority) {
         assertThat(role.authority()).isEqualTo(authority);
     }
+
+    @ParameterizedTest
+    @CsvSource({"STUDENT, 'STUDENT'", "STAFF, 'STAFF'", "ADMIN, 'ADMIN'"})
+    void turnsIntoAQuotedValueForThePreAuthorizeExpression(Role role, String value) {
+        assertThat(role.getExpressionTemplateValue()).isEqualTo("'" + value + "'");
+    }
 }

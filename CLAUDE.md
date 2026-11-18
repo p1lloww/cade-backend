@@ -11,9 +11,9 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D18 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D20 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
 - `docs/tecnico/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
-- `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D19).
+- `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
 ## Comandos
@@ -63,7 +63,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 - **Histórico (RF43):** publique o evento de `shared.audit` na mesma transação da ação; `administration` grava.
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
 - **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam na tabela `login_codes` do PostgreSQL, e 15 tentativas erradas seguidas bloqueiam o e-mail por 15 min (D18).
-- **Autorização (RF02):** todo controller fora das rotas públicas declara `@RequiresRole` (`shared.security.authorization`) na classe ou no método; o administrador atende às rotas de funcionário (D19). O `RouteAuthorizationCoverageTest` quebra o build se faltar. Rota pública nova entra em `SecurityConfiguration.PUBLIC_ROUTES`.
+- **Autorização (RF02):** todo controller fora das rotas públicas declara `@RequiresRole` (`shared.security.authorization`) na classe ou no método; por baixo é um `@PreAuthorize` gerado a partir do enum `Role`, e o administrador atende às rotas de funcionário (D20). O `RouteAuthorizationCoverageTest` quebra o build se faltar. Rota pública nova entra em `SecurityConfiguration.PUBLIC_ROUTES`.
 - **Privacidade:** foto, descrição interna, detalhes reservados e local exato de um objeto nunca vão para estudantes nem visitantes (RN03).
 
 ## Convenções

@@ -2,7 +2,7 @@
 
 Como o back-end decide **quem pode chamar cada rota**: o CORS (quais sites podem chamar a API pelo navegador), o token
 de acesso (quem é a pessoa) e a anotação `@RequiresRole` (o que o perfil dela pode fazer). As regras vêm do RF02, do
-RNF05 e da D09; as escolhas de implementação estão na D19. O login, que emite o token, está em
+RNF05 e da D09; as escolhas de implementação estão na D20 (que substituiu a D19). O login, que emite o token, está em
 [login-codigos.md](login-codigos.md).
 
 ## 1. A ideia em uma analogia
@@ -31,7 +31,8 @@ Isso segue a seção 2 dos requisitos: o administrador faz **tudo do funcionári
 estudante: o funcionário e o administrador não registram perdas. Uma rota que sirva a estudante **e** funcionário lista
 os dois.
 
-No código, a hierarquia fica no próprio enum, e não em `if`s espalhados:
+No código, a hierarquia fica no próprio enum, e não em `if`s espalhados. O Spring Security recebe a mesma regra num bean
+`RoleHierarchy` gerado a partir do enum (seção 7):
 
 ```java
 public enum Role {
@@ -59,7 +60,7 @@ sequenceDiagram
     participant N as Navegador (front)
     participant C as CORS<br/>(CrossOriginConfiguration)
     participant J as Spring Security<br/>(SecurityConfiguration)
-    participant I as RoleInterceptor
+    participant I as Segurança por método<br/>(@RequiresRole → @PreAuthorize)
     participant Ct as Controller
 
     N->>C: GET /found-items (Origin: site do front)
@@ -75,7 +76,7 @@ sequenceDiagram
         J->>J: claim role → authority ROLE_STAFF
         J->>I: segue
     end
-    I->>I: lê @RequiresRole do método, senão da classe (reflexão)
+    I->>I: avalia hasAnyRole(...) do método, senão da classe (com a hierarquia)
     alt perfil não aceito
         I-->>N: 403 "Você não tem permissão para fazer isso."
     end
@@ -187,7 +188,7 @@ class ExampleController {
 | `@RequiresRole(Role.STAFF)` | STAFF, ADMIN |
 | `@RequiresRole(Role.ADMIN)` | ADMIN |
 | `@RequiresRole({Role.STUDENT, Role.STAFF})` | STUDENT, STAFF, ADMIN |
-| `@RequiresRole({})` | erro: a aplicação recusa, porque fecharia a rota para todos |
+| `@RequiresRole({})` | ninguém; o Swagger e o teste de cobertura recusam a anotação vazia |
 
 ### E as rotas públicas?
 
@@ -195,11 +196,44 @@ Rotas abertas sem token (login, Swagger, saúde e, depois, a página pública do
 `SecurityConfiguration.PUBLIC_ROUTES`, e **não** levam `@RequiresRole`. Nunca use curinga como `/auth/**`: uma rota
 nova no mesmo caminho ficaria aberta sem ninguém perceber.
 
-## 7. Por dentro: anotação lida por reflexão
+## 7. Por dentro: anotação própria em cima do `@PreAuthorize`
 
 Uma anotação, sozinha, não faz nada: é só uma etiqueta no código. Alguém precisa **ler** a etiqueta enquanto o
-programa roda. Isso é **reflexão**: o programa examinar a própria estrutura (classes, métodos, anotações) em tempo de
-execução.
+programa roda. Aqui, quem lê para decidir o acesso é o Spring Security, porque a `@RequiresRole` é uma
+**meta-anotação** do `@PreAuthorize`:
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@PreAuthorize("hasAnyRole({value})")
+public @interface RequiresRole {
+    Role[] value();
+}
+```
+
+Quando encontra a `@RequiresRole` num controller, o Spring troca o `{value}` pelos perfis da anotação. Para isso, o
+`Role` implementa `ExpressionTemplateValueProvider` e diz como cada perfil vira texto:
+
+```java
+public enum Role implements ExpressionTemplateValueProvider {
+    ...
+    public String getExpressionTemplateValue() {
+        return "'" + name() + "'";          // STAFF vira 'STAFF'
+    }
+}
+```
+
+| No controller | Expressão que o Spring avalia |
+|---|---|
+| `@RequiresRole(Role.STAFF)` | `hasAnyRole('STAFF')` |
+| `@RequiresRole({Role.STUDENT, Role.STAFF})` | `hasAnyRole('STUDENT','STAFF')` |
+
+O `hasAnyRole` compara com as authorities do token (`ROLE_STAFF`) e, por causa do bean `RoleHierarchy`, considera que
+`ROLE_ADMIN` inclui `ROLE_STAFF`. Assim a string SpEL nunca é escrita à mão: ela é gerada a partir do enum, e o
+compilador continua conferindo os perfis.
+
+A **reflexão nossa** continua no `RoleRequirement`, que lê a mesma anotação para o Swagger e para o teste de cobertura
+(seção 8):
 
 ```mermaid
 classDiagram
@@ -208,6 +242,10 @@ classDiagram
         <<annotation>>
         Role[] value
     }
+    class PreAuthorize {
+        <<annotation>>
+        hasAnyRole(value)
+    }
     class Role {
         <<enum>>
         STUDENT
@@ -215,6 +253,7 @@ classDiagram
         ADMIN
         satisfies(Role) boolean
         authority() String
+        getExpressionTemplateValue() String
     }
     class RoleRequirement {
         <<record>>
@@ -222,31 +261,28 @@ classDiagram
         of(HandlerMethod)$ Optional~RoleRequirement~
         admits(Role) boolean
     }
-    class RoleInterceptor {
-        preHandle(...) boolean
+    class AuthorizationConfiguration {
+        templateExpressionDefaults()$
+        roleHierarchy()$
     }
     class RoleOperationCustomizer {
         customize(Operation, HandlerMethod)
     }
-    class AuthorizationConfiguration {
-        addInterceptors(InterceptorRegistry)
-    }
+    RequiresRole ..> PreAuthorize : meta-anotação
+    RequiresRole ..> Role : tipada pelo enum
+    AuthorizationConfiguration ..> Role : gera a hierarquia
     RoleRequirement ..> RequiresRole : lê por reflexão
-    RoleRequirement ..> Role : aplica a hierarquia
-    RoleInterceptor ..> RoleRequirement : decide o acesso
     RoleOperationCustomizer ..> RoleRequirement : documenta no Swagger
-    AuthorizationConfiguration ..> RoleInterceptor : registra no Spring MVC
 ```
 
 Os arquivos ficam em `shared.security` (porque todos os módulos usam, D10):
 
 | Arquivo | Papel |
 |---|---|
-| `Role` | os perfis e a hierarquia (`satisfies`) |
-| `authorization/RequiresRole` | a anotação. `@Retention(RUNTIME)` mantém a anotação no programa em execução; sem isso, a reflexão não a encontraria. `@Target({TYPE, METHOD})` permite usá-la na classe ou no método |
+| `Role` | os perfis, a hierarquia (`satisfies`) e o texto de cada perfil na expressão (`getExpressionTemplateValue`) |
+| `authorization/RequiresRole` | a anotação. `@Retention(RUNTIME)` mantém a anotação no programa em execução; sem isso, nem o Spring nem a reflexão a encontrariam. `@Target({TYPE, METHOD})` permite usá-la na classe ou no método. O `@PreAuthorize` em cima dela é o que aplica a regra |
+| `authorization/AuthorizationConfiguration` | liga a segurança por método (`@EnableMethodSecurity`), a troca do `{value}` (`AnnotationTemplateExpressionDefaults`) e a hierarquia (`RoleHierarchy`, gerada a partir de `Role.satisfies`) |
 | `authorization/RoleRequirement` | **a leitura por reflexão**: `getAnnotation(RequiresRole.class)` no método e, se não houver, na classe. Devolve os perfis aceitos, já com a hierarquia aplicada |
-| `authorization/RoleInterceptor` | roda antes de todo controller, compara o perfil do token com os aceitos e lança `AccessDeniedException` (vira 403) |
-| `authorization/AuthorizationConfiguration` | registra o interceptor no Spring MVC |
 | `cors/CrossOriginConfiguration`, `cors/CorsProperties` | o CORS da seção 4 |
 | `shared.web.openapi/RoleOperationCustomizer` | lê a mesma anotação e escreve **Perfis:** no Swagger |
 
@@ -266,12 +302,14 @@ private static Optional<RequiresRole> annotationOn(AnnotatedElement element) {
 
 `HandlerMethod` é como o Spring descreve "o método do controller que vai atender esta requisição"; dele saem o
 `Method` e a classe. `AnnotatedElement` é a interface que `Method` e `Class` têm em comum, então o mesmo método serve
-para os dois.
+para os dois. A ordem (método antes da classe) é a mesma que o Spring usa no `@PreAuthorize`, então o Swagger e o
+servidor nunca divergem.
 
-**Por que um interceptor e não `@PreAuthorize`?** O Spring Security já tem `@PreAuthorize("hasRole('STAFF')")`, que faria
-o mesmo. Mas aí a leitura da anotação seria do Spring, e a nossa regra viraria texto dentro de uma string. Com uma
-anotação própria e um interceptor, a reflexão e a hierarquia ficam no nosso código, tipadas pelo enum, e são conteúdo
-de POOA (anotações e reflexão) que dá para mostrar no pitch.
+**Por que não usar o `@PreAuthorize("hasRole('STAFF')")` direto nos controllers?** Porque aí cada controller teria a
+regra como texto dentro de uma string, e um erro de digitação (`'STAF'`) só apareceria em execução. Com a anotação
+própria, o perfil é um valor do enum conferido pelo compilador, e o Swagger e o teste de cobertura leem a mesma
+anotação. Até a D19 havia um interceptor nosso no lugar do `@PreAuthorize`; ele saiu na D20 porque reimplementava algo
+que o Spring já faz.
 
 ## 8. O que garante que ninguém esquece a anotação
 
@@ -314,9 +352,9 @@ em português.
 
 | Teste | O que confere |
 |---|---|
-| `RoleTest` | a tabela da seção 2 (cada perfil contra cada exigência) e a conversão para `ROLE_...` |
+| `RoleTest` | a tabela da seção 2 (cada perfil contra cada exigência), a conversão para `ROLE_...` e o texto de cada perfil na expressão (`'STAFF'`) |
 | `RoleRequirementTest` | a leitura na classe, a substituição pelo método, a lista com vários perfis, a ausência de anotação e a recusa de `@RequiresRole({})` |
-| `RoleInterceptorTest` | requisições de verdade (MockMvc) com tokens de cada perfil contra rotas de cada perfil; o 403 em português; o 401 antes do 403 |
+| `RequiresRoleTest` | requisições de verdade (MockMvc) com tokens de cada perfil contra rotas de cada perfil, o que confere a expressão gerada e a hierarquia; o 403 em português; o 401 antes do 403 |
 | `CrossOriginTest` | preflight de origem liberada (com o header do ngrok), de origem desconhecida e com header fora da lista; `Retry-After` exposto |
 | `RouteAuthorizationCoverageTest` | toda rota fora das públicas tem `@RequiresRole` |
 | `RoleDocumentationTest` | o Swagger mostra **Perfis:** e a resposta 403 |

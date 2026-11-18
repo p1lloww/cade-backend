@@ -4,7 +4,7 @@ Registro das decisões da equipe sobre stack, arquitetura e processo. Os requisi
 
 Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a antiga: marque como **substituída** e aponte a nova (ver "Histórico de mudanças" no fim).
 
-Última atualização: 17/11/2026
+Última atualização: 18/11/2026
 
 ---
 
@@ -158,6 +158,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** com o `@PreAuthorize` do Spring, a regra viraria texto numa string e a leitura da anotação não seria nossa; a anotação própria fica tipada pelo enum e é conteúdo de POOA (anotações e reflexão). A hierarquia segue a seção 2 dos requisitos. O teste evita que uma rota de funcionário fique aberta a estudantes por esquecimento.
 - **Consequências:** o perfil vem do token, sem consulta ao banco, então uma mudança de perfil (ADM-02) só vale no próximo login.
 - **Detalhes:** fluxo, CORS, exemplos e checklist de rota nova em [autorizacao.md](tecnico/autorizacao.md).
+- **Situação:** substituída pela D20 em 18/11/2026.
+
+## D20 — `@RequiresRole` aplicada pelo `@PreAuthorize` do Spring (substitui a D19)
+- **Decisão (18/11/2026):** a `@RequiresRole` continua sendo a anotação dos controllers, tipada pelo enum `Role`, mas passa a ser uma meta-anotação de `@PreAuthorize("hasAnyRole({value})")`. O Spring Security troca o `{value}` pelos perfis (o `Role` implementa `ExpressionTemplateValueProvider` e vira `'STAFF'`), então `@RequiresRole(Role.STAFF)` vira `hasAnyRole('STAFF')`. A hierarquia vai para um bean `RoleHierarchy` gerado a partir do enum (`ROLE_ADMIN > ROLE_STAFF`). O `RoleInterceptor` sai. Continuam valendo as regras da D19: o método substitui a classe, o administrador atende às rotas de funcionário, toda rota fora de `PUBLIC_ROUTES` precisa da anotação e o Swagger mostra os perfis a partir dela.
+- **Motivo:** quem decide o acesso passa a ser o mecanismo padrão e testado do Spring, em vez de um interceptor nosso que reimplementava a checagem das authorities. Os controllers não mudam, e a regra continua tipada: a string SpEL é gerada, nunca escrita à mão. A leitura por reflexão continua no `RoleRequirement`, usada pelo Swagger e pelo teste de cobertura das rotas.
+- **Consequências:**
+  - O `@PreAuthorize` vale em qualquer bean do Spring, não só em controllers.
+  - A negação vira `AuthorizationDeniedException`, que herda de `AccessDeniedException`; o 403 em português do `ApiExceptionHandler` não muda.
+  - Um erro na expressão gerada só aparece em execução; o `RequiresRoleTest` cobre cada perfil contra cada exigência com requisições de verdade.
+  - Igual à D19: o perfil vem do token, então uma mudança de perfil (ADM-02) só vale no próximo login.
+- **Detalhes:** [autorizacao.md](tecnico/autorizacao.md).
 - **Situação:** fechada.
 
 ---
@@ -168,3 +179,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **15/11/2026 — D17 registrada:** Swagger com springdoc e erros no formato RFC 9457, na implementação do ACE-02.
 - **16/11/2026 — Revisão do ACE-01/ACE-02:** D18 registrada e D16 marcada como substituída (Redis → PostgreSQL, bloqueio contra força bruta); complementos na D12 (check do CI obrigatório, só squash merge, sem `develop`), na D13 (a Action move para "Concluído" o card com a issue fechada) e na D17 (401, 403 e 500 também como `ProblemDetail`).
 - **17/11/2026 — D19 registrada:** autorização por perfil com `@RequiresRole` e interceptor, na implementação do ACE-03.
+- **18/11/2026 — D20 registrada e D19 marcada como substituída:** a `@RequiresRole` passa a ser aplicada pelo `@PreAuthorize` do Spring Security, e o `RoleInterceptor` sai, na revisão do ACE-03.

@@ -11,8 +11,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * O que a {@link RequiresRole} de uma rota exige, já com a hierarquia de perfis aplicada. Usado pelo
- * {@link RoleInterceptor} para decidir o acesso e pela documentação da API para mostrar quem pode usar a rota.
+ * O que a {@link RequiresRole} de uma rota exige, já com a hierarquia de perfis aplicada. Quem aplica a regra é o
+ * Spring Security (D20); esta leitura por reflexão serve ao Swagger, para mostrar quem pode usar a rota, e ao teste
+ * que exige a anotação em toda rota fora das públicas.
  *
  * @param acceptedRoles todos os perfis que podem usar a rota, por exemplo {@code STAFF} e {@code ADMIN} para uma rota
  *                      marcada com {@code @RequiresRole(Role.STAFF)}

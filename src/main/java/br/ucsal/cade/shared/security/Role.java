@@ -1,5 +1,7 @@
 package br.ucsal.cade.shared.security;
 
+import org.springframework.security.core.annotation.ExpressionTemplateValueProvider;
+
 import java.util.Set;
 
 /**
@@ -7,8 +9,11 @@ import java.util.Set;
  *
  * <p>Fica no núcleo compartilhado porque a autorização por perfil ({@code @RequiresRole}) é usada pelos controllers de
  * todos os módulos, e só os módulos listados na D10 podem depender de {@code access}.
+ *
+ * <p>Como {@link ExpressionTemplateValueProvider}, cada perfil vira um texto entre aspas ({@code 'STAFF'}) quando o
+ * Spring monta a expressão do {@code @PreAuthorize} a partir da {@code @RequiresRole} (D20).
  */
-public enum Role {
+public enum Role implements ExpressionTemplateValueProvider {
 
     /** Todo login válido novo começa como estudante. */
     STUDENT,
@@ -39,5 +44,11 @@ public enum Role {
     /** A authority do Spring Security correspondente, por exemplo {@code ROLE_STAFF}. */
     public String authority() {
         return AUTHORITY_PREFIX + name();
+    }
+
+    /** O perfil como texto SpEL, para {@code hasAnyRole({value})}: {@code STAFF} vira {@code 'STAFF'}. */
+    @Override
+    public String getExpressionTemplateValue() {
+        return "'" + name() + "'";
     }
 }

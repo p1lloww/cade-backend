@@ -4,6 +4,7 @@ import br.ucsal.cade.shared.exception.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -43,6 +44,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     static final String UNEXPECTED_MESSAGE = "Algo deu errado do nosso lado. Tente de novo em instantes.";
     static final String INVALID_VALUE_MESSAGE = "Valor inválido.";
     static final String TOO_LARGE_MESSAGE = "O arquivo enviado é grande demais.";
+    static final String CONCURRENT_CHANGE_MESSAGE =
+            "Outra alteração foi salva ao mesmo tempo que a sua. Confira e tente de novo.";
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
@@ -67,6 +70,18 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE));
+    }
+
+    /**
+     * Lock otimista: outra transação gravou o mesmo dado entre a leitura e o commit, e esta foi desfeita inteira. É o
+     * caso de dois registros de perda simultâneos do mesmo estudante (RN05,
+     * {@code docs/tecnico/limite-registros-abertos.md}).
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ProblemDetail> handleConcurrentChange(OptimisticLockingFailureException exception) {
+        log.info("Concurrent change refused: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, CONCURRENT_CHANGE_MESSAGE));
     }
 
     /** Tudo o que nenhum outro tratador conhece: um bug ou um serviço fora do ar. Os erros do Spring mantêm os tratadores acima. */

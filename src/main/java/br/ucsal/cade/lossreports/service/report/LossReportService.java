@@ -12,6 +12,7 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.exception.BadRequestException;
+import br.ucsal.cade.shared.exception.TooManyActiveReportsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;

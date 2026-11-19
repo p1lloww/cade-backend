@@ -1,6 +1,4 @@
-package br.ucsal.cade.lossreports.service.report;
-
-import br.ucsal.cade.shared.exception.ConflictException;
+package br.ucsal.cade.shared.exception;
 
 /** O estudante já tem o máximo de registros em andamento e não pode abrir outro (RN05). */
 public class TooManyActiveReportsException extends ConflictException {

@@ -13,6 +13,7 @@ import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.ConflictException;
+import br.ucsal.cade.shared.exception.TooManyActiveReportsException;
 import br.ucsal.cade.shared.time.MutableClock;
 import br.ucsal.cade.shared.time.MutableClockConfiguration;
 import org.junit.jupiter.api.BeforeEach;

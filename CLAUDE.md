@@ -11,7 +11,7 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D22 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D21 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
 - `docs/tecnico/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
 - `docs/tecnico/limite-registros-abertos.md`: o lock otimista que garante no máximo 5 registros de perda em andamento por estudante (RN05), com os fluxos em Mermaid.
 - `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).
@@ -71,7 +71,6 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 ## Convenções
 
 - **Idioma (D11):** código em inglês (classes, métodos, pacotes, rotas); mensagens ao usuário, Javadoc e documentação em português. Termo novo entra no `GLOSSARIO.md` no mesmo PR.
-- **DTOs (D22):** o que entra ou sai pela API termina em `RequestDTO` ou `ResponseDTO` e fica em `<módulo>/dto/request` ou `<módulo>/dto/response`. O controller recebe o `RequestDTO` com `@Valid` e o passa direto ao service, que devolve o `ResponseDTO`, sem objeto intermediário com os mesmos campos. Formato e campos obrigatórios são validados só pelas anotações do `RequestDTO`.
 - **Padrões de POOA** (State, Strategy, Composite, Observer, Streams, Virtual Threads, anotações e reflexão, SOLID) valem bônus quando aparecem de forma justificada. Use-os onde o problema pede, nunca de forma artificial. Toda PR que usar um deles acrescenta a linha em `docs/entrega/pooa-no-projeto.md`, começando pelo problema que resolve.
 - **Testes:** cobrir transições de estado, a nota do cruzamento, as regras por risco e os prazos (RNF13). Testes de integração usam o `TestcontainersConfiguration`; prazos usam o `Clock` de `shared.time`.
 - **Sem dados reais:** nada de dados pessoais, credenciais ou segredos no código, nos testes ou nos commits.

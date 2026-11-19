@@ -34,9 +34,12 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Situação do objeto (Disponível, Reservado, Devolvido, Não reclamado, Destinado) | `FoundItemStatus`, sealed interface com os records `Available`, `Reserved`, `Returned`, `Unclaimed`, `Disposed` (gravados como `AVAILABLE`, `RESERVED`, `RETURNED`, `UNCLAIMED`, `DISPOSED`) |
 | Convocar, liberar, entregar, marcar como não reclamado, destinar (ações sobre o objeto) | `reserve`, `release`, `handOver`, `markUnclaimed`, `dispose` |
 | Transição proibida | `InvalidStatusTransitionException` (HTTP 409, `ConflictException`) |
-| Caixa do mês (local de guarda) | `StorageBox` |
-| Categoria | `Category` |
-| Risco (baixo, médio, alto, documento) | `RiskLevel` (`LOW`, `MEDIUM`, `HIGH`, `DOCUMENT`) |
+| Caixa do mês (local de guarda) | `StorageBox` (`StorageBox.suggestedFor(data)` sugere "Caixa Novembro/2026", RF05) |
+| Categoria | `Category` (`shared.category`, D21); as iniciais são criadas pelo `DefaultCategoriesInitializer` |
+| Risco (baixo, médio, alto, documento) | `RiskLevel` (`LOW`, `MEDIUM`, `HIGH`, `DOCUMENT`); só aumenta: `canBeRaisedTo` (RN04) |
+| Cadastro de objeto | `FoundItemService.register`, rota `POST /found-items` |
+| Descrição interna, detalhes reservados | `internalDescription`, `reservedDetails` (RF06, só funcionários) |
+| Evento objeto.cadastrado | `FoundItemRegisteredEvent` (`founditems.api.event`) |
 | Registro de perda | `LossReport` |
 | Situação do registro (Aberto, Aguardando informações, Convocado, Concluído, Vencido, Cancelado) | `LossReportStatus` (`OPEN`, `AWAITING_INFO`, `SUMMONED`, `COMPLETED`, `EXPIRED`, `CANCELLED`) |
 | Detalhe que só o dono conhece | `secretDetail` |
@@ -60,7 +63,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 
 | Requisitos | Código |
 |---|---|
-| `ArmazenamentoFotos` | `PhotoStorage` |
+| `ArmazenamentoFotos` | `PhotoStorage` (`shared.storage`, D21), implementado pelo `LocalPhotoStorage` (pasta `PHOTOS_DIR`) |
 | `ServicoEmail` | `EmailSender` (`shared.mail`), implementado pelo `SmtpEmailSender` |
 | `PublicadorEventos` | `EventPublisher` (`shared.event`) |
 | `CriterioCompatibilidade` | `CompatibilityCriterion` |

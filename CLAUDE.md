@@ -11,7 +11,7 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D20 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D21 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
 - `docs/tecnico/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
 - `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
@@ -56,7 +56,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 | `publicpage` | M8 Página pública | founditems |
 | `administration` | M9 Administração | access |
 | `demo` | M10 Modo demonstração | access, founditems, lossreports |
-| `shared` | Núcleo: `audit`, `event`, `exception`, `mail`, `security`, `time`, `web` | nenhum módulo |
+| `shared` | Núcleo: `audit`, `category`, `event`, `exception`, `mail`, `security`, `storage`, `time`, `web` | nenhum módulo |
 
 - **Entidades** ficam em `persistence`, com anotações JPA e os métodos de regra sobre o próprio estado (ex.: transições de situação). Regra que depende de outros registros ou módulos fica no `service`.
 - **Entre módulos:** só pela `api`, só nas direções da tabela, referência por id (sem chave estrangeira cruzando módulos). Para avisar que algo aconteceu, publique um evento. O `ModuleBoundariesTest` (ArchUnit) quebra o build se essas regras forem violadas; mudar a tabela exige registrar na D10.
@@ -64,6 +64,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
 - **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam na tabela `login_codes` do PostgreSQL, e 15 tentativas erradas seguidas bloqueiam o e-mail por 15 min (D18).
 - **Autorização (RF02):** todo controller fora das rotas públicas declara `@RequiresRole` (`shared.security.authorization`) na classe ou no método; por baixo é um `@PreAuthorize` gerado a partir do enum `Role`, e o administrador atende às rotas de funcionário (D20). O `RouteAuthorizationCoverageTest` quebra o build se faltar. Rota pública nova entra em `SecurityConfiguration.PUBLIC_ROUTES`.
+- **Categorias e fotos (D21):** a `Category` (com o risco padrão, `RiskLevel`) fica em `shared.category`, e as fotos ficam atrás da `PhotoStorage` (`shared.storage`), numa pasta (`PHOTOS_DIR`; no Docker, o volume `photos-data`). Foto nunca tem URL pública: a API serve só a quem o perfil permite.
 - **Privacidade:** foto, descrição interna, detalhes reservados e local exato de um objeto nunca vão para estudantes nem visitantes (RN03).
 
 ## Convenções

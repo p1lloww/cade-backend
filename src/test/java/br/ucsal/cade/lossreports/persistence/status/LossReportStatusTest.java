@@ -52,7 +52,6 @@ class LossReportStatusTest {
                 Named.of(t.from().label(), t.from()), Named.of(t.action(), ACTIONS.get(t.action())), t.to()));
     }
 
-    /** Toda combinação de situação e ação que não está na tabela. */
     static Stream<Arguments> forbiddenTransitions() {
         return LossReportStatus.ALL.stream().flatMap(from -> ACTIONS.keySet().stream()
                 .filter(action -> ALLOWED.stream().noneMatch(t -> t.from().equals(from) && t.action().equals(action)))

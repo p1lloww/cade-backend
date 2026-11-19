@@ -25,14 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Registro de perda feito pelo estudante (RF13, RF14).
- *
- * <p>O detalhe secreto nunca vai para outros estudantes (RF14): só o dono e os funcionários o veem.
- *
- * <p>O {@code @Version} faz duas gravações simultâneas do mesmo registro (o estudante editando enquanto o funcionário
- * convoca, por exemplo) não se sobreporem: a segunda falha em vez de apagar a primeira sem ninguém perceber.
- */
+/** Registro de perda (RF13). O detalhe secreto e a foto nunca vão para outros estudantes (RF14). */
 @Entity
 @Table(name = "loss_reports")
 public class LossReport {
@@ -40,14 +33,13 @@ public class LossReport {
     public static final int MAX_TEXT_LENGTH = 500;
     public static final int MAX_LOCATIONS = 5;
 
-    /** Validade do registro (RN14); a renovação (PER-06) empurra o vencimento. */
+    /** RN14. */
     public static final Duration VALIDITY = Duration.ofDays(30);
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /** Id da conta do estudante no módulo de acesso; sem chave estrangeira entre módulos (D10). */
     @Column(nullable = false, updatable = false)
     private UUID studentId;
 
@@ -69,7 +61,6 @@ public class LossReport {
     @Embedded
     private LostPeriod period;
 
-    /** Chave da foto na {@code PhotoStorage}; a foto nunca tem URL pública (D21). */
     @Column(updatable = false)
     private String photoKey;
 
@@ -102,10 +93,7 @@ public class LossReport {
         this.expiresAt = registeredAt.plus(VALIDITY);
     }
 
-    /**
-     * Registra a perda na situação Aberto (seção 6.2), com vencimento em 30 dias (RN14). Locais repetidos contam uma
-     * vez só. O limite de 5 registros abertos (RN05) depende dos outros registros do estudante e fica no service.
-     */
+    /** Entra Aberto e vence em 30 dias (RN14). Locais repetidos contam uma vez. */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt) {
         return new LossReport(data, studentId, registeredAt);
     }

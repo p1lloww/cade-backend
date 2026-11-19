@@ -1,6 +1,6 @@
 package br.ucsal.cade.shared.exception;
 
-/** O estudante já tem o máximo de registros em andamento e não pode abrir outro (RN05). */
+/** RN05. */
 public class TooManyActiveReportsException extends ConflictException {
 
     public TooManyActiveReportsException(int limit) {

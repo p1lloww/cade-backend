@@ -5,12 +5,7 @@ import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import java.util.List;
 
 /**
- * Situação de um registro de perda, com as transições da seção 6.2 dos requisitos. Padrão State: cada situação é um
- * record que sabe para onde pode ir, e toda ação que ela não permite é recusada com
- * {@link InvalidStatusTransitionException} (RN01).
- *
- * <p>A interface é {@code sealed}: as seis situações são as únicas possíveis. Por isso os {@code switch} sobre uma
- * situação não têm {@code default}, e uma situação nova faz o compilador apontar cada lugar que precisa tratá-la.
+ * Situação do registro de perda (seção 6.2). Transição fora da tabela é recusada (RN01).
  *
  * <table>
  *   <caption>Transições permitidas</caption>
@@ -24,11 +19,7 @@ import java.util.List;
  *   <tr><td>{@link #cancel()} (cancelar)</td><td>Aberto, Aguardando informações</td><td>Cancelado</td></tr>
  * </table>
  *
- * <p>Concluído, Vencido e Cancelado são finais: não permitem nenhuma ação. A renovação do prazo (RN14) não muda a
- * situação, por isso não aparece aqui.
- *
- * <p>As situações não guardam dados, então cada record tem uma única instância útil, nas constantes abaixo; como são
- * records, duas instâncias da mesma situação são sempre iguais.
+ * <p>Concluído, Vencido e Cancelado são finais.
  */
 public sealed interface LossReportStatus {
 
@@ -94,10 +85,7 @@ public sealed interface LossReportStatus {
         };
     }
 
-    /**
-     * Se o estudante ainda pode alterar a descrição e o detalhe. Depois da convocação, não pode mais, para que ninguém
-     * ajuste o texto ao objeto (RN06).
-     */
+    /** Depois da convocação, descrição e detalhe não mudam mais (RN06). */
     default boolean isEditable() {
         return switch (this) {
             case Open _, AwaitingInfo _ -> true;

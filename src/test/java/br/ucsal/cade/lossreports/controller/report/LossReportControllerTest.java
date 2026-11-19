@@ -72,7 +72,6 @@ class LossReportControllerTest {
     @Autowired
     private PhotoProperties photoProperties;
 
-    /** Cada teste com um estudante novo, para o limite de 5 (RN05) de um não atrapalhar o outro. */
     private UUID student;
 
     @BeforeEach
@@ -272,7 +271,6 @@ class LossReportControllerTest {
         return mvc.perform(form(json).header("Authorization", "Bearer " + studentToken()));
     }
 
-    /** O pedido como o front envia: a parte {@code report} em JSON e, se houver, a parte {@code photo}. */
     private static MockMultipartHttpServletRequestBuilder form(String json) {
         return multipart("/loss-reports").file(new MockMultipartFile("report", "", MediaType.APPLICATION_JSON_VALUE,
                 json.getBytes(StandardCharsets.UTF_8)));

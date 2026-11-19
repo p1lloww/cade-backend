@@ -20,10 +20,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * O lock otimista da RN05. Sem a transação do teste, para cada {@link TransactionTemplate} ser um commit de verdade, e
- * com as duas transações intercaladas na mesma thread, para o conflito acontecer sempre na mesma ordem.
- */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TestcontainersConfiguration.class)

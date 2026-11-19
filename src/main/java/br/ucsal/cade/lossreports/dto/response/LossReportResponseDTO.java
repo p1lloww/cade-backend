@@ -11,13 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * O registro como o dono o vê, inclusive o detalhe secreto. Só o próprio estudante (e, nos cards de funcionário, a
- * sala) recebe esta resposta (RF14).
- *
- * <p>O que o estudante não informou vem nulo nos campos de dado e com texto nos campos {@code ...Label}, para o
- * front mostrar sem tratar cada caso.
- */
+/** Inclui o detalhe secreto: só o dono recebe esta resposta (RF14). */
 @Schema(description = "Registro de perda com todos os dados, inclusive o detalhe secreto. Só o dono recebe.")
 public record LossReportResponseDTO(
         UUID id,

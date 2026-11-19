@@ -15,7 +15,6 @@ import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
-import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.LossReportNotFoundException;
 import br.ucsal.cade.shared.exception.PhotoNotFoundException;
 import br.ucsal.cade.shared.exception.TooManyActiveReportsException;
@@ -43,7 +42,7 @@ public class LossReportService {
 
     private static final Logger log = LoggerFactory.getLogger(LossReportService.class);
 
-    /** RN05: dificulta "pescar" objetos com vários registros genéricos. */
+    /** RN05. */
     public static final int MAX_ACTIVE_REPORTS = 5;
 
     static final String REGISTERED_ACTION = "LOSS_REPORT_REGISTERED";
@@ -66,28 +65,7 @@ public class LossReportService {
         this.clock = clock;
     }
 
-    /**
-     * Registra a perda, grava o histórico e avisa que ela foi registrada, tudo na mesma transação (RF43, D10). O
-     * pedido chega já validado pelo {@code @Valid} (campos obrigatórios, tamanhos, até 5 locais); aqui ficam só as
-     * regras que dependem do banco, do relógio ou dos outros registros.
-     *
-     * <p>O limite de registros em andamento (RN05) é conferido com o estudante travado pelo lock otimista: se outro
-     * registro dele for gravado entre a contagem e o commit, este falha com
-     * {@link org.springframework.orm.ObjectOptimisticLockingFailureException} e é desfeito inteiro. O fluxo está em
-     * {@code docs/tecnico/limite-registros-abertos.md}.
-     *
-     * <p>A foto é opcional. Ela só é guardada depois de todas as regras conferidas e é apagada se a transação for
-     * desfeita, para não sobrar foto sem registro.
-     *
-     * <p>Os logs nunca levam a descrição nem o detalhe secreto (RF14), só ids e contagens.
-     *
-     * @param photo     foto do objeto; nula ou vazia quando o estudante não enviou
-     * @param studentId id da conta do estudante (claim {@code sub} do token)
-     * @throws UnknownCategoryException      se a categoria não existe
-     * @throws BadRequestException           se a data é futura, o período é inválido ou a foto não é JPEG, PNG ou
-     *                                       WebP de até 5 MB
-     * @throws TooManyActiveReportsException se o estudante já tem {@value #MAX_ACTIVE_REPORTS} registros em andamento
-     */
+    /** No máximo 5 registros em andamento por estudante (RN05); o registro vai para o histórico (RF43). */
     @Transactional
     public LossReportResponseDTO register(LossReportRequestDTO request, MultipartFile photo, UUID studentId) {
         List<LossLocation> locations = locationsOf(request);
@@ -115,12 +93,7 @@ public class LossReportService {
         return LossReportResponseDTO.from(report);
     }
 
-    /**
-     * A foto do registro, servida só ao dono (RF14). Registro de outro estudante responde como inexistente.
-     *
-     * @throws LossReportNotFoundException se o registro não existe ou é de outro estudante
-     * @throws PhotoNotFoundException      se o registro não tem foto
-     */
+    /** Só o dono vê a foto (RF14). */
     @Transactional(readOnly = true)
     public StoredPhoto photoOf(UUID reportId, UUID studentId) {
         LossReport report = reports.findByIdAndStudentId(reportId, studentId).orElseThrow(() -> {
@@ -169,11 +142,6 @@ public class LossReportService {
         return locations.stream().map(location -> LossLocation.of(location.block(), location.room())).toList();
     }
 
-    /**
-     * Trava o estudante (lock otimista) antes de contar, para a contagem valer até o commit (RN05).
-     *
-     * @return quantos registros em andamento o estudante já tem
-     */
     private long requireRoomForAnotherReport(UUID studentId) {
         reporters.createIfAbsent(studentId);
         reporters.findLockedByStudentId(studentId).orElseThrow();
@@ -186,10 +154,6 @@ public class LossReportService {
         return active;
     }
 
-    /**
-     * O resultado só é conhecido no fim da transação: um registro que passou por todas as regras ainda pode ser
-     * desfeito no commit pelo lock otimista (outro registro simultâneo do mesmo estudante).
-     */
     private void logOutcomeAfterCommit(UUID reportId, UUID studentId, long activeAfter) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override

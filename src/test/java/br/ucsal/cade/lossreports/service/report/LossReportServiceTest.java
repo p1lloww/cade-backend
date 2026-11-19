@@ -142,11 +142,6 @@ class LossReportServiceTest {
         assertThat(activeReports()).isOne();
     }
 
-    /**
-     * O cenário da RN05 que o lock otimista resolve: com 4 registros, o estudante envia vários ao mesmo tempo. Só um
-     * pode passar. Os outros falham pela contagem (se começaram depois do commit do primeiro) ou pela versão (se
-     * contaram antes), e nenhum deixa registro gravado.
-     */
     @Test
     void simultaneousRegistrationsNeverGoPastTheLimit() throws Exception {
         IntStream.range(0, LossReportService.MAX_ACTIVE_REPORTS - 1).forEach(_ -> register());
@@ -158,14 +153,12 @@ class LossReportServiceTest {
         assertThat(activeReports()).isEqualTo(LossReportService.MAX_ACTIVE_REPORTS);
     }
 
-    /** Sem a linha do estudante, o segundo {@code INSERT ... ON CONFLICT} espera o primeiro e segue sem erro. */
     @Test
     void simultaneousFirstRegistrationsOfANewStudentAllPass() throws Exception {
         assertThat(registerAtTheSameTime(2)).isEmpty();
         assertThat(activeReports()).isEqualTo(2);
     }
 
-    /** Dispara os registros juntos, em Virtual Threads, e devolve as falhas. */
     private List<Throwable> registerAtTheSameTime(int count) throws InterruptedException {
         CountDownLatch start = new CountDownLatch(1);
         Callable<UUID> task = () -> {

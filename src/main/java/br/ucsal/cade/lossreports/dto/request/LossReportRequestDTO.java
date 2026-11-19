@@ -12,10 +12,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Registro de uma perda (RF13, RF14). Só categoria, descrição e data são obrigatórias; regras que dependem do relógio
- * ou dos outros registros (data futura, período, limite de 5) ficam no domínio.
- */
 @Schema(description = "Registro de uma perda. Só categoria, descrição e data são obrigatórias.")
 public record LossReportRequestDTO(
 

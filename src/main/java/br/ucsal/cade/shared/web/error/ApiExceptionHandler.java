@@ -72,11 +72,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE));
     }
 
-    /**
-     * Lock otimista: outra transação gravou o mesmo dado entre a leitura e o commit, e esta foi desfeita inteira. É o
-     * caso de dois registros de perda simultâneos do mesmo estudante (RN05,
-     * {@code docs/tecnico/limite-registros-abertos.md}).
-     */
+    /** Gravação simultânea do mesmo dado, como dois registros de perda juntos (RN05). */
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ResponseEntity<ProblemDetail> handleConcurrentChange(OptimisticLockingFailureException exception) {
         log.info("Concurrent change refused: {}", exception.getMessage());

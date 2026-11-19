@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
-/** Documentação OpenAPI do registro de perdas (RF13, RF14); as rotas ficam no {@link LossReportController}. */
 @Tag(name = "Registros de perda", description = """
         O estudante registra de casa o que perdeu. O detalhe secreto nunca aparece para outros estudantes (RF14).""")
 public interface LossReportApi {

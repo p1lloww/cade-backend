@@ -1,4 +1,4 @@
-package br.ucsal.cade.lossreports.persistence.report;
+package br.ucsal.cade.lossreports.persistence.period;
 
 /** Turno em que o estudante acha que perdeu o objeto (RF13). */
 public enum Shift {

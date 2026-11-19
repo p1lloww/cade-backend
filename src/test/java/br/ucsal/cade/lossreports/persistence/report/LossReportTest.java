@@ -1,5 +1,8 @@
 package br.ucsal.cade.lossreports.persistence.report;
 
+import br.ucsal.cade.lossreports.persistence.location.LossLocation;
+import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
+import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.RiskLevel;

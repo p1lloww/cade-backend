@@ -1,6 +1,9 @@
 package br.ucsal.cade.lossreports.persistence.report;
 
 import br.ucsal.cade.TestcontainersConfiguration;
+import br.ucsal.cade.lossreports.persistence.location.LossLocation;
+import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
+import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
@@ -19,7 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** O mapeamento no PostgreSQL: situação, período, locais em ordem e versão. */
+/** O mapeamento no PostgreSQL (situação, período, locais em ordem e versão) e a contagem da RN05. */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(TestcontainersConfiguration.class)
@@ -71,5 +74,24 @@ class LossReportRepositoryTest {
         LossReport read = reports.findById(id).orElseThrow();
         assertThat(read.getLocations()).isEmpty();
         assertThat(read.getPeriod().shift()).isNull();
+    }
+
+    @Test
+    void countsOnlyTheActiveReportsOfTheStudent() {
+        Category category = categories.saveAndFlush(new Category("Garrafa de teste", RiskLevel.LOW));
+        UUID student = UUID.randomUUID();
+        for (String status : List.of("OPEN", "AWAITING_INFO", "SUMMONED", "COMPLETED", "EXPIRED", "CANCELLED")) {
+            UUID id = reports.saveAndFlush(report(category, student)).getId();
+            entityManager.createNativeQuery("UPDATE loss_reports SET status = :status WHERE id = :id")
+                    .setParameter("status", status).setParameter("id", id).executeUpdate();
+        }
+        reports.saveAndFlush(report(category, UUID.randomUUID()));
+
+        assertThat(reports.countByStudentIdAndStatusIn(student, LossReportStatus.ACTIVE)).isEqualTo(3);
+    }
+
+    private static LossReport report(Category category, UUID student) {
+        return LossReport.register(new NewLossReport(category, "Garrafa azul", null, List.of(),
+                LostPeriod.of(TODAY, null, null, TODAY)), student, NOW);
     }
 }

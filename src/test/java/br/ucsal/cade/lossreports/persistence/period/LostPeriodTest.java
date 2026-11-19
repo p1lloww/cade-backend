@@ -1,4 +1,4 @@
-package br.ucsal.cade.lossreports.persistence.report;
+package br.ucsal.cade.lossreports.persistence.period;
 
 import br.ucsal.cade.shared.exception.BadRequestException;
 import org.junit.jupiter.api.Test;

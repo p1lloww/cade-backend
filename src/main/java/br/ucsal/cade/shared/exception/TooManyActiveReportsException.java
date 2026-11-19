@@ -1,6 +1,5 @@
 package br.ucsal.cade.shared.exception;
 
-/** RN05. */
 public class TooManyActiveReportsException extends ConflictException {
 
     public TooManyActiveReportsException(int limit) {

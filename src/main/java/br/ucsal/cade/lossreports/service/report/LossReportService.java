@@ -36,13 +36,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/** Registro de perdas pelo estudante (RF13, RF14). */
 @Service
 public class LossReportService {
 
     private static final Logger log = LoggerFactory.getLogger(LossReportService.class);
 
-    /** RN05. */
     public static final int MAX_ACTIVE_REPORTS = 5;
 
     static final String REGISTERED_ACTION = "LOSS_REPORT_REGISTERED";
@@ -93,7 +91,7 @@ public class LossReportService {
         return LossReportResponseDTO.from(report);
     }
 
-    /** Só o dono vê a foto (RF14). */
+    /** Registro de outro estudante responde como inexistente (RF14). */
     @Transactional(readOnly = true)
     public StoredPhoto photoOf(UUID reportId, UUID studentId) {
         LossReport report = reports.findByIdAndStudentId(reportId, studentId).orElseThrow(() -> {

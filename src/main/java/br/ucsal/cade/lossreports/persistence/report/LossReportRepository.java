@@ -9,9 +9,7 @@ import java.util.UUID;
 
 public interface LossReportRepository extends JpaRepository<LossReport, UUID> {
 
-    /** Registro de outro estudante fica invisível (RF14). */
     Optional<LossReport> findByIdAndStudentId(UUID id, UUID studentId);
 
-    /** RN05. */
     long countByStudentIdAndStatusIn(UUID studentId, Collection<LossReportStatus> statuses);
 }

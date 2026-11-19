@@ -72,7 +72,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, FORBIDDEN_MESSAGE));
     }
 
-    /** Gravação simultânea do mesmo dado, como dois registros de perda juntos (RN05). */
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ResponseEntity<ProblemDetail> handleConcurrentChange(OptimisticLockingFailureException exception) {
         log.info("Concurrent change refused: {}", exception.getMessage());

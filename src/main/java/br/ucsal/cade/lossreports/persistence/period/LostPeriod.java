@@ -9,7 +9,7 @@ import jakarta.persistence.Enumerated;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-/** Data ou período da perda, com turno opcional (RF13). Sem data futura e com no máximo 30 dias. */
+/** Uma data só é um período com início igual ao fim. */
 @Embeddable
 public record LostPeriod(
 

@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Registro de perda (RF13). O detalhe secreto e a foto nunca vão para outros estudantes (RF14). */
+/** O detalhe secreto e a foto nunca vão para outros estudantes (RF14). */
 @Entity
 @Table(name = "loss_reports")
 public class LossReport {
@@ -33,7 +33,6 @@ public class LossReport {
     public static final int MAX_TEXT_LENGTH = 500;
     public static final int MAX_LOCATIONS = 5;
 
-    /** RN14. */
     public static final Duration VALIDITY = Duration.ofDays(30);
 
     @Id
@@ -93,7 +92,7 @@ public class LossReport {
         this.expiresAt = registeredAt.plus(VALIDITY);
     }
 
-    /** Entra Aberto e vence em 30 dias (RN14). Locais repetidos contam uma vez. */
+    /** Locais repetidos contam uma vez. */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt) {
         return new LossReport(data, studentId, registeredAt);
     }

@@ -3,10 +3,7 @@ package br.ucsal.cade.lossreports.persistence.location;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
-/**
- * Local da perda: bloco e, opcionalmente, sala (RF13). Sala desconhecida fica nula, nunca como texto, para o
- * cruzamento não tratar duas salas "não informadas" como a mesma (RN07).
- */
+/** Sala desconhecida fica nula, nunca como texto, para o cruzamento não tratar duas como a mesma sala (RN07). */
 @Embeddable
 public record LossLocation(
 

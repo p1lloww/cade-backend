@@ -45,7 +45,6 @@ public sealed interface LossReportStatus {
                 .orElseThrow(() -> new IllegalArgumentException("Situação de registro desconhecida: " + code));
     }
 
-    /** O funcionário pede mais informações ao estudante, com motivo. */
     default LossReportStatus requestInfo() {
         throw refused("pedir informações sobre");
     }
@@ -55,7 +54,6 @@ public sealed interface LossReportStatus {
         throw refused("retomar");
     }
 
-    /** O funcionário convoca o estudante a partir de uma sugestão. */
     default LossReportStatus summon() {
         throw refused("convocar");
     }
@@ -119,7 +117,6 @@ public sealed interface LossReportStatus {
         return new InvalidStatusTransitionException(action, "um registro de perda", label());
     }
 
-    /** Esperando o cruzamento ou a decisão do funcionário. */
     record Open() implements LossReportStatus {
 
         @Override
@@ -143,7 +140,6 @@ public sealed interface LossReportStatus {
         }
     }
 
-    /** O funcionário pediu mais informações e espera a resposta do estudante. */
     record AwaitingInfo() implements LossReportStatus {
 
         @Override
@@ -157,7 +153,6 @@ public sealed interface LossReportStatus {
         }
     }
 
-    /** O estudante foi chamado para retirar um objeto. */
     record Summoned() implements LossReportStatus {
 
         @Override
@@ -171,15 +166,12 @@ public sealed interface LossReportStatus {
         }
     }
 
-    /** O objeto foi retirado pelo dono. Final. */
     record Completed() implements LossReportStatus {
     }
 
-    /** Passou de 30 dias sem renovação. Final. */
     record Expired() implements LossReportStatus {
     }
 
-    /** O estudante cancelou. Final. */
     record Cancelled() implements LossReportStatus {
     }
 }

@@ -4,3 +4,6 @@ cade:
   jwt:
     # Chave só de teste: o application.yml principal não tem valor padrão, então a aplicação não sobe sem JWT_SECRET.
     secret: test-only-secret-never-used-outside-the-tests-0123456789
+  photos:
+    # Pasta temporária, para os testes não deixarem fotos no projeto.
+    directory: ${java.io.tmpdir}/cade-test-photos

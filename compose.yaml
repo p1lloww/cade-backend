@@ -29,6 +29,9 @@ services:
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/cade
       MAIL_HOST: ${MAIL_HOST:-mailpit}
+      PHOTOS_DIR: /app/data/photos
+    volumes:
+      - photos-data:/app/data/photos
     ports:
       - "8080:8080"
     depends_on:
@@ -39,3 +42,4 @@ services:
 
 volumes:
   postgres-data:
+  photos-data:

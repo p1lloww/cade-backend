@@ -16,7 +16,11 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.exception.BadRequestException;
+import br.ucsal.cade.shared.exception.LossReportNotFoundException;
+import br.ucsal.cade.shared.exception.PhotoNotFoundException;
 import br.ucsal.cade.shared.exception.TooManyActiveReportsException;
+import br.ucsal.cade.shared.storage.PhotoStorage;
+import br.ucsal.cade.shared.storage.StoredPhoto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,7 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -45,14 +52,16 @@ public class LossReportService {
     private final LossReportRepository reports;
     private final LossReporterRepository reporters;
     private final CategoryRepository categories;
+    private final PhotoStorage photos;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     LossReportService(LossReportRepository reports, LossReporterRepository reporters, CategoryRepository categories,
-                      ApplicationEventPublisher events, Clock clock) {
+                      PhotoStorage photos, ApplicationEventPublisher events, Clock clock) {
         this.reports = reports;
         this.reporters = reporters;
         this.categories = categories;
+        this.photos = photos;
         this.events = events;
         this.clock = clock;
     }
@@ -67,18 +76,23 @@ public class LossReportService {
      * {@link org.springframework.orm.ObjectOptimisticLockingFailureException} e é desfeito inteiro. O fluxo está em
      * {@code docs/tecnico/limite-registros-abertos.md}.
      *
+     * <p>A foto é opcional. Ela só é guardada depois de todas as regras conferidas e é apagada se a transação for
+     * desfeita, para não sobrar foto sem registro.
+     *
      * <p>Os logs nunca levam a descrição nem o detalhe secreto (RF14), só ids e contagens.
      *
+     * @param photo     foto do objeto; nula ou vazia quando o estudante não enviou
      * @param studentId id da conta do estudante (claim {@code sub} do token)
      * @throws UnknownCategoryException      se a categoria não existe
-     * @throws BadRequestException           se a data é futura ou o período é inválido
+     * @throws BadRequestException           se a data é futura, o período é inválido ou a foto não é JPEG, PNG ou
+     *                                       WebP de até 5 MB
      * @throws TooManyActiveReportsException se o estudante já tem {@value #MAX_ACTIVE_REPORTS} registros em andamento
      */
     @Transactional
-    public LossReportResponseDTO register(LossReportRequestDTO request, UUID studentId) {
+    public LossReportResponseDTO register(LossReportRequestDTO request, MultipartFile photo, UUID studentId) {
         List<LossLocation> locations = locationsOf(request);
-        log.debug("Registering loss report: student={}, category={}, locations={}", studentId,
-                request.categoryId(), locations.size());
+        log.debug("Registering loss report: student={}, category={}, locations={}, photo={}", studentId,
+                request.categoryId(), locations.size(), hasContent(photo));
         Category category = categories.findById(request.categoryId()).orElseThrow(() -> {
             log.info("Loss report refused: unknown category {} (student={})", request.categoryId(), studentId);
             return new UnknownCategoryException(request.categoryId());
@@ -87,9 +101,10 @@ public class LossReportService {
                 LocalDate.now(clock));
 
         long active = requireRoomForAnotherReport(studentId);
+        String photoKey = hasContent(photo) ? savePhoto(photo) : null;
 
         NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(), locations,
-                period);
+                period, photoKey);
         LossReport report = reports.save(LossReport.register(data, studentId, clock.instant()));
 
         events.publishEvent(new AuditEvent(studentId, REGISTERED_ACTION, LossReport.class.getSimpleName(),
@@ -98,6 +113,55 @@ public class LossReportService {
                 period.lostUntil()));
         logOutcomeAfterCommit(report.getId(), studentId, active + 1);
         return LossReportResponseDTO.from(report);
+    }
+
+    /**
+     * A foto do registro, servida só ao dono (RF14). Registro de outro estudante responde como inexistente.
+     *
+     * @throws LossReportNotFoundException se o registro não existe ou é de outro estudante
+     * @throws PhotoNotFoundException      se o registro não tem foto
+     */
+    @Transactional(readOnly = true)
+    public StoredPhoto photoOf(UUID reportId, UUID studentId) {
+        LossReport report = reports.findByIdAndStudentId(reportId, studentId).orElseThrow(() -> {
+            log.info("Loss report photo refused: report {} not found for student {}", reportId, studentId);
+            return new LossReportNotFoundException();
+        });
+        if (!report.hasPhoto()) {
+            throw new PhotoNotFoundException();
+        }
+        return photos.load(report.getPhotoKey()).orElseThrow(() -> {
+            log.warn("Loss report {} points to photo {}, which is missing from the storage", reportId,
+                    report.getPhotoKey());
+            return new PhotoNotFoundException();
+        });
+    }
+
+    private String savePhoto(MultipartFile photo) {
+        try {
+            String key = photos.save(photo.getBytes());
+            deleteOnRollback(key);
+            log.debug("Loss report photo stored: {} ({} bytes)", key, photo.getSize());
+            return key;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
+    }
+
+    private void deleteOnRollback(String photoKey) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != STATUS_COMMITTED) {
+                    photos.delete(photoKey);
+                    log.debug("Loss report photo {} deleted after rollback", photoKey);
+                }
+            }
+        });
+    }
+
+    private static boolean hasContent(MultipartFile photo) {
+        return photo != null && !photo.isEmpty();
     }
 
     private static List<LossLocation> locationsOf(LossReportRequestDTO request) {

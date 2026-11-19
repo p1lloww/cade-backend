@@ -8,6 +8,8 @@ import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.TestTokens;
 import br.ucsal.cade.shared.security.jwt.TokenClaims;
+import br.ucsal.cade.shared.storage.PhotoProperties;
+import br.ucsal.cade.shared.storage.TestPhotos;
 import br.ucsal.cade.shared.time.MutableClock;
 import br.ucsal.cade.shared.time.MutableClockConfiguration;
 import com.jayway.jsonpath.JsonPath;
@@ -18,19 +20,27 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,6 +68,9 @@ class LossReportControllerTest {
 
     @Autowired
     private ApplicationEvents events;
+
+    @Autowired
+    private PhotoProperties photoProperties;
 
     /** Cada teste com um estudante novo, para o limite de 5 (RN05) de um não atrapalhar o outro. */
     private UUID student;
@@ -114,12 +127,76 @@ class LossReportControllerTest {
     @Test
     void onlyStudentsRegisterLosses() throws Exception {
         for (Role role : new Role[]{Role.STAFF, Role.ADMIN}) {
-            mvc.perform(post("/loss-reports").header("Authorization", bearer(role))
-                            .contentType(MediaType.APPLICATION_JSON).content(minimal()))
-                    .andExpect(status().isForbidden());
+            mvc.perform(form(minimal()).header("Authorization", bearer(role))).andExpect(status().isForbidden());
         }
-        mvc.perform(post("/loss-reports").contentType(MediaType.APPLICATION_JSON).content(minimal()))
-                .andExpect(status().isUnauthorized());
+        mvc.perform(form(minimal())).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void theOwnerSendsAPhotoAndDownloadsItBack() throws Exception {
+        String body = mvc.perform(form(minimal()).file(photo(TestPhotos.jpeg()))
+                        .header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.photoPath").value(startsWith("/loss-reports/")))
+                .andReturn().getResponse().getContentAsString();
+        String photoPath = JsonPath.read(body, "$.photoPath");
+
+        mvc.perform(get(photoPath).header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/jpeg"))
+                .andExpect(content().bytes(TestPhotos.jpeg()));
+    }
+
+    @Test
+    void nobodyElseSeesThePhoto() throws Exception {
+        String body = mvc.perform(form(minimal()).file(photo(TestPhotos.png()))
+                        .header("Authorization", "Bearer " + studentToken()))
+                .andReturn().getResponse().getContentAsString();
+        String photoPath = JsonPath.read(body, "$.photoPath");
+        student = UUID.randomUUID();
+
+        mvc.perform(get(photoPath).header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Registro de perda não encontrado."));
+        mvc.perform(get(photoPath).header("Authorization", bearer(Role.STAFF))).andExpect(status().isForbidden());
+        mvc.perform(get(photoPath)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void aReportWithoutPhotoHasNoPhotoPath() throws Exception {
+        String body = register(minimal())
+                .andExpect(jsonPath("$.photoPath").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+
+        mvc.perform(get("/loss-reports/" + JsonPath.read(body, "$.id") + "/photo")
+                        .header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Foto não encontrada."));
+    }
+
+    @Test
+    void refusesAFileThatIsNotAPhoto() throws Exception {
+        mvc.perform(form(minimal()).file(photo(TestPhotos.pdf())).header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("A foto precisa ser JPEG, PNG ou WebP."));
+    }
+
+    @Test
+    void doesNotKeepThePhotoOfARefusedReport() throws Exception {
+        long before = photoCount();
+        String future = """
+                {"categoryId": "%s", "description": "Fone", "lostFrom": "%s"}"""
+                .formatted(headphones(), yesterday().plusDays(2));
+
+        mvc.perform(form(future).file(photo(TestPhotos.jpeg())).header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isBadRequest());
+        for (int i = 0; i < 5; i++) {
+            register(minimal()).andExpect(status().isCreated());
+        }
+        mvc.perform(form(minimal()).file(photo(TestPhotos.jpeg())).header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isConflict());
+
+        assertThat(photoCount()).isEqualTo(before);
     }
 
     @Test
@@ -192,8 +269,27 @@ class LossReportControllerTest {
     }
 
     private ResultActions register(String json) throws Exception {
-        return mvc.perform(post("/loss-reports").header("Authorization", "Bearer " + studentToken())
-                .contentType(MediaType.APPLICATION_JSON).content(json));
+        return mvc.perform(form(json).header("Authorization", "Bearer " + studentToken()));
+    }
+
+    /** O pedido como o front envia: a parte {@code report} em JSON e, se houver, a parte {@code photo}. */
+    private static MockMultipartHttpServletRequestBuilder form(String json) {
+        return multipart("/loss-reports").file(new MockMultipartFile("report", "", MediaType.APPLICATION_JSON_VALUE,
+                json.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static MockMultipartFile photo(byte[] content) {
+        return new MockMultipartFile("photo", "foto", MediaType.APPLICATION_OCTET_STREAM_VALUE, content);
+    }
+
+    private long photoCount() throws Exception {
+        Path directory = photoProperties.directory();
+        if (!Files.isDirectory(directory)) {
+            return 0;
+        }
+        try (Stream<Path> files = Files.list(directory)) {
+            return files.count();
+        }
     }
 
     private String minimal() {

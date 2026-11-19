@@ -49,7 +49,7 @@ class LossReportRepositoryTest {
         UUID student = UUID.randomUUID();
 
         UUID id = reports.saveAndFlush(LossReport.register(new NewLossReport(category, "Fone JBL preto",
-                "Adesivo de estrela", locations, period), student, NOW)).getId();
+                "Adesivo de estrela", locations, period, null), student, NOW)).getId();
         entityManager.clear();
 
         LossReport read = reports.findById(id).orElseThrow();
@@ -68,7 +68,7 @@ class LossReportRepositoryTest {
         LostPeriod period = LostPeriod.of(TODAY, null, null, TODAY);
 
         UUID id = reports.saveAndFlush(LossReport.register(new NewLossReport(category, "iPhone", null, List.of(),
-                period), UUID.randomUUID(), NOW)).getId();
+                period, null), UUID.randomUUID(), NOW)).getId();
         entityManager.clear();
 
         LossReport read = reports.findById(id).orElseThrow();
@@ -92,6 +92,6 @@ class LossReportRepositoryTest {
 
     private static LossReport report(Category category, UUID student) {
         return LossReport.register(new NewLossReport(category, "Garrafa azul", null, List.of(),
-                LostPeriod.of(TODAY, null, null, TODAY)), student, NOW);
+                LostPeriod.of(TODAY, null, null, TODAY), null), student, NOW);
     }
 }

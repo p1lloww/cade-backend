@@ -33,6 +33,9 @@ public record LossReportResponseDTO(
         @Schema(example = "Noite") String shiftLabel,
         @Schema(example = "OPEN") String status,
         @Schema(example = "Aberto") String statusLabel,
+        @Schema(description = "Caminho da foto na API, pedir com o token; nulo quando não há foto.",
+                example = "/loss-reports/{id}/photo")
+        String photoPath,
         Instant registeredAt,
         Instant expiresAt) {
 
@@ -48,7 +51,8 @@ public record LossReportResponseDTO(
                 report.getCategory().getName(), report.getDescription(), report.getSecretDetail(), locations,
                 locationsLabel(locations), period.lostFrom(), period.lostUntil(), period.shift(),
                 period.shift() == null ? UNKNOWN_SHIFT : period.shift().label(), report.getStatus().code(),
-                report.getStatus().label(), report.getRegisteredAt(), report.getExpiresAt());
+                report.getStatus().label(), report.hasPhoto() ? "/loss-reports/" + report.getId() + "/photo" : null,
+                report.getRegisteredAt(), report.getExpiresAt());
     }
 
     private static String locationsLabel(List<LossLocationResponseDTO> locations) {

@@ -82,7 +82,7 @@ class LossReportServiceTest {
                 "Adesivo de estrela", List.of(new LossLocationRequestDTO("Bloco 400", " Sala 421 ")), yesterday, null,
                 Shift.EVENING);
 
-        LossReportResponseDTO response = service.register(request, student);
+        LossReportResponseDTO response = service.register(request, null, student);
 
         assertThat(response.statusLabel()).isEqualTo("Aberto");
         assertThat(response.locationsLabel()).isEqualTo("Bloco 400, Sala 421");
@@ -104,7 +104,7 @@ class LossReportServiceTest {
         LossReportRequestDTO request = new LossReportRequestDTO(UUID.randomUUID(), "Fone", null, List.of(), today(),
                 null, null);
 
-        assertThatThrownBy(() -> service.register(request, student))
+        assertThatThrownBy(() -> service.register(request, null, student))
                 .isInstanceOf(UnknownCategoryException.class)
                 .isInstanceOf(BadRequestException.class);
         assertThat(activeReports()).isZero();
@@ -189,7 +189,7 @@ class LossReportServiceTest {
 
     private UUID register() {
         return service.register(new LossReportRequestDTO(category.getId(), "Garrafa azul", null, null, today(),
-                null, null), student).id();
+                null, null), null, student).id();
     }
 
     private long activeReports() {

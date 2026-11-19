@@ -40,7 +40,7 @@ class LossReportTest {
     @Test
     void stripsTheTextsAndStoresABlankSecretDetailAsNull() {
         LossReport report = LossReport.register(
-                new NewLossReport(HEADPHONES, "  Fone JBL preto ", "   ", List.of(), PERIOD), STUDENT, NOW);
+                new NewLossReport(HEADPHONES, "  Fone JBL preto ", "   ", List.of(), PERIOD, null), STUDENT, NOW);
 
         assertThat(report.getDescription()).isEqualTo("Fone JBL preto");
         assertThat(report.getSecretDetail()).isNull();
@@ -49,7 +49,7 @@ class LossReportTest {
     @Test
     void keepsTheSecretDetail() {
         LossReport report = LossReport.register(new NewLossReport(HEADPHONES, "Fone JBL preto",
-                " Adesivo de estrela ", List.of(), PERIOD), STUDENT, NOW);
+                " Adesivo de estrela ", List.of(), PERIOD, null), STUDENT, NOW);
 
         assertThat(report.getSecretDetail()).isEqualTo("Adesivo de estrela");
     }
@@ -82,6 +82,6 @@ class LossReportTest {
 
     private static LossReport register(List<LossLocation> locations) {
         return LossReport.register(
-                new NewLossReport(HEADPHONES, "Fone JBL preto", null, locations, PERIOD), STUDENT, NOW);
+                new NewLossReport(HEADPHONES, "Fone JBL preto", null, locations, PERIOD, null), STUDENT, NOW);
     }
 }

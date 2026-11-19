@@ -69,6 +69,10 @@ public class LossReport {
     @Embedded
     private LostPeriod period;
 
+    /** Chave da foto na {@code PhotoStorage}; a foto nunca tem URL pública (D21). */
+    @Column(updatable = false)
+    private String photoKey;
+
     @Column(nullable = false, length = 20)
     private LossReportStatus status;
 
@@ -92,6 +96,7 @@ public class LossReport {
                 ? null : data.secretDetail().strip();
         this.locations = new ArrayList<>(data.locations().stream().distinct().toList());
         this.period = data.period();
+        this.photoKey = data.photoKey();
         this.status = LossReportStatus.initial();
         this.registeredAt = registeredAt;
         this.expiresAt = registeredAt.plus(VALIDITY);
@@ -131,6 +136,14 @@ public class LossReport {
 
     public LostPeriod getPeriod() {
         return period;
+    }
+
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
+    public boolean hasPhoto() {
+        return photoKey != null;
     }
 
     public LossReportStatus getStatus() {

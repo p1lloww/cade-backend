@@ -81,7 +81,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   | `publicpage` | M8 Página pública | founditems |
   | `administration` | M9 Administração | access |
   | `demo` | M10 Modo demonstração | access, founditems, lossreports |
-  | `shared` | Núcleo compartilhado | nenhum módulo |
+  | `shared` | Núcleo compartilhado (inclui categorias e fotos, D21) | nenhum módulo |
 
 - **Camadas dentro do módulo:** `api` (interfaces, DTOs e eventos públicos), `controller`, `service` e `persistence`. As entidades JPA ficam em `persistence` com as regras sobre o próprio estado (ex.: transições de situação); o que depende de outros registros ou módulos fica no `service`. Sem Clean Architecture, pelo mesmo motivo da D45 do SCEA: o objetivo é separar módulos, e isolar o domínio do Spring dobraria o código para uma equipe de quatro com prazo curto.
 - **Entre módulos:** referência só por id, sem chave estrangeira cruzando módulos. Para avisar que algo aconteceu, o módulo publica um evento (D05). Quando um módulo "de baixo" precisa de algo de um "de cima", a dependência é invertida: a interface fica na `api` de quem usa.
@@ -172,6 +172,15 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [autorizacao.md](tecnico/autorizacao.md).
 - **Situação:** fechada.
 
+## D21 — Categorias e fotos no núcleo compartilhado
+- **Decisão (18/11/2026):** a `Category` (nome e risco padrão, o `RiskLevel`) fica em `shared.category`, e a interface `PhotoStorage` (o `ArmazenamentoFotos` da seção 7), com a implementação em disco local, fica em `shared.storage`. As categorias iniciais (as mais comuns da S8, com o risco da RN09) são criadas na subida pelo `DefaultCategoriesInitializer`, que só cria as que faltam. O objeto achado guarda o próprio risco: o padrão da categoria, que o funcionário pode aumentar mas nunca reduzir (RN04); documento continua documento. A tabela da D10 não muda: o `shared` continua sem depender de nenhum módulo.
+- **Motivo:** objetos achados (ACH-02), perdas (PER-01) e o cruzamento (CRU-01) usam a mesma lista de categorias, e a D10 não deixa `founditems` e `lossreports` dependerem um do outro nem do `administration`. No núcleo, todos usam a mesma tabela, e a gerência pelo administrador (ADM-04) entra depois sem mudar nenhuma direção de dependência. O mesmo vale para as fotos: objetos (ACH-02) e provas de perda (PER-05).
+- **Consequências:**
+  - O `shared` passa a ter uma entidade com regra (o risco). É a exceção desta decisão; outra entidade no núcleo exige uma decisão nova.
+  - As fotos ficam numa pasta (`PHOTOS_DIR`; no Docker, o volume `photos-data`), com nome novo (`<uuid>.<extensão>`), formato conferido pelos primeiros bytes (JPEG, PNG ou WebP) e no máximo 5 MB. Nunca têm URL pública: a API serve a foto só a quem o perfil permite (D09, RN03). Se o cadastro for desfeito, a foto gravada é apagada.
+  - Nenhum card cobria a RN04; ela entrou no ACH-02.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -182,3 +191,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **17/11/2026 — D19 registrada:** autorização por perfil com `@RequiresRole` e interceptor, na implementação do ACE-03.
 - **18/11/2026 — D20 registrada e D19 marcada como substituída:** a `@RequiresRole` passa a ser aplicada pelo `@PreAuthorize` do Spring Security, e o `RoleInterceptor` sai, na revisão do ACE-03.
 - **18/11/2026 — Complemento na D10:** histórico gravado por evento síncrono na mesma transação (`MANDATORY`), na implementação do ADM-01.
+- **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.

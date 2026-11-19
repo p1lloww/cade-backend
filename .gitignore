@@ -34,3 +34,6 @@ build/
 
 # Ambiente local (segredos)
 .env
+
+# Fotos gravadas em desenvolvimento
+data/

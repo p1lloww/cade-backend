@@ -11,6 +11,11 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/cade}
     username: ${DB_USER:cade}
     password: ${DB_PASSWORD:cade}
+  servlet:
+    multipart:
+      # Um pouco acima do limite da foto (cade.photos.max-size), para a mensagem vir do PhotoStorage.
+      max-file-size: 6MB
+      max-request-size: 7MB
   jpa:
     hibernate:
       ddl-auto: update
@@ -49,3 +54,7 @@ cade:
     ttl: 8h
   email:
     from: ${MAIL_FROM:cade@localhost}
+  photos:
+    # No Docker, um volume (compose.yaml); fora dele, a pasta data/ do projeto, ignorada pelo Git.
+    directory: ${PHOTOS_DIR:data/photos}
+    max-size: 5MB

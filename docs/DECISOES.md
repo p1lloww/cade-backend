@@ -179,6 +179,11 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - O `shared` passa a ter uma entidade com regra (o risco). É a exceção desta decisão; outra entidade no núcleo exige uma decisão nova.
   - As fotos ficam numa pasta (`PHOTOS_DIR`; no Docker, o volume `photos-data`), com nome novo (`<uuid>.<extensão>`), formato conferido pelos primeiros bytes (JPEG, PNG ou WebP) e no máximo 5 MB. Nunca têm URL pública: a API serve a foto só a quem o perfil permite (D09, RN03). Se o cadastro for desfeito, a foto gravada é apagada.
   - Nenhum card cobria a RN04; ela entrou no ACH-02.
+- **Complemento (18/11/2026), mudança de risco depois do cadastro:** a RN04 é lida em relação à categoria, não ao risco atual do objeto. O funcionário pode mudar o risco de um objeto para cima ou para baixo, desde que nunca fique abaixo do risco padrão da categoria (`RiskLevel.canBeRaisedTo` continua sendo a regra); documento continua documento. Uma garrafa cadastrada como Alto pode voltar a Baixo; um celular nunca fica abaixo de Alto. Duas proteções valem para a mudança:
+  - toda mudança de risco vai para o histórico com o valor anterior, o novo e um **motivo obrigatório** (RF43);
+  - o risco **não muda com o objeto Reservado**, isto é, com um estudante convocado, para ninguém afrouxar a conferência no meio de uma entrega.
+
+  **Motivo:** a RN04 existe para que um objeto nunca tenha conferência mais fraca do que a categoria exige, e isso continua garantido. Proibir qualquer redução deixaria um erro de digitação sem correção no dia a dia da sala; o histórico com motivo e o bloqueio durante a convocação cobrem o risco de alguém reduzir de má-fé. A edição fica no ACH-07.
 - **Situação:** fechada.
 
 ---
@@ -192,3 +197,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — D20 registrada e D19 marcada como substituída:** a `@RequiresRole` passa a ser aplicada pelo `@PreAuthorize` do Spring Security, e o `RoleInterceptor` sai, na revisão do ACE-03.
 - **18/11/2026 — Complemento na D10:** histórico gravado por evento síncrono na mesma transação (`MANDATORY`), na implementação do ADM-01.
 - **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.
+- **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).

@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /** As transições da seção 6.2 dos requisitos (RN01, RN06, RNF13): todas as permitidas e todas as proibidas. */
 class LossReportStatusTest {
 
-    /** As sete ações, com o nome que aparece no relatório dos testes. */
     private static final Map<String, UnaryOperator<LossReportStatus>> ACTIONS = Map.of(
             "pedir informações sobre", LossReportStatus::requestInfo,
             "retomar", LossReportStatus::resume,
@@ -35,7 +34,6 @@ class LossReportStatusTest {
             "vencer", LossReportStatus::expire,
             "cancelar", LossReportStatus::cancel);
 
-    /** A tabela da seção 6.2: situação de origem, ação e situação de destino. */
     private static final List<Transition> ALLOWED = List.of(
             new Transition(OPEN, "pedir informações sobre", AWAITING_INFO),
             new Transition(AWAITING_INFO, "retomar", OPEN),

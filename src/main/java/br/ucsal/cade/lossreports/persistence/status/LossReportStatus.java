@@ -39,18 +39,14 @@ public sealed interface LossReportStatus {
     Expired EXPIRED = new Expired();
     Cancelled CANCELLED = new Cancelled();
 
-    /** Todas as situações, na ordem do ciclo de vida. */
     List<LossReportStatus> ALL = List.of(OPEN, AWAITING_INFO, SUMMONED, COMPLETED, EXPIRED, CANCELLED);
 
-    /** As situações que ainda não terminaram; são as que contam para o limite de 5 registros (RN05). */
     List<LossReportStatus> ACTIVE = ALL.stream().filter(status -> !status.isFinal()).toList();
 
-    /** Situação de todo registro recém-criado pelo estudante. */
     static LossReportStatus initial() {
         return OPEN;
     }
 
-    /** A situação gravada no banco com este código (ver {@link #code()}). */
     static LossReportStatus fromCode(String code) {
         return ALL.stream()
                 .filter(status -> status.code().equals(code))
@@ -78,7 +74,6 @@ public sealed interface LossReportStatus {
         throw refused("liberar");
     }
 
-    /** A retirada do objeto foi registrada. */
     default LossReportStatus complete() {
         throw refused("concluir");
     }
@@ -88,12 +83,10 @@ public sealed interface LossReportStatus {
         throw refused("vencer");
     }
 
-    /** O estudante cancela o registro ("já achei"). */
     default LossReportStatus cancel() {
         throw refused("cancelar");
     }
 
-    /** Se a situação encerra o ciclo de vida do registro. */
     default boolean isFinal() {
         return switch (this) {
             case Completed _, Expired _, Cancelled _ -> true;
@@ -112,7 +105,6 @@ public sealed interface LossReportStatus {
         };
     }
 
-    /** Código gravado no banco; nunca muda, mesmo que o nome em português mude. */
     default String code() {
         return switch (this) {
             case Open _ -> "OPEN";
@@ -124,7 +116,6 @@ public sealed interface LossReportStatus {
         };
     }
 
-    /** Nome da situação para o usuário, como nos requisitos. */
     default String label() {
         return switch (this) {
             case Open _ -> "Aberto";

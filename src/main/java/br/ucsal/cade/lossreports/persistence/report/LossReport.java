@@ -4,7 +4,6 @@ import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
-import br.ucsal.cade.shared.exception.BadRequestException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -24,7 +23,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -44,8 +42,6 @@ public class LossReport {
 
     /** Validade do registro (RN14); a renovação (PER-06) empurra o vencimento. */
     public static final Duration VALIDITY = Duration.ofDays(30);
-
-    static final String TOO_MANY_LOCATIONS_MESSAGE = "Informe no máximo " + MAX_LOCATIONS + " locais.";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -89,27 +85,21 @@ public class LossReport {
     }
 
     private LossReport(NewLossReport data, UUID studentId, Instant registeredAt) {
-        List<LossLocation> distinctLocations = data.locations().stream().distinct().toList();
-        if (distinctLocations.size() > MAX_LOCATIONS) {
-            throw new BadRequestException(TOO_MANY_LOCATIONS_MESSAGE);
-        }
-        this.studentId = Objects.requireNonNull(studentId);
+        this.studentId = studentId;
         this.category = data.category();
         this.description = data.description().strip();
         this.secretDetail = data.secretDetail() == null || data.secretDetail().isBlank()
                 ? null : data.secretDetail().strip();
-        this.locations = new ArrayList<>(distinctLocations);
+        this.locations = new ArrayList<>(data.locations().stream().distinct().toList());
         this.period = data.period();
         this.status = LossReportStatus.initial();
-        this.registeredAt = Objects.requireNonNull(registeredAt);
+        this.registeredAt = registeredAt;
         this.expiresAt = registeredAt.plus(VALIDITY);
     }
 
     /**
      * Registra a perda na situação Aberto (seção 6.2), com vencimento em 30 dias (RN14). Locais repetidos contam uma
      * vez só. O limite de 5 registros abertos (RN05) depende dos outros registros do estudante e fica no service.
-     *
-     * @throws BadRequestException se há mais de {@value #MAX_LOCATIONS} locais diferentes
      */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt) {
         return new LossReport(data, studentId, registeredAt);

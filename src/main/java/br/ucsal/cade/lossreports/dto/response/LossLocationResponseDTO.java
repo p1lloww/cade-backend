@@ -1,4 +1,4 @@
-package br.ucsal.cade.lossreports.controller.report.dto;
+package br.ucsal.cade.lossreports.dto.response;
 
 import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import io.swagger.v3.oas.annotations.media.Schema;

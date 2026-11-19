@@ -6,7 +6,6 @@ import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.RiskLevel;
-import br.ucsal.cade.shared.exception.BadRequestException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -57,7 +56,6 @@ class LossReportTest {
 
     @Test
     void aReportWithoutLocationHasAnEmptyList() {
-        assertThat(register(null).getLocations()).isEmpty();
         assertThat(register(List.of()).getLocations()).isEmpty();
     }
 
@@ -68,14 +66,6 @@ class LossReportTest {
 
         assertThat(report.getLocations()).containsExactly(
                 new LossLocation("Bloco 400", "Sala 421"), new LossLocation("Bloco 400", null));
-    }
-
-    @Test
-    void acceptsUpToFiveDifferentLocationsAndRefusesMore() {
-        assertThat(register(rooms(5)).getLocations()).hasSize(5);
-        assertThatThrownBy(() -> register(rooms(6)))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage(LossReport.TOO_MANY_LOCATIONS_MESSAGE);
     }
 
     @Test

@@ -71,7 +71,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 ## Convenções
 
 - **Idioma (D11):** código em inglês (classes, métodos, pacotes, rotas); mensagens ao usuário, Javadoc e documentação em português. Termo novo entra no `GLOSSARIO.md` no mesmo PR.
-- **DTOs (D22):** o que entra ou sai pela API fica em `controller/.../dto` e termina em `RequestDTO` ou `ResponseDTO`. A validação de entrada fica nas anotações do Bean Validation do `RequestDTO`, e o controller o recebe com `@Valid`.
+- **DTOs (D22):** o que entra ou sai pela API termina em `RequestDTO` ou `ResponseDTO` e fica em `<módulo>/dto/request` ou `<módulo>/dto/response`. O controller recebe o `RequestDTO` com `@Valid` e o passa direto ao service, que devolve o `ResponseDTO`, sem objeto intermediário com os mesmos campos. Formato e campos obrigatórios são validados só pelas anotações do `RequestDTO`.
 - **Padrões de POOA** (State, Strategy, Composite, Observer, Streams, Virtual Threads, anotações e reflexão, SOLID) valem bônus quando aparecem de forma justificada. Use-os onde o problema pede, nunca de forma artificial. Toda PR que usar um deles acrescenta a linha em `docs/entrega/pooa-no-projeto.md`, começando pelo problema que resolve.
 - **Testes:** cobrir transições de estado, a nota do cruzamento, as regras por risco e os prazos (RNF13). Testes de integração usam o `TestcontainersConfiguration`; prazos usam o `Clock` de `shared.time`.
 - **Sem dados reais:** nada de dados pessoais, credenciais ou segredos no código, nos testes ou nos commits.

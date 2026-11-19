@@ -1,4 +1,4 @@
-package br.ucsal.cade.lossreports.controller.report.dto;
+package br.ucsal.cade.lossreports.dto.request;
 
 import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,8 +17,4 @@ public record LossLocationRequestDTO(
                 example = "Sala 421", maxLength = LossLocation.MAX_LENGTH)
         @Size(max = LossLocation.MAX_LENGTH, message = "A sala pode ter no máximo 30 caracteres.")
         String room) {
-
-    public LossLocation toLocation() {
-        return LossLocation.of(block, room);
-    }
 }

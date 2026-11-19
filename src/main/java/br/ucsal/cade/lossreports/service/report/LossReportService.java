@@ -1,6 +1,10 @@
 package br.ucsal.cade.lossreports.service.report;
 
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
+import br.ucsal.cade.lossreports.dto.request.LossLocationRequestDTO;
+import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
+import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
+import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;
@@ -23,6 +27,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /** Registro de perdas pelo estudante (RF13, RF14). */
@@ -53,7 +58,9 @@ public class LossReportService {
     }
 
     /**
-     * Registra a perda, grava o histórico e avisa que ela foi registrada, tudo na mesma transação (RF43, D10).
+     * Registra a perda, grava o histórico e avisa que ela foi registrada, tudo na mesma transação (RF43, D10). O
+     * pedido chega já validado pelo {@code @Valid} (campos obrigatórios, tamanhos, até 5 locais); aqui ficam só as
+     * regras que dependem do banco, do relógio ou dos outros registros.
      *
      * <p>O limite de registros em andamento (RN05) é conferido com o estudante travado pelo lock otimista: se outro
      * registro dele for gravado entre a contagem e o commit, este falha com
@@ -64,13 +71,14 @@ public class LossReportService {
      *
      * @param studentId id da conta do estudante (claim {@code sub} do token)
      * @throws UnknownCategoryException      se a categoria não existe
-     * @throws BadRequestException           se os dados violam uma regra do registro (período, locais)
+     * @throws BadRequestException           se a data é futura ou o período é inválido
      * @throws TooManyActiveReportsException se o estudante já tem {@value #MAX_ACTIVE_REPORTS} registros em andamento
      */
     @Transactional
-    public LossReport register(RegisterLossReport request, UUID studentId) {
+    public LossReportResponseDTO register(LossReportRequestDTO request, UUID studentId) {
+        List<LossLocation> locations = locationsOf(request);
         log.debug("Registering loss report: student={}, category={}, locations={}", studentId,
-                request.categoryId(), request.locations().size());
+                request.categoryId(), locations.size());
         Category category = categories.findById(request.categoryId()).orElseThrow(() -> {
             log.info("Loss report refused: unknown category {} (student={})", request.categoryId(), studentId);
             return new UnknownCategoryException(request.categoryId());
@@ -80,8 +88,8 @@ public class LossReportService {
 
         long active = requireRoomForAnotherReport(studentId);
 
-        NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(),
-                request.locations(), period);
+        NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(), locations,
+                period);
         LossReport report = reports.save(LossReport.register(data, studentId, clock.instant()));
 
         events.publishEvent(new AuditEvent(studentId, REGISTERED_ACTION, LossReport.class.getSimpleName(),
@@ -89,7 +97,12 @@ public class LossReportService {
         events.publishEvent(new LossReportRegisteredEvent(report.getId(), category.getId(), period.lostFrom(),
                 period.lostUntil()));
         logOutcomeAfterCommit(report.getId(), studentId, active + 1);
-        return report;
+        return LossReportResponseDTO.from(report);
+    }
+
+    private static List<LossLocation> locationsOf(LossReportRequestDTO request) {
+        List<LossLocationRequestDTO> locations = request.locations() == null ? List.of() : request.locations();
+        return locations.stream().map(location -> LossLocation.of(location.block(), location.room())).toList();
     }
 
     /**

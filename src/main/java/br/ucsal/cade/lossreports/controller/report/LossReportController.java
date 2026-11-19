@@ -1,8 +1,7 @@
 package br.ucsal.cade.lossreports.controller.report;
 
-import br.ucsal.cade.lossreports.controller.report.dto.LossReportRequestDTO;
-import br.ucsal.cade.lossreports.controller.report.dto.LossReportResponseDTO;
-import br.ucsal.cade.lossreports.persistence.report.LossReport;
+import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
+import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
 import br.ucsal.cade.lossreports.service.report.LossReportService;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
@@ -33,8 +32,7 @@ class LossReportController implements LossReportApi {
     @PostMapping
     public ResponseEntity<LossReportResponseDTO> register(@Valid @RequestBody LossReportRequestDTO request,
                                                           @AuthenticationPrincipal Jwt token) {
-        LossReport report = service.register(request.toRegisterLossReport(), UUID.fromString(token.getSubject()));
-        return ResponseEntity.created(URI.create("/loss-reports/" + report.getId()))
-                .body(LossReportResponseDTO.from(report));
+        LossReportResponseDTO report = service.register(request, UUID.fromString(token.getSubject()));
+        return ResponseEntity.created(URI.create("/loss-reports/" + report.id())).body(report);
     }
 }

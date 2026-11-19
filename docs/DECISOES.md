@@ -194,6 +194,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - Os DTOs existentes foram renomeados no PER-01 (`FoundItemForm` → `FoundItemRequestDTO`, `TokenResponse` → `TokenResponseDTO` etc.).
   - Os nomes dos schemas no Swagger mudam junto (`TokenRequestDTO`...). Quem gera tipos no front a partir do OpenAPI precisa gerar de novo.
   - Os pedidos internos do service (`RegisterFoundItem`, `RegisterLossReport`) não são DTOs da API e não levam o sufixo.
+- **Complemento (19/11/2026), o service recebe e devolve os DTOs:** um pedido do service com os mesmos campos do `RequestDTO` é só uma cópia, então o service recebe o `RequestDTO` e devolve o `ResponseDTO`. Para isso os DTOs saem do `controller` (o service não conhece o controller, regra do `ModuleBoundariesTest`) e ficam em `<módulo>/dto/request` e `<módulo>/dto/response`. A validação de formato e de obrigatoriedade acontece uma vez, no `@Valid`; entidade e service conferem só o que depende do banco, do relógio ou de outros registros. Aplicado primeiro em `lossreports` (PER-01), com a remoção do `RegisterLossReport`.
 - **Situação:** fechada.
 
 ---
@@ -209,3 +210,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.
 - **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).
 - **19/11/2026 — D22 registrada:** DTOs da API com sufixo `RequestDTO` e `ResponseDTO`, validados com `@Valid`, na implementação do PER-01.
+- **19/11/2026 — Complemento na D22:** o service recebe o `RequestDTO` e devolve o `ResponseDTO`; DTOs em `<módulo>/dto/request` e `<módulo>/dto/response`.

@@ -1,6 +1,5 @@
 package br.ucsal.cade.lossreports.persistence.location;
 
-import br.ucsal.cade.shared.exception.BadRequestException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
@@ -10,7 +9,7 @@ import jakarta.persistence.Embeddable;
  * <p>A sala desconhecida fica nula, nunca com um texto como "Não informado": o cruzamento compara salas, e duas salas
  * "Não informado" contariam como a mesma sala (RN07). O texto para o usuário é montado na resposta da API.
  *
- * <p>Crie sempre por {@link #of}, que aplica as regras; o construtor do record existe para o Hibernate.
+ * <p>Crie sempre por {@link #of}, que normaliza os textos; o construtor do record existe para o Hibernate.
  *
  * @param room sala; nula quando o estudante lembra só do bloco
  */
@@ -25,13 +24,8 @@ public record LossLocation(
 
     public static final int MAX_LENGTH = 30;
 
-    static final String BLANK_BLOCK_MESSAGE = "Informe o bloco de cada local.";
-
-    /** @throws BadRequestException se o bloco está em branco */
+    /** Tira os espaços das pontas; sala em branco vira nula. O bloco chega validado pelo {@code @NotBlank}. */
     public static LossLocation of(String block, String room) {
-        if (block == null || block.isBlank()) {
-            throw new BadRequestException(BLANK_BLOCK_MESSAGE);
-        }
         return new LossLocation(block.strip(), room == null || room.isBlank() ? null : room.strip());
     }
 }

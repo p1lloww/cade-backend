@@ -1,8 +1,7 @@
-package br.ucsal.cade.lossreports.controller.report.dto;
+package br.ucsal.cade.lossreports.dto.request;
 
 import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
-import br.ucsal.cade.lossreports.service.report.RegisterLossReport;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -51,10 +50,4 @@ public record LossReportRequestDTO(
 
         @Schema(description = "Turno. Vazio quando não lembra.")
         Shift shift) {
-
-    public RegisterLossReport toRegisterLossReport() {
-        List<LossLocationRequestDTO> places = locations == null ? List.of() : locations;
-        return new RegisterLossReport(categoryId, description, secretDetail,
-                places.stream().map(LossLocationRequestDTO::toLocation).toList(), lostFrom, lostUntil, shift);
-    }
 }

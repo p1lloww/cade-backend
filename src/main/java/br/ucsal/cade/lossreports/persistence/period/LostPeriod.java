@@ -8,7 +8,6 @@ import jakarta.persistence.Enumerated;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Objects;
 
 /**
  * Quando o estudante acha que perdeu o objeto: uma data ou um período, e o turno se ele lembrar (RF13). Uma data só é
@@ -44,7 +43,6 @@ public record LostPeriod(
      * @throws BadRequestException se alguma data é futura, o período está invertido ou passa de {@value #MAX_DAYS} dias
      */
     public static LostPeriod of(LocalDate lostFrom, LocalDate lostUntil, Shift shift, LocalDate today) {
-        Objects.requireNonNull(lostFrom);
         LocalDate until = lostUntil == null ? lostFrom : lostUntil;
         if (until.isAfter(today)) {
             throw new BadRequestException(FUTURE_MESSAGE);

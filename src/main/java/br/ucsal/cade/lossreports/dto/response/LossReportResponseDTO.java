@@ -1,4 +1,4 @@
-package br.ucsal.cade.lossreports.controller.report.dto;
+package br.ucsal.cade.lossreports.dto.response;
 
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.period.Shift;

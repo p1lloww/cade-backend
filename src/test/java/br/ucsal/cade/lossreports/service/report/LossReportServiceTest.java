@@ -2,7 +2,9 @@ package br.ucsal.cade.lossreports.service.report;
 
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
-import br.ucsal.cade.lossreports.persistence.location.LossLocation;
+import br.ucsal.cade.lossreports.dto.request.LossLocationRequestDTO;
+import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
+import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
 import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;
@@ -76,27 +78,30 @@ class LossReportServiceTest {
     @Test
     void registersAnOpenReportWithHistoryAndEvent() {
         LocalDate yesterday = today().minusDays(1);
-        RegisterLossReport request = new RegisterLossReport(category.getId(), "Fone JBL preto", "Adesivo de estrela",
-                List.of(LossLocation.of("Bloco 400", "Sala 421")), yesterday, null, Shift.EVENING);
+        LossReportRequestDTO request = new LossReportRequestDTO(category.getId(), "Fone JBL preto",
+                "Adesivo de estrela", List.of(new LossLocationRequestDTO("Bloco 400", " Sala 421 ")), yesterday, null,
+                Shift.EVENING);
 
-        LossReport report = service.register(request, student);
+        LossReportResponseDTO response = service.register(request, student);
 
-        LossReport saved = reports.findById(report.getId()).orElseThrow();
+        assertThat(response.statusLabel()).isEqualTo("Aberto");
+        assertThat(response.locationsLabel()).isEqualTo("Bloco 400, Sala 421");
+        LossReport saved = reports.findById(response.id()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(LossReportStatus.OPEN);
         assertThat(saved.getStudentId()).isEqualTo(student);
         assertThat(saved.getRegisteredAt()).isEqualTo(clock.instant());
         assertThat(events.stream(AuditEvent.class)).containsExactly(new AuditEvent(student,
-                LossReportService.REGISTERED_ACTION, "LossReport", report.getId(),
+                LossReportService.REGISTERED_ACTION, "LossReport", response.id(),
                 LossReportService.REGISTERED_REASON));
         assertThat(events.stream(LossReportRegisteredEvent.class)).containsExactly(
-                new LossReportRegisteredEvent(report.getId(), category.getId(), yesterday, yesterday));
+                new LossReportRegisteredEvent(response.id(), category.getId(), yesterday, yesterday));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_records WHERE entity_id = ?", Long.class,
-                report.getId())).isOne();
+                response.id())).isOne();
     }
 
     @Test
     void refusesAnUnknownCategoryWithoutSavingAnything() {
-        RegisterLossReport request = new RegisterLossReport(UUID.randomUUID(), "Fone", null, List.of(), today(),
+        LossReportRequestDTO request = new LossReportRequestDTO(UUID.randomUUID(), "Fone", null, List.of(), today(),
                 null, null);
 
         assertThatThrownBy(() -> service.register(request, student))
@@ -183,8 +188,8 @@ class LossReportServiceTest {
     }
 
     private UUID register() {
-        return service.register(new RegisterLossReport(category.getId(), "Garrafa azul", null, List.of(), today(),
-                null, null), student).getId();
+        return service.register(new LossReportRequestDTO(category.getId(), "Garrafa azul", null, null, today(),
+                null, null), student).id();
     }
 
     private long activeReports() {

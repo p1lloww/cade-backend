@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -50,7 +49,7 @@ class LossReporterRepositoryTest {
         otherTransaction = new TransactionTemplate(transactionManager);
         otherTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         student = UUID.randomUUID();
-        reporters.save(new LossReporter(student));
+        transaction.executeWithoutResult(_ -> reporters.createIfAbsent(student));
     }
 
     @Test
@@ -84,11 +83,15 @@ class LossReporterRepositoryTest {
     }
 
     @Test
-    void aSecondRowForTheSameStudentIsRefused() {
-        assertThatThrownBy(() -> transaction.executeWithoutResult(_ -> {
-            reporters.save(new LossReporter(student));
-            reporters.flush();
-        })).isInstanceOf(DataIntegrityViolationException.class);
+    void creatingAnExistingRowChangesNothing() {
+        transaction.executeWithoutResult(_ -> reporters.findLockedByStudentId(student).orElseThrow());
+        long before = version();
+
+        transaction.executeWithoutResult(_ -> reporters.createIfAbsent(student));
+
+        assertThat(version()).isEqualTo(before);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM loss_reporters WHERE student_id = ?", Long.class,
+                student)).isOne();
     }
 
     private long version() {

@@ -5,7 +5,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -15,6 +14,8 @@ import java.util.UUID;
  *
  * <p>Não guarda contador: a contagem vem dos próprios registros, então não há o que dessincronizar quando um registro
  * é cancelado ou vence.
+ *
+ * <p>Não tem construtor público: a linha só nasce pelo {@link LossReporterRepository#createIfAbsent}.
  */
 @Entity
 @Table(name = "loss_reporters")
@@ -24,13 +25,9 @@ public class LossReporter {
     private UUID studentId;
 
     @Version
-    private Long version;
+    private long version;
 
     protected LossReporter() {
-    }
-
-    public LossReporter(UUID studentId) {
-        this.studentId = Objects.requireNonNull(studentId);
     }
 
     public UUID getStudentId() {

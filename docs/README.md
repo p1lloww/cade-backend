@@ -25,6 +25,7 @@ eles.
 | [problema-validacao.md](entrega/problema-validacao.md) | A e B: problema e validação |
 | [definicao-mvp.md](entrega/definicao-mvp.md) | C: definição do MVP |
 | [declaracao-ia-terceiros.md](entrega/declaracao-ia-terceiros.md) | E: uso de IA e componentes de terceiros |
+| [pooa-no-projeto.md](entrega/pooa-no-projeto.md) | Bônus de POOA: onde cada conteúdo da disciplina aparece no código e qual problema resolve |
 
 ## `imagens/`
 

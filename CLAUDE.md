@@ -70,7 +70,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 ## Convenções
 
 - **Idioma (D11):** código em inglês (classes, métodos, pacotes, rotas); mensagens ao usuário, Javadoc e documentação em português. Termo novo entra no `GLOSSARIO.md` no mesmo PR.
-- **Padrões de POOA** (State, Strategy, Composite, Observer, Streams, Virtual Threads, anotações e reflexão, SOLID) valem bônus quando aparecem de forma justificada. Use-os onde o problema pede, nunca de forma artificial.
+- **Padrões de POOA** (State, Strategy, Composite, Observer, Streams, Virtual Threads, anotações e reflexão, SOLID) valem bônus quando aparecem de forma justificada. Use-os onde o problema pede, nunca de forma artificial. Toda PR que usar um deles acrescenta a linha em `docs/entrega/pooa-no-projeto.md`, começando pelo problema que resolve.
 - **Testes:** cobrir transições de estado, a nota do cruzamento, as regras por risco e os prazos (RNF13). Testes de integração usam o `TestcontainersConfiguration`; prazos usam o `Clock` de `shared.time`.
 - **Sem dados reais:** nada de dados pessoais, credenciais ou segredos no código, nos testes ou nos commits.
 

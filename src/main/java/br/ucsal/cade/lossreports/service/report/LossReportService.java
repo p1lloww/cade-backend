@@ -10,11 +10,15 @@ import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
+import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.exception.BadRequestException;
-import br.ucsal.cade.shared.exception.ConflictException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -24,14 +28,13 @@ import java.util.UUID;
 @Service
 public class LossReportService {
 
+    private static final Logger log = LoggerFactory.getLogger(LossReportService.class);
+
     /** RN05: dificulta "pescar" objetos com vários registros genéricos. */
     public static final int MAX_ACTIVE_REPORTS = 5;
 
     static final String REGISTERED_ACTION = "LOSS_REPORT_REGISTERED";
     static final String REGISTERED_REASON = "Perda registrada pelo estudante.";
-    static final String UNKNOWN_CATEGORY_MESSAGE = "Categoria não encontrada.";
-    static final String LIMIT_MESSAGE = "Você já tem " + MAX_ACTIVE_REPORTS + " registros em andamento. Cancele um "
-            + "que não precisa mais, ou espere um deles ser resolvido, para registrar outra perda.";
 
     private final LossReportRepository reports;
     private final LossReporterRepository reporters;
@@ -56,18 +59,25 @@ public class LossReportService {
      * {@link org.springframework.orm.ObjectOptimisticLockingFailureException} e é desfeito inteiro. O fluxo está em
      * {@code docs/tecnico/limite-registros-abertos.md}.
      *
+     * <p>Os logs nunca levam a descrição nem o detalhe secreto (RF14), só ids e contagens.
+     *
      * @param studentId id da conta do estudante (claim {@code sub} do token)
-     * @throws BadRequestException se a categoria não existe ou os dados violam uma regra do registro
-     * @throws ConflictException   se o estudante já tem {@value #MAX_ACTIVE_REPORTS} registros em andamento
+     * @throws UnknownCategoryException      se a categoria não existe
+     * @throws BadRequestException           se os dados violam uma regra do registro (período, locais)
+     * @throws TooManyActiveReportsException se o estudante já tem {@value #MAX_ACTIVE_REPORTS} registros em andamento
      */
     @Transactional
     public LossReport register(RegisterLossReport request, UUID studentId) {
-        Category category = categories.findById(request.categoryId())
-                .orElseThrow(() -> new BadRequestException(UNKNOWN_CATEGORY_MESSAGE));
+        log.debug("Registering loss report: student={}, category={}, locations={}", studentId,
+                request.categoryId(), request.locations().size());
+        Category category = categories.findById(request.categoryId()).orElseThrow(() -> {
+            log.info("Loss report refused: unknown category {} (student={})", request.categoryId(), studentId);
+            return new UnknownCategoryException(request.categoryId());
+        });
         LostPeriod period = LostPeriod.of(request.lostFrom(), request.lostUntil(), request.shift(),
                 LocalDate.now(clock));
 
-        requireRoomForAnotherReport(studentId);
+        long active = requireRoomForAnotherReport(studentId);
 
         NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(),
                 request.locations(), period);
@@ -77,15 +87,43 @@ public class LossReportService {
                 report.getId(), REGISTERED_REASON));
         events.publishEvent(new LossReportRegisteredEvent(report.getId(), category.getId(), period.lostFrom(),
                 period.lostUntil()));
+        logOutcomeAfterCommit(report.getId(), studentId, active + 1);
         return report;
     }
 
-    /** Trava o estudante (lock otimista) antes de contar, para a contagem valer até o commit (RN05). */
-    private void requireRoomForAnotherReport(UUID studentId) {
+    /**
+     * Trava o estudante (lock otimista) antes de contar, para a contagem valer até o commit (RN05).
+     *
+     * @return quantos registros em andamento o estudante já tem
+     */
+    private long requireRoomForAnotherReport(UUID studentId) {
         reporters.createIfAbsent(studentId);
         reporters.findLockedByStudentId(studentId).orElseThrow();
-        if (reports.countByStudentIdAndStatusIn(studentId, LossReportStatus.ACTIVE) >= MAX_ACTIVE_REPORTS) {
-            throw new ConflictException(LIMIT_MESSAGE);
+        long active = reports.countByStudentIdAndStatusIn(studentId, LossReportStatus.ACTIVE);
+        if (active >= MAX_ACTIVE_REPORTS) {
+            log.info("Loss report refused: student {} already has {} active reports (limit {})", studentId, active,
+                    MAX_ACTIVE_REPORTS);
+            throw new TooManyActiveReportsException(MAX_ACTIVE_REPORTS);
         }
+        return active;
+    }
+
+    /**
+     * O resultado só é conhecido no fim da transação: um registro que passou por todas as regras ainda pode ser
+     * desfeito no commit pelo lock otimista (outro registro simultâneo do mesmo estudante).
+     */
+    private void logOutcomeAfterCommit(UUID reportId, UUID studentId, long activeAfter) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_COMMITTED) {
+                    log.info("Loss report {} registered: student={}, active={}/{}", reportId, studentId,
+                            activeAfter, MAX_ACTIVE_REPORTS);
+                } else {
+                    log.warn("Loss report {} rolled back at commit: student={} (probably a simultaneous registration)",
+                            reportId, studentId);
+                }
+            }
+        });
     }
 }

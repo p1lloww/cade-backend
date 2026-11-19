@@ -10,6 +10,7 @@ import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
+import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.ConflictException;
 import br.ucsal.cade.shared.time.MutableClock;
@@ -98,8 +99,8 @@ class LossReportServiceTest {
                 null, null);
 
         assertThatThrownBy(() -> service.register(request, student))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage(LossReportService.UNKNOWN_CATEGORY_MESSAGE);
+                .isInstanceOf(UnknownCategoryException.class)
+                .isInstanceOf(BadRequestException.class);
         assertThat(activeReports()).isZero();
         assertThat(events.stream(LossReportRegisteredEvent.class)).isEmpty();
     }
@@ -109,8 +110,9 @@ class LossReportServiceTest {
         IntStream.range(0, LossReportService.MAX_ACTIVE_REPORTS).forEach(_ -> register());
 
         assertThatThrownBy(this::register)
+                .isInstanceOf(TooManyActiveReportsException.class)
                 .isInstanceOf(ConflictException.class)
-                .hasMessage(LossReportService.LIMIT_MESSAGE);
+                .hasMessageStartingWith("Você já tem 5 registros em andamento.");
         assertThat(activeReports()).isEqualTo(LossReportService.MAX_ACTIVE_REPORTS);
     }
 

@@ -1,8 +1,8 @@
 package br.ucsal.cade.access.controller.auth;
 
-import br.ucsal.cade.access.controller.auth.dto.LoginCodeRequest;
-import br.ucsal.cade.access.controller.auth.dto.TokenRequest;
-import br.ucsal.cade.access.controller.auth.dto.TokenResponse;
+import br.ucsal.cade.access.controller.auth.dto.LoginCodeRequestDTO;
+import br.ucsal.cade.access.controller.auth.dto.TokenRequestDTO;
+import br.ucsal.cade.access.controller.auth.dto.TokenResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -78,7 +78,7 @@ public interface AuthApi {
                                       "detail": "Muitas tentativas com código errado. Aguarde alguns minutos para pedir um novo código.",
                                       "instance": "/auth/login-code"
                                     }""")}))
-    ResponseEntity<Void> requestLoginCode(LoginCodeRequest request);
+    ResponseEntity<Void> requestLoginCode(LoginCodeRequestDTO request);
 
     @Operation(
             summary = "Trocar o código por um token de acesso",
@@ -89,7 +89,7 @@ public interface AuthApi {
                     Cada código permite 5 tentativas; depois disso, é preciso pedir um novo. Um código errado, \
                     vencido, já usado ou travado recebe a mesma resposta, para não ser possível diferenciá-los.""")
     @ApiResponse(responseCode = "200", description = "Código aceito.",
-            content = @Content(schema = @Schema(implementation = TokenResponse.class)))
+            content = @Content(schema = @Schema(implementation = TokenResponseDTO.class)))
     @ApiResponse(responseCode = "400",
             description = "Campos inválidos, ou o código está errado, vencido, já usado ou travado.",
             content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -112,5 +112,5 @@ public interface AuthApi {
                                       "instance": "/auth/token",
                                       "errors": { "code": "O código tem 6 dígitos." }
                                     }""")}))
-    TokenResponse issueToken(TokenRequest request);
+    TokenResponseDTO issueToken(TokenRequestDTO request);
 }

@@ -1,11 +1,13 @@
-package br.ucsal.cade.shared.category;
+package br.ucsal.cade.shared.category.dto;
 
+import br.ucsal.cade.shared.category.Category;
+import br.ucsal.cade.shared.category.RiskLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
 
 @Schema(description = "Categoria de objeto, com o risco padrão que define o que é conferido no balcão.")
-public record CategoryResponse(
+public record CategoryResponseDTO(
 
         @Schema(description = "Id da categoria, usado nos cadastros.")
         UUID id,
@@ -19,8 +21,8 @@ public record CategoryResponse(
         @Schema(description = "Nome do risco para mostrar ao usuário.", example = "Médio")
         String defaultRiskLabel) {
 
-    public static CategoryResponse from(Category category) {
-        return new CategoryResponse(category.getId(), category.getName(), category.getDefaultRisk(),
+    public static CategoryResponseDTO from(Category category) {
+        return new CategoryResponseDTO(category.getId(), category.getName(), category.getDefaultRisk(),
                 category.getDefaultRisk().label());
     }
 }

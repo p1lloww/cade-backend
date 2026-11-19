@@ -4,7 +4,7 @@ import br.ucsal.cade.access.service.token.AccessToken;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Token de acesso a enviar como `Authorization: Bearer <accessToken>` nas rotas protegidas.")
-public record TokenResponse(
+public record TokenResponseDTO(
 
         @Schema(description = "JWT assinado com o id da conta (`sub`), o e-mail e o perfil.")
         String accessToken,
@@ -17,12 +17,12 @@ public record TokenResponse(
 
     private static final String BEARER = "Bearer";
 
-    public static TokenResponse from(AccessToken token) {
-        return new TokenResponse(token.value(), BEARER, token.expiresIn().toSeconds());
+    public static TokenResponseDTO from(AccessToken token) {
+        return new TokenResponseDTO(token.value(), BEARER, token.expiresIn().toSeconds());
     }
 
     @Override
     public String toString() {
-        return "TokenResponse[accessToken=******, tokenType=" + tokenType + ", expiresIn=" + expiresIn + "]";
+        return "TokenResponseDTO[accessToken=******, tokenType=" + tokenType + ", expiresIn=" + expiresIn + "]";
     }
 }

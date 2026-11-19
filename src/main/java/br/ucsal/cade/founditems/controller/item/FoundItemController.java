@@ -1,8 +1,8 @@
 package br.ucsal.cade.founditems.controller.item;
 
-import br.ucsal.cade.founditems.controller.item.dto.FoundItemForm;
-import br.ucsal.cade.founditems.controller.item.dto.FoundItemResponse;
-import br.ucsal.cade.founditems.controller.item.dto.StorageBoxSuggestion;
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemRequestDTO;
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemResponseDTO;
+import br.ucsal.cade.founditems.controller.item.dto.StorageBoxSuggestionResponseDTO;
 import br.ucsal.cade.founditems.persistence.item.FoundItem;
 import br.ucsal.cade.founditems.persistence.item.StorageBox;
 import br.ucsal.cade.founditems.service.item.FoundItemService;
@@ -44,19 +44,19 @@ class FoundItemController implements FoundItemApi {
 
     @Override
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<FoundItemResponse> register(@Valid @ModelAttribute FoundItemForm form,
+    public ResponseEntity<FoundItemResponseDTO> register(@Valid @ModelAttribute FoundItemRequestDTO form,
                                                       @AuthenticationPrincipal Jwt token) {
         RegisterFoundItem request = new RegisterFoundItem(bytesOf(form), form.categoryId(), form.block(),
                 form.room(), form.foundOn(), form.storageBox(), form.risk(), form.internalDescription(),
                 form.reservedDetails());
         FoundItem item = service.register(request, UUID.fromString(token.getSubject()));
-        return ResponseEntity.created(URI.create("/found-items/" + item.getId())).body(FoundItemResponse.from(item));
+        return ResponseEntity.created(URI.create("/found-items/" + item.getId())).body(FoundItemResponseDTO.from(item));
     }
 
     @Override
     @GetMapping("/{id}")
-    public FoundItemResponse find(@PathVariable UUID id) {
-        return FoundItemResponse.from(service.find(id));
+    public FoundItemResponseDTO find(@PathVariable UUID id) {
+        return FoundItemResponseDTO.from(service.find(id));
     }
 
     @Override
@@ -71,12 +71,12 @@ class FoundItemController implements FoundItemApi {
 
     @Override
     @GetMapping("/storage-box-suggestion")
-    public StorageBoxSuggestion suggestStorageBox(
+    public StorageBoxSuggestionResponseDTO suggestStorageBox(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return new StorageBoxSuggestion(StorageBox.suggestedFor(date));
+        return new StorageBoxSuggestionResponseDTO(StorageBox.suggestedFor(date));
     }
 
-    private static byte[] bytesOf(FoundItemForm form) {
+    private static byte[] bytesOf(FoundItemRequestDTO form) {
         try {
             return form.photo().getBytes();
         } catch (IOException exception) {

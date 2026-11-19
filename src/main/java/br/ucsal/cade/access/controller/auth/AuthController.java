@@ -1,8 +1,8 @@
 package br.ucsal.cade.access.controller.auth;
 
-import br.ucsal.cade.access.controller.auth.dto.LoginCodeRequest;
-import br.ucsal.cade.access.controller.auth.dto.TokenRequest;
-import br.ucsal.cade.access.controller.auth.dto.TokenResponse;
+import br.ucsal.cade.access.controller.auth.dto.LoginCodeRequestDTO;
+import br.ucsal.cade.access.controller.auth.dto.TokenRequestDTO;
+import br.ucsal.cade.access.controller.auth.dto.TokenResponseDTO;
 import br.ucsal.cade.access.persistence.user.User;
 import br.ucsal.cade.access.service.login.LoginService;
 import br.ucsal.cade.access.service.token.AccessTokenIssuer;
@@ -28,15 +28,15 @@ class AuthController implements AuthApi {
 
     @Override
     @PostMapping(path = "/login-code", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> requestLoginCode(@Valid @RequestBody LoginCodeRequest request) {
+    public ResponseEntity<Void> requestLoginCode(@Valid @RequestBody LoginCodeRequestDTO request) {
         loginService.requestCode(request.email());
         return ResponseEntity.accepted().build();
     }
 
     @Override
     @PostMapping(path = "/token", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public TokenResponse issueToken(@Valid @RequestBody TokenRequest request) {
+    public TokenResponseDTO issueToken(@Valid @RequestBody TokenRequestDTO request) {
         User user = loginService.exchangeCode(request.email(), request.code());
-        return TokenResponse.from(tokenIssuer.issue(user));
+        return TokenResponseDTO.from(tokenIssuer.issue(user));
     }
 }

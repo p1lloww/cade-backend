@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "Pedido de envio de um código de login ao e-mail institucional.")
-public record LoginCodeRequest(
+public record LoginCodeRequestDTO(
 
         @Schema(description = "E-mail institucional (@ucsal.edu.br). Maiúsculas e espaços nas pontas são ignorados.",
                 example = "estudante@ucsal.edu.br", maxLength = 254)
@@ -15,7 +15,7 @@ public record LoginCodeRequest(
         @Size(max = 254, message = "O e-mail é longo demais.")
         String email) {
 
-    public LoginCodeRequest {
+    public LoginCodeRequestDTO {
         email = email == null ? null : email.strip();
     }
 }

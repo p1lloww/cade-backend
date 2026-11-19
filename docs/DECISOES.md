@@ -186,6 +186,16 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   **Motivo:** a RN04 existe para que um objeto nunca tenha conferência mais fraca do que a categoria exige, e isso continua garantido. Proibir qualquer redução deixaria um erro de digitação sem correção no dia a dia da sala; o histórico com motivo e o bloqueio durante a convocação cobrem o risco de alguém reduzir de má-fé. A edição fica no ACH-07.
 - **Situação:** fechada.
 
+## D22 — DTOs com sufixo `RequestDTO` e `ResponseDTO`, validados com `@Valid`
+
+- **Decisão (19/11/2026):** toda classe que entra ou sai pela API (o que fica em `controller/.../dto`) termina em `RequestDTO`, se é o corpo ou o formulário recebido, ou em `ResponseDTO`, se é o que a API devolve. A validação de entrada fica nas anotações do Bean Validation (`@NotNull`, `@NotBlank`, `@Size`...) do próprio `RequestDTO`, com a mensagem em português, e o controller recebe o DTO com `@Valid`; listas de objetos aninhados levam `@Valid` no elemento. Regra que depende de outros registros ou do relógio continua na entidade ou no service.
+- **Motivo:** o nome mostra de cara o que é contrato da API e o que é modelo interno (entidade, pedido do service), e se é entrada ou saída. A validação declarada no DTO devolve todos os campos inválidos de uma vez (400 com a lista, D17), antes de chegar ao service.
+- **Consequências:**
+  - Os DTOs existentes foram renomeados no PER-01 (`FoundItemForm` → `FoundItemRequestDTO`, `TokenResponse` → `TokenResponseDTO` etc.).
+  - Os nomes dos schemas no Swagger mudam junto (`TokenRequestDTO`...). Quem gera tipos no front a partir do OpenAPI precisa gerar de novo.
+  - Os pedidos internos do service (`RegisterFoundItem`, `RegisterLossReport`) não são DTOs da API e não levam o sufixo.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -198,3 +208,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — Complemento na D10:** histórico gravado por evento síncrono na mesma transação (`MANDATORY`), na implementação do ADM-01.
 - **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.
 - **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).
+- **19/11/2026 — D22 registrada:** DTOs da API com sufixo `RequestDTO` e `ResponseDTO`, validados com `@Valid`, na implementação do PER-01.

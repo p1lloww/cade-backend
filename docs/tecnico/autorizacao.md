@@ -146,8 +146,9 @@ Isso já existia (ACE-02) e só é lembrado aqui. O token emitido no login leva 
 Em toda requisição, o `SecurityConfiguration` confere a assinatura, o emissor e a validade, e transforma `"role":
 "STAFF"` na *authority* `ROLE_STAFF` do Spring Security. O banco **não** é consultado.
 
-**Consequência:** se o administrador muda o perfil de alguém (ADM-02), a mudança só vale no **próximo login**. O token
-antigo continua com o perfil antigo até vencer (8 h).
+**Consequência:** se o administrador muda o perfil de alguém (ADM-02, `PUT /users/{id}/role`), a mudança só vale no
+**próximo login**. O token antigo continua com o perfil antigo até vencer (8 h). O Swagger da rota avisa isso, para o
+front poder mostrar a mensagem ao administrador.
 
 ## 6. A anotação `@RequiresRole`
 
@@ -160,6 +161,15 @@ Na classe, vale para todas as rotas do controller:
 @RequestMapping("/found-items")
 @RequiresRole(Role.STAFF)                 // funcionário e administrador
 class FoundItemController implements FoundItemApi { ... }
+```
+
+Uma rota só do administrador segue o mesmo formato. É o caso da gestão de funcionários (ADM-02):
+
+```java
+@RestController
+@RequestMapping("/users")
+@RequiresRole(Role.ADMIN)                 // só o administrador; o funcionário recebe 403
+class UserController implements UserApi { ... }
 ```
 
 Num método, **substitui** a da classe (não soma):

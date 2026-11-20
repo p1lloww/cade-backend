@@ -25,6 +25,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Usuário | `User` |
 | Perfil (estudante, funcionário, administrador) | `Role` (`STUDENT`, `STAFF`, `ADMIN`), em `shared.security` porque `@RequiresRole` é usada por todos os módulos |
 | Administrador inicial (criado na instalação) | `InitialAdminInitializer` (variável `ADMIN_EMAIL`) |
+| Dar e retirar o perfil de funcionário (RF03) | `User.grantStaff`, `User.revokeStaff`, chamados pelo `UserRoleService.changeRole`; rota `PUT /users/{id}/role` (só administrador) |
+| Mudança de perfil recusada (já é funcionário, não é funcionário, conta do administrador) | `RoleChangeNotAllowedException` (HTTP 409, `ConflictException`) |
+| Lista de contas (gestão de funcionários) | `UserRoleService.search`, rota `GET /users` (só administrador, sempre ordenada por e-mail) |
 | Código de login | `LoginCode` (tabela `login_codes`), gravado pelo `LoginCodeStore` (D18) |
 | Bloqueio por tentativas erradas | `LoginCode.blockedUntil`, `LoginCodeStore.registerFailure` (D18) |
 | Tempo de espera entre envios de código | `resend-interval` (`LoginCodeProperties.resendInterval`), conferido pelo `LoginCodeStore.save` |
@@ -52,6 +55,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Recusa no balcão | `PickupRefusal` |
 | Destino de não reclamado (bazar, descarte, outro) | `Disposal` |
 | Histórico | `AuditEvent` (contrato em `shared.audit`) |
+| Perfil de funcionário dado ou retirado (no histórico) | ações `STAFF_ROLE_GRANTED` e `STAFF_ROLE_REVOKED`, com o motivo informado pelo administrador |
 | E-mail (destinatário, assunto e texto) | `EmailMessage` (`shared.mail`) |
 | Remetente dos e-mails | `cade.email.from` (`EmailProperties`, variável `MAIL_FROM`) |
 | Aviso com o código de login | `LoginCodeEmail`, enviado pelo `LoginCodeEmailListener` ao receber o `LoginCodeRequestedEvent` |

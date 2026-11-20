@@ -7,7 +7,6 @@ import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,7 +36,7 @@ class UserController implements UserApi {
     @GetMapping
     public PagedModel<UserResponseDTO> search(@RequestParam(required = false) Role role,
                                               @RequestParam(required = false) String email,
-                                              @PageableDefault(sort = "email") Pageable pageable) {
+                                              Pageable pageable) {
         return new PagedModel<>(service.search(role, email, pageable));
     }
 

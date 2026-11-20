@@ -12,7 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class UserRoleService {
     static final String REVOKED_ACTION = "STAFF_ROLE_REVOKED";
 
     private static final Logger log = LoggerFactory.getLogger(UserRoleService.class);
+    private static final Sort BY_EMAIL = Sort.by("email");
 
     private final UserRepository users;
     private final ApplicationEventPublisher events;
@@ -38,12 +41,16 @@ public class UserRoleService {
         this.events = events;
     }
 
-    /** Perfil nulo e e-mail nulo ou vazio não filtram. */
+    /**
+     * Perfil nulo e e-mail nulo ou vazio não filtram. A ordem é sempre pelo e-mail: a ordem pedida é ignorada, para
+     * que um campo inexistente não vire erro do banco.
+     */
     @Transactional(readOnly = true)
     public Page<UserResponseDTO> search(Role role, String emailPart, Pageable pageable) {
-        log.debug("Searching users: role={}, page={}", role, pageable);
+        log.debug("Searching users: role={}, page={}, size={}", role, pageable.getPageNumber(), pageable.getPageSize());
         String normalizedPart = emailPart == null ? "" : User.normalize(emailPart);
-        return users.search(role, normalizedPart, pageable).map(UserResponseDTO::from);
+        Pageable byEmail = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), BY_EMAIL);
+        return users.search(role, normalizedPart, byEmail).map(UserResponseDTO::from);
     }
 
     /**

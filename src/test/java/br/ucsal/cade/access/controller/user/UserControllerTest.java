@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -162,6 +163,28 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.content[0].role").value("STAFF"))
                 .andExpect(jsonPath("$.page.totalElements").value(2))
                 .andExpect(jsonPath("$.page.totalPages").value(2));
+    }
+
+    @Test
+    void theListIgnoresTheRequestedSortAndAlwaysSortsByEmail() throws Exception {
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        users.save(User.newStudent("b-" + tag + "@ucsal.edu.br", clock.instant()));
+        users.save(User.newStudent("a-" + tag + "@ucsal.edu.br", clock.instant()));
+
+        for (String sort : new String[]{"email,desc", "createdAt,desc", "doesNotExist"}) {
+            mvc.perform(get("/users").header("Authorization", bearer(Role.ADMIN))
+                            .param("email", tag).param("sort", sort))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].email").value("a-" + tag + "@ucsal.edu.br"))
+                    .andExpect(jsonPath("$.content[1].email").value("b-" + tag + "@ucsal.edu.br"));
+        }
+    }
+
+    @Test
+    void theDocumentationOffersPageAndSizeButNotSort() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.paths['/users'].get.parameters[*].name")
+                        .value(containsInAnyOrder("role", "email", "page", "size")));
     }
 
     private ResultActions changeRole(UUID id, String role, String reason, Role caller) throws Exception {

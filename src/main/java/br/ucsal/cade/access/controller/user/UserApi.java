@@ -5,12 +5,12 @@ import br.ucsal.cade.access.dto.response.UserResponseDTO;
 import br.ucsal.cade.shared.security.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.MediaType;
@@ -30,11 +30,15 @@ public interface UserApi {
             description = """
                     Contas em páginas, ordenadas por e-mail. Os filtros são opcionais e se combinam: `role` traz só \
                     um perfil, e `email` traz as contas cujo e-mail contém o trecho, sem diferenciar maiúsculas.""")
+    @Parameter(name = "page", in = ParameterIn.QUERY, description = "Número da página, a partir de 0.",
+            schema = @Schema(type = "integer", minimum = "0", defaultValue = "0"))
+    @Parameter(name = "size", in = ParameterIn.QUERY, description = "Contas por página.",
+            schema = @Schema(type = "integer", minimum = "1", defaultValue = "20"))
     @ApiResponse(responseCode = "200", description = "Uma página de contas.")
     PagedModel<UserResponseDTO> search(
             @Parameter(description = "Perfil das contas.", example = "STAFF") Role role,
             @Parameter(description = "Trecho do e-mail.", example = "fulano") String email,
-            @ParameterObject Pageable pageable);
+            @Parameter(hidden = true) Pageable pageable);
 
     @Operation(
             summary = "Dar ou retirar o perfil de funcionário",

@@ -12,7 +12,7 @@ import java.util.UUID;
  * O objeto com todos os dados, inclusive os reservados. Só as rotas de funcionário devolvem esta resposta (RN03).
  */
 @Schema(description = "Objeto achado com todos os dados. Só funcionários recebem esta resposta (RN03).")
-public record FoundItemResponse(
+public record FoundItemResponseDTO(
         UUID id,
         UUID categoryId,
         @Schema(example = "Fone") String categoryName,
@@ -30,8 +30,8 @@ public record FoundItemResponse(
         String photoPath,
         Instant registeredAt) {
 
-    public static FoundItemResponse from(FoundItem item) {
-        return new FoundItemResponse(item.getId(), item.getCategory().getId(), item.getCategory().getName(),
+    public static FoundItemResponseDTO from(FoundItem item) {
+        return new FoundItemResponseDTO(item.getId(), item.getCategory().getId(), item.getCategory().getName(),
                 item.getBlock(), item.getRoom(), item.getFoundOn(), item.getStorageBox(), item.getRisk(),
                 item.getRisk().label(), item.getStatus().code(), item.getStatus().label(),
                 item.getInternalDescription(), item.getReservedDetails(), "/found-items/" + item.getId() + "/photo",

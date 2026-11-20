@@ -38,7 +38,7 @@ class OpenApiDocumentationTest {
                         .exists())
                 .andExpect(jsonPath("$.paths['/auth/token'].post.security").value(empty()))
                 .andExpect(jsonPath("$.paths['/auth/token'].post.responses['200']").exists())
-                .andExpect(jsonPath("$.components.schemas.TokenRequest.required").exists());
+                .andExpect(jsonPath("$.components.schemas.TokenRequestDTO.required").exists());
     }
 
     @Test

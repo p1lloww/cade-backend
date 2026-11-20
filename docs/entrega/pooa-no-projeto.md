@@ -10,15 +10,16 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 
 | Conteúdo | Onde | Problema que resolve | Situação |
 |---|---|---|---|
-| ★ State | `FoundItemStatus` | O objeto só pode mudar de situação pelas transições permitidas (RN01) | Na `main` (ACH-01) |
-| ★ Observer (eventos) | `LoginCodeRequestedEvent` → `LoginCodeEmailListener`; `AuditEvent` → `AuditRecorder` | Um módulo avisa que algo aconteceu sem conhecer quem reage | Na `main` (AVI-01, ADM-01) |
+| ★ State | `FoundItemStatus`, `LossReportStatus` | O objeto e o registro de perda só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01 |
+| ★ Observer (eventos) | `LoginCodeRequestedEvent` → `LoginCodeEmailListener`; `AuditEvent` → `AuditRecorder`; `LossReportRegisteredEvent` | Um módulo avisa que algo aconteceu sem conhecer quem reage | Na `main` (AVI-01, ADM-01); perda no PER-01 |
+| ★ Concorrência: lock otimista | `LossReporter` + `OPTIMISTIC_FORCE_INCREMENT` | Dois registros simultâneos não passam do limite de 5 em andamento (RN05) | PER-01 |
 | ★ Anotações e reflexão | `@RequiresRole`, `RoleRequirement`, `RouteAuthorizationCoverageTest` | Cada rota declara quem pode usá-la, e um teste impede que uma rota fique aberta por esquecimento | Na `main` (ACE-03) |
 | Virtual Threads | `AsyncConfiguration` + `spring.threads.virtual.enabled` | O e-mail é enviado sem prender a resposta ao usuário | Na `main` (AVI-01) |
 | ★ SOLID: inversão de dependência | `EmailSender`, `PhotoStorage`, `Clock` | Trocar o SMTP ou o disco sem mexer em quem usa; testar prazos sem esperar | Na `main`; `PhotoStorage` na PR #65 |
 | SOLID: aberto/fechado | `ApiException` e subclasses | Um tipo novo de erro não exige mudar o tratador | Na `main` |
 | SOLID: segregação de interfaces | `AuditRecordRepository` | O histórico não tem método de exclusão (RN19) | Na `main` (ADM-01) |
 | Collections e Streams | `RoleRequirement`, `AuthorizationConfiguration`, `FoundItemStatus` | Calcular os perfis aceitos e a hierarquia a partir do enum | Na `main` |
-| Records e enums com comportamento | `AuditEvent`, `Role`, `RiskLevel` | Dados imutáveis validados na criação; regra junto do dado | Na `main`; `RiskLevel` na PR #65 |
+| Records e enums com comportamento | `AuditEvent`, `Role`, `RiskLevel`, `LostPeriod`, `LossLocation` | Dados imutáveis validados na criação; regra junto do dado | Na `main`; `RiskLevel` na PR #65; período e local no PER-01 |
 | GRASP: especialista na informação | `FoundItemStatus`, `RiskLevel.canBeRaisedTo`, `FoundItem.register` | A regra fica na classe que tem os dados para decidir | Na `main`; `FoundItem` na PR #65 |
 | Baixo acoplamento (módulos) | `ModuleBoundariesTest` (ArchUnit) | Módulos só se falam pela `api` e nas direções da D10 | Na `main` (GES-01) |
 | Strategy + Composite | `CompatibilityCriterion` | A nota do cruzamento soma critérios configuráveis (RN07) | Planejado (CRU-01) |
@@ -46,7 +47,9 @@ O `sealed` faz o compilador conhecer todas as situações: os `switch` de `code(
 
 **Onde:** [`FoundItemStatus.java`](../../src/main/java/br/ucsal/cade/founditems/persistence/status/FoundItemStatus.java), [`FoundItemStatusConverter.java`](../../src/main/java/br/ucsal/cade/founditems/persistence/status/FoundItemStatusConverter.java) (grava no banco como texto) e os testes em [`FoundItemStatusTest.java`](../../src/test/java/br/ucsal/cade/founditems/persistence/status/FoundItemStatusTest.java), que cobrem todas as transições, permitidas e proibidas.
 
-**Próximos:** o registro de perda (PER-01) e a sugestão do cruzamento seguem o mesmo modelo (seção 6.2 e 6.3).
+**Registro de perda (PER-01):** o [`LossReportStatus`](../../src/main/java/br/ucsal/cade/lossreports/persistence/status/LossReportStatus.java) segue o mesmo modelo para a seção 6.2, e ainda diz se o registro pode ser editado (`isEditable`, RN06) e quais situações contam para o limite de 5 (`ACTIVE`, RN05). Os testes em [`LossReportStatusTest.java`](../../src/test/java/br/ucsal/cade/lossreports/persistence/status/LossReportStatusTest.java) cobrem as 8 transições permitidas e as 34 proibidas.
+
+**Próximo:** a sugestão do cruzamento (seção 6.3).
 
 **Perguntas prováveis**
 - *Por que não um enum com um `switch`?* O enum concentraria todas as transições num método só. Com o State, cada situação guarda as próprias regras, e o `sealed` dá a mesma garantia do enum: não existe situação fora da lista.
@@ -69,7 +72,7 @@ Os dois ouvintes mostram as duas formas do padrão: o e-mail roda **depois do co
 
 **Onde:** [`LoginCodeRequestedEvent.java`](../../src/main/java/br/ucsal/cade/access/api/event/LoginCodeRequestedEvent.java), [`LoginCodeEmailListener.java`](../../src/main/java/br/ucsal/cade/notifications/service/login/LoginCodeEmailListener.java), [`AuditEvent.java`](../../src/main/java/br/ucsal/cade/shared/audit/AuditEvent.java), [`AuditRecorder.java`](../../src/main/java/br/ucsal/cade/administration/service/audit/AuditRecorder.java); testes em [`AuditRecorderTest.java`](../../src/test/java/br/ucsal/cade/administration/service/audit/AuditRecorderTest.java) (commit grava, rollback não grava, sem transação falha).
 
-**Próximos:** o `FoundItemRegisteredEvent` (PR #65) será ouvido pelo cruzamento (CRU-02), que calcula as sugestões em segundo plano enquanto o funcionário cadastra o próximo objeto.
+**Próximos:** o `FoundItemRegisteredEvent` (PR #65) e o [`LossReportRegisteredEvent`](../../src/main/java/br/ucsal/cade/lossreports/api/event/LossReportRegisteredEvent.java) (PER-01) serão ouvidos pelo cruzamento (CRU-02), que calcula as sugestões em segundo plano. Pela D10, `lossreports` não pode chamar `matching` (é o cruzamento que depende das perdas), então o evento é o único caminho.
 
 **Perguntas prováveis**
 - *Por que eventos e não chamar o serviço de e-mail direto?* Pela D10, `access` não pode depender de `notifications`. O evento inverte a dependência: quem ouve conhece o evento, e quem publica não conhece ninguém.
@@ -99,6 +102,20 @@ public @interface RequiresRole { Role[] value(); }
 **Perguntas prováveis**
 - *Se o Spring já aplica a regra, onde está a reflexão de vocês?* No `RoleRequirement`, usado pelo Swagger e pelo teste que impede rota esquecida. A primeira versão (D19) fazia a checagem com um interceptor próprio; trocamos pelo mecanismo do Spring para não reimplementar segurança, e mantivemos a reflexão onde ela agrega.
 - *O que é `RUNTIME`?* A retenção da anotação: sem ela, a anotação some depois da compilação e nem o Spring nem a reflexão a encontram.
+
+---
+
+## ★ Concorrência: lock otimista no limite de registros
+
+**Problema.** Cada estudante pode ter no máximo 5 registros em andamento (RN05). Contar e depois gravar não basta: com 4 registros, duas requisições enviadas juntas contam 4 e gravam, e o estudante fica com 6.
+
+**Como.** Uma linha por estudante (`loss_reporters`) com `@Version`. O registro lê essa linha com `OPTIMISTIC_FORCE_INCREMENT` antes de contar, e o commit sobe a versão. Das duas requisições, a segunda encontra a versão já alterada, falha e é desfeita inteira; o estudante recebe 409 "tente de novo".
+
+**Onde:** [`LossReporter.java`](../../src/main/java/br/ucsal/cade/lossreports/persistence/reporter/LossReporter.java), [`LossReporterRepository.java`](../../src/main/java/br/ucsal/cade/lossreports/persistence/reporter/LossReporterRepository.java), [`LossReportService.java`](../../src/main/java/br/ucsal/cade/lossreports/service/report/LossReportService.java); fluxo com diagramas em [`limite-registros-abertos.md`](../tecnico/limite-registros-abertos.md); testes em [`LossReporterRepositoryTest.java`](../../src/test/java/br/ucsal/cade/lossreports/persistence/reporter/LossReporterRepositoryTest.java) (duas transações intercaladas) e [`LossReportServiceTest.java`](../../src/test/java/br/ucsal/cade/lossreports/service/report/LossReportServiceTest.java) (8 registros simultâneos em Virtual Threads terminam com exatamente 5).
+
+**Perguntas prováveis**
+- *Por que otimista e não pessimista?* Conflito de verdade é raro (o mesmo estudante enviando dois registros no mesmo instante). O otimista não deixa ninguém esperando; só quem perde a corrida tenta de novo.
+- *Por que não um `@Version` no próprio registro?* Num cadastro, o registro ainda não existe: duas inserções não disputam nada. É preciso uma linha que as duas leiam.
 
 ---
 
@@ -168,7 +185,6 @@ public @interface RequiresRole { Role[] value(); }
 | Strategy | CRU-01 | Cada critério do cruzamento (categoria, data, local, palavras) é uma `CompatibilityCriterion`; um critério novo não muda o cálculo |
 | Composite | CRU-01 | A nota combina os critérios como se fossem um critério só (RN07) |
 | Strategy | RET-03 | O que conferir no balcão depende do risco do objeto (RN09) |
-| State | PER-01 | Situações do registro de perda (seção 6.2) |
 
 Se algum desses não entrar até a entrega, esta tabela fica como "limitação declarada", que o manual aceita.
 

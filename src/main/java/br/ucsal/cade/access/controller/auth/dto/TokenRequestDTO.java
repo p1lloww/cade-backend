@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "Troca do código recebido por e-mail por um token de acesso.")
-public record TokenRequest(
+public record TokenRequestDTO(
 
         @Schema(description = "O mesmo e-mail usado para pedir o código.",
                 example = "estudante@ucsal.edu.br", maxLength = 254)
@@ -21,12 +21,12 @@ public record TokenRequest(
         @Pattern(regexp = "\\d{6}", message = "O código tem 6 dígitos.")
         String code) {
 
-    public TokenRequest {
+    public TokenRequestDTO {
         email = email == null ? null : email.strip();
     }
 
     @Override
     public String toString() {
-        return "TokenRequest[email=" + email + ", code=******]";
+        return "TokenRequestDTO[email=" + email + ", code=******]";
     }
 }

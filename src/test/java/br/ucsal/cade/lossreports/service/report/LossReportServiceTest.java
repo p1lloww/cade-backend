@@ -2,9 +2,7 @@ package br.ucsal.cade.lossreports.service.report;
 
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
-import br.ucsal.cade.lossreports.dto.request.LossLocationRequestDTO;
-import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
-import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
+import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;
@@ -15,7 +13,6 @@ import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.ConflictException;
-import br.ucsal.cade.shared.exception.TooManyActiveReportsException;
 import br.ucsal.cade.shared.time.MutableClock;
 import br.ucsal.cade.shared.time.MutableClockConfiguration;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,33 +75,32 @@ class LossReportServiceTest {
     @Test
     void registersAnOpenReportWithHistoryAndEvent() {
         LocalDate yesterday = today().minusDays(1);
-        LossReportRequestDTO request = new LossReportRequestDTO(category.getId(), "Fone JBL preto",
-                "Adesivo de estrela", List.of(new LossLocationRequestDTO("Bloco 400", " Sala 421 ")), yesterday, null,
-                Shift.EVENING);
+        RegisterLossReport request = new RegisterLossReport(category.getId(), "Fone JBL preto",
+                "Adesivo de estrela", List.of(LossLocation.of("Bloco 400", " Sala 421 ")), yesterday, null,
+                Shift.EVENING, null);
 
-        LossReportResponseDTO response = service.register(request, null, student);
+        LossReport response = service.register(request, student);
 
-        assertThat(response.statusLabel()).isEqualTo("Aberto");
-        assertThat(response.locationsLabel()).isEqualTo("Bloco 400, Sala 421");
-        LossReport saved = reports.findById(response.id()).orElseThrow();
+        LossReport saved = reports.findById(response.getId()).orElseThrow();
+        assertThat(response.getLocations()).containsExactly(new LossLocation("Bloco 400", "Sala 421"));
         assertThat(saved.getStatus()).isEqualTo(LossReportStatus.OPEN);
         assertThat(saved.getStudentId()).isEqualTo(student);
         assertThat(saved.getRegisteredAt()).isEqualTo(clock.instant());
         assertThat(events.stream(AuditEvent.class)).containsExactly(new AuditEvent(student,
-                LossReportService.REGISTERED_ACTION, "LossReport", response.id(),
+                LossReportService.REGISTERED_ACTION, "LossReport", response.getId(),
                 LossReportService.REGISTERED_REASON));
         assertThat(events.stream(LossReportRegisteredEvent.class)).containsExactly(
-                new LossReportRegisteredEvent(response.id(), category.getId(), yesterday, yesterday));
+                new LossReportRegisteredEvent(response.getId(), category.getId(), yesterday, yesterday));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_records WHERE entity_id = ?", Long.class,
-                response.id())).isOne();
+                response.getId())).isOne();
     }
 
     @Test
     void refusesAnUnknownCategoryWithoutSavingAnything() {
-        LossReportRequestDTO request = new LossReportRequestDTO(UUID.randomUUID(), "Fone", null, List.of(), today(),
-                null, null);
+        RegisterLossReport request = new RegisterLossReport(UUID.randomUUID(), "Fone", null, List.of(), today(),
+                null, null, null);
 
-        assertThatThrownBy(() -> service.register(request, null, student))
+        assertThatThrownBy(() -> service.register(request, student))
                 .isInstanceOf(UnknownCategoryException.class)
                 .isInstanceOf(BadRequestException.class);
         assertThat(activeReports()).isZero();
@@ -181,8 +177,8 @@ class LossReportServiceTest {
     }
 
     private UUID register() {
-        return service.register(new LossReportRequestDTO(category.getId(), "Garrafa azul", null, null, today(),
-                null, null), null, student).id();
+        return service.register(new RegisterLossReport(category.getId(), "Garrafa azul", null, null, today(),
+                null, null, null), student).getId();
     }
 
     private long activeReports() {

@@ -1,10 +1,6 @@
 package br.ucsal.cade.lossreports.service.report;
 
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
-import br.ucsal.cade.lossreports.dto.request.LossLocationRequestDTO;
-import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
-import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
-import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;
@@ -15,9 +11,7 @@ import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
-import br.ucsal.cade.shared.exception.LossReportNotFoundException;
 import br.ucsal.cade.shared.exception.PhotoNotFoundException;
-import br.ucsal.cade.shared.exception.TooManyActiveReportsException;
 import br.ucsal.cade.shared.storage.PhotoStorage;
 import br.ucsal.cade.shared.storage.StoredPhoto;
 import org.slf4j.Logger;
@@ -27,13 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -65,10 +55,9 @@ public class LossReportService {
 
     /** No máximo 5 registros em andamento por estudante (RN05); o registro vai para o histórico (RF43). */
     @Transactional
-    public LossReportResponseDTO register(LossReportRequestDTO request, MultipartFile photo, UUID studentId) {
-        List<LossLocation> locations = locationsOf(request);
+    public LossReport register(RegisterLossReport request, UUID studentId) {
         log.debug("Registering loss report: student={}, category={}, locations={}, photo={}", studentId,
-                request.categoryId(), locations.size(), hasContent(photo));
+                request.categoryId(), request.locations().size(), request.hasPhoto());
         Category category = categories.findById(request.categoryId()).orElseThrow(() -> {
             log.info("Loss report refused: unknown category {} (student={})", request.categoryId(), studentId);
             return new UnknownCategoryException(request.categoryId());
@@ -77,10 +66,10 @@ public class LossReportService {
                 LocalDate.now(clock));
 
         long active = requireRoomForAnotherReport(studentId);
-        String photoKey = hasContent(photo) ? savePhoto(photo) : null;
+        String photoKey = request.hasPhoto() ? savePhoto(request.photo()) : null;
 
-        NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(), locations,
-                period, photoKey);
+        NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(),
+                request.locations(), period, photoKey);
         LossReport report = reports.save(LossReport.register(data, studentId, clock.instant()));
 
         events.publishEvent(new AuditEvent(studentId, REGISTERED_ACTION, LossReport.class.getSimpleName(),
@@ -88,7 +77,7 @@ public class LossReportService {
         events.publishEvent(new LossReportRegisteredEvent(report.getId(), category.getId(), period.lostFrom(),
                 period.lostUntil()));
         logOutcomeAfterCommit(report.getId(), studentId, active + 1);
-        return LossReportResponseDTO.from(report);
+        return report;
     }
 
     /** Registro de outro estudante responde como inexistente (RF14). */
@@ -108,15 +97,11 @@ public class LossReportService {
         });
     }
 
-    private String savePhoto(MultipartFile photo) {
-        try {
-            String key = photos.save(photo.getBytes());
-            deleteOnRollback(key);
-            log.debug("Loss report photo stored: {} ({} bytes)", key, photo.getSize());
-            return key;
-        } catch (IOException exception) {
-            throw new UncheckedIOException(exception);
-        }
+    private String savePhoto(byte[] photo) {
+        String key = photos.save(photo);
+        deleteOnRollback(key);
+        log.debug("Loss report photo stored: {} ({} bytes)", key, photo.length);
+        return key;
     }
 
     private void deleteOnRollback(String photoKey) {
@@ -129,15 +114,6 @@ public class LossReportService {
                 }
             }
         });
-    }
-
-    private static boolean hasContent(MultipartFile photo) {
-        return photo != null && !photo.isEmpty();
-    }
-
-    private static List<LossLocation> locationsOf(LossReportRequestDTO request) {
-        List<LossLocationRequestDTO> locations = request.locations() == null ? List.of() : request.locations();
-        return locations.stream().map(location -> LossLocation.of(location.block(), location.room())).toList();
     }
 
     private long requireRoomForAnotherReport(UUID studentId) {

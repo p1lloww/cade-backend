@@ -13,7 +13,7 @@ classDiagram
         +photo(UUID, Jwt) ResponseEntity
     }
     class LossReportService {
-        +register(LossReportRequestDTO, MultipartFile, UUID) LossReportResponseDTO
+        +register(RegisterLossReport, UUID) LossReport
         +photoOf(UUID, UUID) StoredPhoto
     }
     class LossReportRequestDTO {
@@ -28,6 +28,10 @@ classDiagram
     }
     class LossReportResponseDTO {
         <<record>>
+    }
+    class RegisterLossReport {
+        <<record>>
+        comando do service
     }
     class LossReport {
         <<entity>>
@@ -81,8 +85,10 @@ classDiagram
     }
 
     LossReportController --> LossReportService
-    LossReportController ..> LossReportRequestDTO
-    LossReportService ..> LossReportResponseDTO : devolve
+    LossReportController ..> LossReportRequestDTO : recebe
+    LossReportController ..> LossReportResponseDTO : devolve
+    LossReportController ..> RegisterLossReport : monta
+    LossReportService ..> RegisterLossReport
     LossReportService --> PhotoStorage : guarda a foto
     LossReportService ..> LossReporter : trava (RN05)
     LossReportService ..> AuditEvent : publica
@@ -94,6 +100,7 @@ classDiagram
 ```
 
 - `LostPeriod` e `LossLocation` ficam dentro da tabela do registro (`@Embeddable`); os locais, numa tabela própria (`loss_report_locations`).
+- Os DTOs ficam em `controller.report.dto`, como no módulo de achados: o controller converte o `LossReportRequestDTO` no comando `RegisterLossReport` e a entidade devolvida no `LossReportResponseDTO`. O service não conhece o formato da API.
 - O `LossReportRegisteredEvent` fica em `lossreports.api.event`, o único pacote que outros módulos podem ver (D10).
 
 ## 2. Fluxo do registro
@@ -114,7 +121,7 @@ sequenceDiagram
     alt campo obrigatório ausente ou inválido
         C-->>E: 400 com o erro de cada campo
     end
-    C->>S: register(report, photo, studentId)
+    C->>S: register(RegisterLossReport, studentId)
 
     rect rgba(127, 127, 127, 0.12)
         Note over S,A: uma transação
@@ -134,8 +141,8 @@ sequenceDiagram
     end
 
     alt commit
-        S-->>C: LossReportResponseDTO
-        C-->>E: 201 com o registro
+        S-->>C: LossReport
+        C-->>E: 201 com o LossReportResponseDTO
         S-)X: LossReportRegisteredEvent (@Async, AFTER_COMMIT)
     else rollback
         S->>P: apaga a foto guardada

@@ -1,7 +1,7 @@
 package br.ucsal.cade.lossreports.controller.report;
 
-import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
-import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
+import br.ucsal.cade.lossreports.controller.report.dto.LossReportRequestDTO;
+import br.ucsal.cade.lossreports.controller.report.dto.LossReportResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

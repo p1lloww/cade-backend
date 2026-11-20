@@ -1,8 +1,12 @@
 package br.ucsal.cade.lossreports.controller.report;
 
-import br.ucsal.cade.lossreports.dto.request.LossReportRequestDTO;
-import br.ucsal.cade.lossreports.dto.response.LossReportResponseDTO;
+import br.ucsal.cade.lossreports.controller.report.dto.LossLocationRequestDTO;
+import br.ucsal.cade.lossreports.controller.report.dto.LossReportRequestDTO;
+import br.ucsal.cade.lossreports.controller.report.dto.LossReportResponseDTO;
+import br.ucsal.cade.lossreports.persistence.location.LossLocation;
+import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.service.report.LossReportService;
+import br.ucsal.cade.lossreports.service.report.RegisterLossReport;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
 import br.ucsal.cade.shared.storage.StoredPhoto;
@@ -20,7 +24,10 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,8 +47,12 @@ class LossReportController implements LossReportApi {
                                                           @RequestPart(name = "photo", required = false)
                                                           MultipartFile photo,
                                                           @AuthenticationPrincipal Jwt token) {
-        LossReportResponseDTO registered = service.register(report, photo, UUID.fromString(token.getSubject()));
-        return ResponseEntity.created(URI.create("/loss-reports/" + registered.id())).body(registered);
+        RegisterLossReport request = new RegisterLossReport(report.categoryId(), report.description(),
+                report.secretDetail(), locationsOf(report), report.lostFrom(), report.lostUntil(), report.shift(),
+                bytesOf(photo));
+        LossReport registered = service.register(request, UUID.fromString(token.getSubject()));
+        return ResponseEntity.created(URI.create("/loss-reports/" + registered.getId()))
+                .body(LossReportResponseDTO.from(registered));
     }
 
     @Override
@@ -52,5 +63,21 @@ class LossReportController implements LossReportApi {
                 .contentType(MediaType.parseMediaType(photo.type().mediaType()))
                 .cacheControl(CacheControl.noStore().cachePrivate())
                 .body(photo.content());
+    }
+
+    private static List<LossLocation> locationsOf(LossReportRequestDTO report) {
+        List<LossLocationRequestDTO> locations = report.locations() == null ? List.of() : report.locations();
+        return locations.stream().map(location -> LossLocation.of(location.block(), location.room())).toList();
+    }
+
+    private static byte[] bytesOf(MultipartFile photo) {
+        if (photo == null || photo.isEmpty()) {
+            return null;
+        }
+        try {
+            return photo.getBytes();
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 }

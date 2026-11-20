@@ -1,4 +1,4 @@
-package br.ucsal.cade.lossreports.dto.request;
+package br.ucsal.cade.lossreports.controller.report.dto;
 
 import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;

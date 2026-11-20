@@ -1,4 +1,6 @@
-package br.ucsal.cade.shared.exception;
+package br.ucsal.cade.lossreports.service.report;
+
+import br.ucsal.cade.shared.exception.ConflictException;
 
 public class TooManyActiveReportsException extends ConflictException {
 

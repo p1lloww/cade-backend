@@ -1,5 +1,6 @@
 package br.ucsal.cade.access.persistence.user;
 
+import br.ucsal.cade.shared.exception.RoleChangeNotAllowedException;
 import br.ucsal.cade.shared.security.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -63,6 +64,30 @@ public class User {
     /** Torna esta conta administradora; usado na criação do administrador inicial. */
     public void promoteToAdmin() {
         this.role = Role.ADMIN;
+    }
+
+    /** Dá o perfil de funcionário a um estudante (RF03). */
+    public void grantStaff() {
+        requireNotAdmin();
+        if (role == Role.STAFF) {
+            throw RoleChangeNotAllowedException.alreadyStaff();
+        }
+        this.role = Role.STAFF;
+    }
+
+    /** Retira o perfil de funcionário: a conta volta a ser de estudante (RF03). */
+    public void revokeStaff() {
+        requireNotAdmin();
+        if (role != Role.STAFF) {
+            throw RoleChangeNotAllowedException.notStaff();
+        }
+        this.role = Role.STUDENT;
+    }
+
+    private void requireNotAdmin() {
+        if (role == Role.ADMIN) {
+            throw RoleChangeNotAllowedException.adminAccount();
+        }
     }
 
     public boolean hasRole(Role role) {

@@ -200,6 +200,22 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** a seção "Strategy + Composite" de [pooa-no-projeto.md](entrega/pooa-no-projeto.md) e os testes de `matching.service.score`.
 - **Situação:** fechada.
 
+## D23 — Cruzamento por evento: quem entra e como a sugestão é gravada
+- **Origem:** o RF20 diz que o cruzamento compara com "os registros abertos do outro lado", e a seção 6.3 diz que só compatibilidade média ou alta vira sugestão. Faltava definir quais situações contam como abertas, o que acontece com um par repetido e com uma falha.
+- **Decisão (21/11/2026):**
+  - **Quem entra:** objetos Disponível ou Não reclamado (os que ainda podem ser convocados, seção 6.1) e registros de perda Aberto ou Aguardando informações (o estudante ainda procura e ninguém foi convocado por ele). Só a mesma categoria é consultada, porque categoria diferente zera a nota (RN07).
+  - **O que é gravado:** a `MatchSuggestion` (situação Nova) com a nota, para os pares de faixa média ou alta. A faixa não é gravada: sai da nota pelas faixas de `cade.matching.bands`. Cada sugestão criada vai para o histórico como `MATCH_SUGGESTED`, com o autor `AuditEvent.SYSTEM_ACTOR`.
+  - **Par repetido:** cada par objeto × perda tem no máximo uma sugestão (chave única), e a gravação é um `INSERT ... ON CONFLICT DO NOTHING`. Um objeto e uma perda cadastrados no mesmo instante disparam dois cruzamentos que podem achar o mesmo par; o segundo não grava nada e não falha.
+  - **Falha:** o ouvinte registra o erro no log e não tenta de novo. O cadastro já foi confirmado e não é afetado (RNF08); as sugestões daquela rodada se perdem, como na limitação da D05.
+  - **Interfaces:** o cruzamento lê os dois lados pelas interfaces `MatchableFoundItems` e `MatchableLossReports`, na `api` de cada módulo, que devolvem só o que a nota usa (sem foto, detalhe reservado, detalhe secreto nem estudante). Os serviços publicam eventos pela `EventPublisher` (`shared.event`), e não direto pelo Spring.
+- **Motivo:** o cruzamento só roda quando alguém cadastra; uma sugestão para um objeto que não pode mais ser convocado ou para uma perda que não está mais em busca só ocuparia a lista do funcionário. Guardar a nota, e não a faixa, deixa o ajuste das faixas valer para as sugestões que já existem.
+- **Consequências:**
+  - Um registro que volta de Convocado para Aberto não é cruzado de novo com os objetos cadastrados enquanto estava convocado; as sugestões antigas dele continuam valendo.
+  - Uma sugestão baixa nunca é gravada: baixar a faixa média depois não traz de volta pares que já foram calculados.
+  - Ainda não há recálculo quando o objeto ou a perda mudam (edição, novo local); se entrar, ele usa o mesmo `MatchingService`.
+- **Detalhes:** [`docs/tecnico/cruzamento.md`](tecnico/cruzamento.md).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -213,3 +229,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.
 - **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).
 - **20/11/2026 — D22 registrada:** detalhes da nota de compatibilidade (período, vários locais, palavras que contam), na implementação do CRU-01.
+- **21/11/2026 — D23 registrada:** quem entra no cruzamento, sugestão única por par e falha sem efeito no cadastro, na implementação do CRU-02.

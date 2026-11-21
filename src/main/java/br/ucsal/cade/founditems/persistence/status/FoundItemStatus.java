@@ -38,6 +38,9 @@ public sealed interface FoundItemStatus {
     /** Todas as situações, na ordem do ciclo de vida. */
     List<FoundItemStatus> ALL = List.of(AVAILABLE, RESERVED, RETURNED, UNCLAIMED, DISPOSED);
 
+    /** Situações em que o objeto entra no cruzamento: as que ainda permitem convocar um estudante (RF20). */
+    List<FoundItemStatus> MATCHABLE = List.of(AVAILABLE, UNCLAIMED);
+
     /** Situação de todo objeto recém-cadastrado pelo funcionário. */
     static FoundItemStatus initial() {
         return AVAILABLE;

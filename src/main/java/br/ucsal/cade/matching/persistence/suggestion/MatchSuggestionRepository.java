@@ -1,0 +1,36 @@
+package br.ucsal.cade.matching.persistence.suggestion;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface MatchSuggestionRepository extends JpaRepository<MatchSuggestion, UUID> {
+
+    Optional<MatchSuggestion> findByFoundItemIdAndLossReportId(UUID foundItemId, UUID lossReportId);
+
+    /**
+     * Grava a sugestão, a menos que o par já tenha uma. Um objeto e uma perda cadastrados no mesmo instante disparam
+     * dois cruzamentos que podem achar o mesmo par; com o {@code ON CONFLICT}, o segundo não grava nada e não falha,
+     * sem perder as outras sugestões da mesma rodada.
+     *
+     * @return se a sugestão foi gravada
+     */
+    default boolean saveIfAbsent(MatchSuggestion suggestion) {
+        return insertIfAbsent(suggestion.getId(), suggestion.getFoundItemId(), suggestion.getLossReportId(),
+                suggestion.getScore(), suggestion.getStatus().code(), suggestion.getCreatedAt()) == 1;
+    }
+
+    @Modifying
+    @Query(nativeQuery = true, value = """
+            INSERT INTO match_suggestions (id, found_item_id, loss_report_id, score, status, created_at)
+            VALUES (:id, :foundItemId, :lossReportId, :score, :status, :createdAt)
+            ON CONFLICT (found_item_id, loss_report_id) DO NOTHING""")
+    int insertIfAbsent(@Param("id") UUID id, @Param("foundItemId") UUID foundItemId,
+                       @Param("lossReportId") UUID lossReportId, @Param("score") int score,
+                       @Param("status") String status, @Param("createdAt") Instant createdAt);
+}

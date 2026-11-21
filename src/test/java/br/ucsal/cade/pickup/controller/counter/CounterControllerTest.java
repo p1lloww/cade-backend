@@ -177,7 +177,8 @@ class CounterControllerTest {
                 .andExpect(jsonPath("$.reason").value("Não soube descrever o detalhe."))
                 .andExpect(jsonPath("$.studentRefusals").value(1))
                 .andExpect(jsonPath("$.studentBlocked").value(false))
-                .andExpect(jsonPath("$.resumed", hasSize(0)));
+                .andExpect(jsonPath("$.resumed", hasSize(0)))
+                .andExpect(jsonPath("$.closed", hasSize(0)));
     }
 
     @Test

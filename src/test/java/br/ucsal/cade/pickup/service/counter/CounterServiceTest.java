@@ -217,7 +217,7 @@ class CounterServiceTest {
     }
 
     @Test
-    void aRefusalReleasesTheItemAndTheReportAndRefusesTheSuggestion() {
+    void aRefusalReleasesTheItemAndEndsTheReportAndTheSuggestion() {
         Summons summons = summon(find(), lose(student));
 
         RefusedSummons refused = service.refuse(summons.getId(), "Não soube descrever o detalhe.", staff);
@@ -227,7 +227,7 @@ class CounterServiceTest {
         assertThat(saved.getRefusalReason()).isEqualTo("Não soube descrever o detalhe.");
         assertThat(saved.getClosedBy()).isEqualTo(staff);
         assertThat(itemStatus(summons)).isEqualTo(FoundItemStatus.AVAILABLE);
-        assertThat(reportStatus(summons)).isEqualTo(LossReportStatus.OPEN);
+        assertThat(reportStatus(summons)).isEqualTo(LossReportStatus.REFUSED);
         assertThat(suggestionStatus(summons.getSuggestionId())).isEqualTo(SuggestionStatus.REFUSED);
         assertThat(refused.refusal().refusals()).isOne();
         assertThat(refused.refusal().blocked()).isFalse();
@@ -243,8 +243,25 @@ class CounterServiceTest {
 
         RefusedSummons refused = service.refuse(summons.getId(), "Não desbloqueou o aparelho.", staff);
 
-        assertThat(refused.resumed()).containsExactly(waiting.getId());
+        assertThat(refused.suggestion().resumed()).containsExactly(waiting.getId());
         assertThat(suggestionStatus(waiting.getId())).isEqualTo(SuggestionStatus.NEW);
+    }
+
+    @Test
+    void theOtherSuggestionsOfTheRefusedReportAreClosed() {
+        UUID report = lose(student);
+        MatchSuggestion summoned = suggest(find(), report, 80);
+        MatchSuggestion otherItem = suggest(find(), report, 60);
+        MatchSuggestion otherReport = suggest(find(), lose(), 70);
+        Summons summons = summonsService.summon(summoned.getId(), staff).summons();
+
+        RefusedSummons refused = service.refuse(summons.getId(), "Verificação falhou.", staff);
+
+        assertThat(refused.suggestion().closed()).containsExactly(otherItem.getId());
+        assertThat(suggestionStatus(otherItem.getId())).isEqualTo(SuggestionStatus.CLOSED);
+        assertThat(suggestionStatus(otherReport.getId())).isEqualTo(SuggestionStatus.NEW);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_records WHERE entity_id = ? AND action = ?",
+                Long.class, otherItem.getId(), "MATCH_CLOSED")).isOne();
     }
 
     @Test
@@ -254,7 +271,7 @@ class CounterServiceTest {
         service.refuse(summons.getId(), "Não soube descrever o detalhe.", staff);
 
         assertThat(history(summons, student)).containsExactlyInAnyOrder("Summons SUMMONS_REFUSED",
-                "FoundItem FOUND_ITEM_RELEASED", "LossReport LOSS_REPORT_RELEASED", "MatchSuggestion MATCH_REFUSED",
+                "FoundItem FOUND_ITEM_RELEASED", "LossReport LOSS_REPORT_REFUSED", "MatchSuggestion MATCH_REFUSED",
                 "LossReporter STUDENT_REFUSAL_RECORDED");
     }
 

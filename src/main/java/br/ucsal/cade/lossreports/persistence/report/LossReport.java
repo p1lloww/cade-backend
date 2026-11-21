@@ -110,9 +110,14 @@ public class LossReport {
         status = status.complete();
     }
 
-    /** Convocado → Aberto: a verificação falhou no balcão ou a convocação venceu. */
+    /** Convocado → Aberto: a convocação venceu (RN15). */
     public void release() {
         status = status.release();
+    }
+
+    /** Convocado → Recusado: a verificação falhou no balcão (RF31), e o registro se encerra (D26). */
+    public void refuse() {
+        status = status.refuse();
     }
 
     public UUID getId() {

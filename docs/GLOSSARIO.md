@@ -45,7 +45,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Descrição interna, detalhes reservados | `internalDescription`, `reservedDetails` (RF06, só funcionários) |
 | Evento objeto.cadastrado | `FoundItemRegisteredEvent` (`founditems.api.event`) |
 | Registro de perda | `LossReport` |
-| Situação do registro (Aberto, Aguardando informações, Convocado, Concluído, Vencido, Cancelado) | `LossReportStatus` (`OPEN`, `AWAITING_INFO`, `SUMMONED`, `COMPLETED`, `EXPIRED`, `CANCELLED`) |
+| Situação do registro (Aberto, Aguardando informações, Convocado, Concluído, Vencido, Cancelado, Recusado) | `LossReportStatus` (`OPEN`, `AWAITING_INFO`, `SUMMONED`, `COMPLETED`, `EXPIRED`, `CANCELLED`, `REFUSED`); Recusado vem da D26 |
 | Detalhe que só o dono conhece | `secretDetail` |
 | Pedir informações, retomar, convocar, liberar, concluir, vencer, cancelar (ações sobre o registro) | `requestInfo`, `resume`, `summon`, `release`, `complete`, `expire`, `cancel` |
 | Registro em andamento (conta para o limite de 5, RN05) | `LossReportStatus.ACTIVE` (Aberto, Aguardando informações, Convocado) |
@@ -90,9 +90,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Retirada | `Pickup` (tabela `pickups`; uma por convocação), com o que foi conferido em `CounterCheck` |
 | Recusa no balcão | `Summons.refuse` (convocação Recusada, com `refusalReason`); `CounterService.refuse` |
 | Recusas do estudante e bloqueio (RN12) | `LossReporter.refusals` e `isBlocked()` (3 recusas, `MAX_REFUSALS`); `StudentRefusals.record` (`lossreports.api`); `StudentBlockedException` |
-| Fim da convocação (a parte de cada módulo) | `FoundItemReservations.handOver` e `release`, `LossReportSummons.complete` e `release`, `SuggestionSummons.complete` e `refuse` |
+| Fim da convocação (a parte de cada módulo) | `FoundItemReservations.handOver` e `release`, `LossReportSummons.complete`, `refuse` e `release` (este para o vencimento), `SuggestionSummons.complete` e `refuse` (`RefusedSuggestion`) |
 | Evento retirada.registrada | `PickupRegisteredEvent` (`pickup.api.event`) |
-| Balcão no histórico | ações `SUMMONS_COMPLETED`, `PICKUP_REGISTERED`, `FOUND_ITEM_HANDED_OVER`, `LOSS_REPORT_COMPLETED`, `MATCH_COMPLETED`; na recusa, `SUMMONS_REFUSED`, `FOUND_ITEM_RELEASED`, `LOSS_REPORT_RELEASED`, `MATCH_REFUSED`, `MATCH_RESUMED`, `STUDENT_REFUSAL_RECORDED` e `STUDENT_BLOCKED` |
+| Balcão no histórico | ações `SUMMONS_COMPLETED`, `PICKUP_REGISTERED`, `FOUND_ITEM_HANDED_OVER`, `LOSS_REPORT_COMPLETED`, `MATCH_COMPLETED`; na recusa, `SUMMONS_REFUSED`, `FOUND_ITEM_RELEASED`, `LOSS_REPORT_REFUSED`, `MATCH_REFUSED`, `MATCH_RESUMED`, `MATCH_CLOSED`, `STUDENT_REFUSAL_RECORDED` e `STUDENT_BLOCKED` |
 | Destino de não reclamado (bazar, descarte, outro) | `Disposal` |
 | Histórico | `AuditEvent` (contrato em `shared.audit`) |
 | Perfil de funcionário dado ou retirado (no histórico) | ações `STAFF_ROLE_GRANTED` e `STAFF_ROLE_REVOKED`, com o motivo informado pelo administrador |

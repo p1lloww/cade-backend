@@ -1,5 +1,6 @@
 package br.ucsal.cade.matching.service.suggestion;
 
+import br.ucsal.cade.matching.api.RefusedSuggestion;
 import br.ucsal.cade.matching.api.SuggestionPair;
 import br.ucsal.cade.matching.api.SuggestionSummons;
 import br.ucsal.cade.matching.api.SummonedSuggestion;
@@ -33,6 +34,8 @@ class SuggestionSummonsService implements SuggestionSummons {
     static final String REFUSED_REASON = "A verificação falhou no balcão.";
     static final String RESUMED_ACTION = "MATCH_RESUMED";
     static final String RESUMED_REASON = "A convocação do mesmo objeto foi recusada; a sugestão volta a valer (RN18).";
+    static final String CLOSED_ACTION = "MATCH_CLOSED";
+    static final String CLOSED_REASON = "A perda foi encerrada pela recusa no balcão.";
 
     private static final Logger log = LoggerFactory.getLogger(SuggestionSummonsService.class);
 
@@ -84,7 +87,7 @@ class SuggestionSummonsService implements SuggestionSummons {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public List<UUID> refuse(UUID suggestionId, UUID staffId) {
+    public RefusedSuggestion refuse(UUID suggestionId, UUID staffId) {
         MatchSuggestion suggestion = load(suggestionId);
         change(suggestion, MatchSuggestion::refuse, "Refusal");
         audit(staffId, REFUSED_ACTION, suggestion, REFUSED_REASON);
@@ -95,9 +98,21 @@ class SuggestionSummonsService implements SuggestionSummons {
             other.resume();
             audit(staffId, RESUMED_ACTION, other, RESUMED_REASON);
         });
-        log.debug("Suggestion {} refused by {}; {} suggestion(s) of the item resumed", suggestionId, staffId,
-                onHold.size());
-        return onHold.stream().map(MatchSuggestion::getId).toList();
+
+        List<MatchSuggestion> ofTheReport = suggestions.findByLossReportIdAndStatusInAndIdNot(
+                suggestion.getLossReportId(), List.of(SuggestionStatus.NEW, SuggestionStatus.ON_HOLD),
+                suggestion.getId());
+        ofTheReport.forEach(other -> {
+            other.close();
+            audit(staffId, CLOSED_ACTION, other, CLOSED_REASON);
+        });
+        log.debug("Suggestion {} refused by {}; {} suggestion(s) of the item resumed, {} of the report closed",
+                suggestionId, staffId, onHold.size(), ofTheReport.size());
+        return new RefusedSuggestion(ids(onHold), ids(ofTheReport));
+    }
+
+    private static List<UUID> ids(List<MatchSuggestion> suggestions) {
+        return suggestions.stream().map(MatchSuggestion::getId).toList();
     }
 
     private static void change(MatchSuggestion suggestion, Consumer<MatchSuggestion> transition, String operation) {

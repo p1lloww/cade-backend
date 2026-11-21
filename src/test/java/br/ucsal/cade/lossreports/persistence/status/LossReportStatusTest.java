@@ -18,6 +18,7 @@ import static br.ucsal.cade.lossreports.persistence.status.LossReportStatus.CANC
 import static br.ucsal.cade.lossreports.persistence.status.LossReportStatus.COMPLETED;
 import static br.ucsal.cade.lossreports.persistence.status.LossReportStatus.EXPIRED;
 import static br.ucsal.cade.lossreports.persistence.status.LossReportStatus.OPEN;
+import static br.ucsal.cade.lossreports.persistence.status.LossReportStatus.REFUSED;
 import static br.ucsal.cade.lossreports.persistence.status.LossReportStatus.SUMMONED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,7 +33,8 @@ class LossReportStatusTest {
             "liberar", LossReportStatus::release,
             "concluir", LossReportStatus::complete,
             "vencer", LossReportStatus::expire,
-            "cancelar", LossReportStatus::cancel);
+            "cancelar", LossReportStatus::cancel,
+            "recusar", LossReportStatus::refuse);
 
     private static final List<Transition> ALLOWED = List.of(
             new Transition(OPEN, "pedir informações sobre", AWAITING_INFO),
@@ -40,6 +42,7 @@ class LossReportStatusTest {
             new Transition(OPEN, "convocar", SUMMONED),
             new Transition(SUMMONED, "concluir", COMPLETED),
             new Transition(SUMMONED, "liberar", OPEN),
+            new Transition(SUMMONED, "recusar", REFUSED),
             new Transition(OPEN, "vencer", EXPIRED),
             new Transition(OPEN, "cancelar", CANCELLED),
             new Transition(AWAITING_INFO, "cancelar", CANCELLED));
@@ -79,7 +82,7 @@ class LossReportStatusTest {
         long combinations = (long) LossReportStatus.ALL.size() * ACTIONS.size();
 
         assertThat(ALLOWED.size() + forbiddenTransitions().count()).isEqualTo(combinations);
-        assertThat(forbiddenTransitions().count()).isEqualTo(34);
+        assertThat(forbiddenTransitions().count()).isEqualTo(47);
     }
 
     @Test
@@ -88,14 +91,14 @@ class LossReportStatusTest {
     }
 
     @Test
-    void onlyCompletedExpiredAndCancelledAreFinal() {
+    void onlyCompletedExpiredCancelledAndRefusedAreFinal() {
         assertThat(LossReportStatus.ALL).filteredOn(LossReportStatus::isFinal)
-                .containsExactly(COMPLETED, EXPIRED, CANCELLED);
+                .containsExactly(COMPLETED, EXPIRED, CANCELLED, REFUSED);
     }
 
     @Test
     void aFinalStatusAllowsNoAction() {
-        for (LossReportStatus status : List.of(COMPLETED, EXPIRED, CANCELLED)) {
+        for (LossReportStatus status : List.of(COMPLETED, EXPIRED, CANCELLED, REFUSED)) {
             ACTIONS.values().forEach(action -> assertThatThrownBy(() -> action.apply(status))
                     .isInstanceOf(InvalidStatusTransitionException.class));
         }
@@ -113,8 +116,17 @@ class LossReportStatusTest {
     }
 
     @Test
-    void aSummonedReportThatFailsAtTheCounterCanBeSummonedAgain() {
+    void aSummonedReportWhoseSummonsExpiredCanBeSummonedAgain() {
         assertThat(OPEN.summon().release().summon()).isEqualTo(SUMMONED);
+    }
+
+    @Test
+    void aReportRefusedAtTheCounterIsOverAndItsDescriptionNeverChangesAgain() {
+        LossReportStatus refused = OPEN.summon().refuse();
+
+        assertThat(refused).isEqualTo(REFUSED);
+        assertThat(refused.isEditable()).isFalse();
+        assertThat(refused.label()).isEqualTo("Recusado");
     }
 
     @Test

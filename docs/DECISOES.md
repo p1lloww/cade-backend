@@ -254,12 +254,16 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - **Ordem e lock:** a `Summons` (com `@Version`) é gravada primeiro. Depois vêm objeto, sugestão e perda, pelas interfaces da `api` de cada módulo (`MANDATORY`, como na D25). Retirada, recusa e o vencimento do RET-02 disputam a mesma linha, e só uma decisão passa.
   - **Recusas:** contadas em `LossReporter.refusals`, a linha por estudante que já existe para a RN05. O `lossreports` não pode depender do `pickup` (D10), e o bloqueio impede justamente abrir registros de perda. Com 3 recusas, o registro de perda responde 409.
   - **Recusa e sugestões:** a convocada passa a Recusada, e as Em espera do mesmo objeto voltam a Nova (seção 6.3).
-- **Motivo:** guardar as recusas no `lossreports` deixa a regra do bloqueio junto do registro que ela barra, sem dependência nova entre módulos, e aproveita a trava que já protege o limite de 5 registros.
+  - **A perda recusada se encerra:** a recusa leva o registro de perda a **Recusado**, uma situação final nova, em vez de voltar a Aberto como a seção 6.2 previa. As outras sugestões Novas ou Em espera dessa perda passam a Encerrada. Se o estudante ainda procura o objeto, registra a perda de novo. O vencimento da convocação (RET-02) continua devolvendo a perda a Aberto, porque nele ninguém viu o objeto.
+- **Motivo:**
+  - Guardar as recusas no `lossreports` deixa a regra do bloqueio junto do registro que ela barra, sem dependência nova entre módulos, e aproveita a trava que já protege o limite de 5 registros.
+  - Encerrar a perda recusada evita que ela volte a ser editável (`isEditable` vale para Aberto). Sem isso, quem foi recusado poderia ajustar a descrição ao que viu no balcão, o que a RN06 proíbe. Decidido pela equipe na revisão do RET-03.
 - **Consequências:**
-  - **O desbloqueio pelo administrador não faz parte do RET-03** e não tinha card. Até existir, o bloqueio só sai pelo banco (`UPDATE loss_reporters SET refusals = 0`). Fica proposto um card P2 em Administração.
+  - **O desbloqueio pelo administrador não faz parte do RET-03.** Ele virou o card [#75](https://github.com/p1lloww/cade-backend/issues/75) (ADM-07, P2). Até entrar, o bloqueio só sai pelo banco (`UPDATE loss_reporters SET refusals = 0`).
   - Encerrar as outras sugestões do objeto e avisar os estudantes (RF33, RET-06), o e-mail de confirmação (AVI-02) e o atalho de balcão sem convocação (RET-04) também ficam fora. O `PickupRegisteredEvent` (`retirada.registrada`) fica pronto para eles.
   - As perguntas de conferência por categoria (RF44, ADM-04) ainda não existem. Quando entrarem, somam-se ao checklist da regra.
-  - Uma perda que volta a Aberto depois da recusa passa a ser editável de novo (`LossReportStatus.isEditable`), embora a RN06 diga que a descrição trava "depois de uma convocação". Isso precisa ser resolvido no PER-07.
+  - A seção 6.2 dos requisitos ganha, na prática, a transição Convocado → Recusado. A seção 6.2 não foi reescrita: vale esta decisão.
+  - Uma perda cuja convocação venceu (RET-02) volta a Aberto e fica editável de novo. O PER-07 precisa decidir se a RN06 também trava esse caso.
   - Um banco local já existente ganha a coluna `refusals` sozinho (há valor padrão), mas `summons` ganha três colunas que aceitam nulo; não é preciso zerar o banco.
 - **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md).
 - **Situação:** fechada.
@@ -280,4 +284,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D23 registrada:** quem entra no cruzamento, sugestão única por par e falha sem efeito no cadastro, na implementação do CRU-02.
 - **21/11/2026 — D24 registrada:** a mudança de perfil de funcionário vale no próximo login, na implementação do ADM-02.
 - **21/11/2026 — D25 registrada:** ordem das mudanças na convocação, sugestões em espera e o que o estudante recebe, na implementação do RET-01.
-- **21/11/2026 — D26 registrada:** regras de conferência por risco, retirada com documento e verificação, recusas no `LossReporter` e o que fica fora (desbloqueio pelo administrador, RF33), na implementação do RET-03. Nota na D25: o `WhatToBring` foi absorvido pelas regras.
+- **21/11/2026 — D26 registrada:** regras de conferência por risco, retirada com documento e verificação, recusas no `LossReporter`, perda recusada encerrada (situação Recusado) e o que fica fora (desbloqueio pelo administrador no #75, RF33), na implementação do RET-03. Nota na D25: o `WhatToBring` foi absorvido pelas regras.

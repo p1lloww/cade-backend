@@ -24,6 +24,7 @@ class LossReportSummonsService implements LossReportSummons {
     static final String COMPLETED_ACTION = "LOSS_REPORT_COMPLETED";
     static final String COMPLETED_REASON = "Objeto retirado pelo estudante no balcão.";
     static final String RELEASED_ACTION = "LOSS_REPORT_RELEASED";
+    static final String REFUSED_ACTION = "LOSS_REPORT_REFUSED";
 
     private static final Logger log = LoggerFactory.getLogger(LossReportSummonsService.class);
 
@@ -53,6 +54,15 @@ class LossReportSummonsService implements LossReportSummons {
         change(report, LossReport::complete, "Completion");
         audit(staffId, COMPLETED_ACTION, report, COMPLETED_REASON);
         log.debug("Loss report {} completed by {}", lossReportId, staffId);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void refuse(UUID lossReportId, UUID staffId, String reason) {
+        LossReport report = load(lossReportId, "Refusal");
+        change(report, LossReport::refuse, "Refusal");
+        audit(staffId, REFUSED_ACTION, report, reason);
+        log.debug("Loss report {} refused by {}", lossReportId, staffId);
     }
 
     @Override

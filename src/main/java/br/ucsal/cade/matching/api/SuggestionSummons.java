@@ -3,7 +3,6 @@ package br.ucsal.cade.matching.api;
 import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import br.ucsal.cade.shared.exception.NotFoundException;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,12 +40,12 @@ public interface SuggestionSummons {
 
     /**
      * Convocada → Recusada: a verificação falhou no balcão (RF31). As sugestões Em espera do mesmo objeto voltam a
-     * Nova (RN18), para o funcionário convocar a próxima. Cada mudança vai para o histórico (RF43). Só roda dentro da
-     * transação da recusa.
+     * Nova (RN18), para o funcionário convocar a próxima. As outras sugestões Novas ou Em espera da mesma perda são
+     * encerradas, porque a perda se encerra com a recusa (D26). Cada mudança vai para o histórico (RF43). Só roda
+     * dentro da transação da recusa.
      *
-     * @return as sugestões que voltaram a Nova
      * @throws NotFoundException se a sugestão não existe
      * @throws InvalidStatusTransitionException se a sugestão não está Convocada
      */
-    List<UUID> refuse(UUID suggestionId, UUID staffId);
+    RefusedSuggestion refuse(UUID suggestionId, UUID staffId);
 }

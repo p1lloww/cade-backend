@@ -90,8 +90,9 @@ public interface CounterApi {
             summary = "Registrar a recusa",
             description = """
                     A verificação falhou no balcão (RF31). A convocação passa a Recusada, o objeto volta a \
-                    Disponível, o registro de perda a Aberto e a sugestão a Recusada; as sugestões Em espera do \
-                    mesmo objeto voltam a Nova (RN18). A recusa conta para o estudante: com 3, ele não abre novos \
+                    Disponível e a sugestão a Recusada; as sugestões Em espera do mesmo objeto voltam a Nova \
+                    (RN18). O registro de perda se encerra como Recusado, e as outras sugestões dele são encerradas: \
+                    o estudante precisa registrar a perda de novo (RN06). A recusa conta para o estudante: com 3, ele não abre novos \
                     registros até o administrador liberar (RN12). O motivo vai para o histórico (RF43).""")
     @ApiResponse(responseCode = "200", description = "Recusa registrada.",
             content = @Content(schema = @Schema(implementation = RefusalResponseDTO.class)))

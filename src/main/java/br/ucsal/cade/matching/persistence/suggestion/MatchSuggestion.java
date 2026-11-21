@@ -104,6 +104,11 @@ public class MatchSuggestion {
         status = status.refuse();
     }
 
+    /** Nova ou Em espera → Encerrada: a perda ou o objeto desta sugestão não está mais em jogo. */
+    public void close() {
+        status = status.close();
+    }
+
     public UUID getId() {
         return id;
     }

@@ -128,22 +128,28 @@ sequenceDiagram
     C->>A: release(objeto)
     A->>DB: objeto → Disponível
     C->>M: refuse(sugestão)
-    M->>DB: sugestão → Recusada; as Em espera do objeto → Nova (RN18)
-    C->>P: release(perda)
-    P->>DB: perda → Aberto
+    M->>DB: sugestão → Recusada; as Em espera do objeto → Nova (RN18); as outras da perda → Encerrada
+    C->>P: refuse(perda)
+    P->>DB: perda → Recusado (encerrada)
     C->>E: record(estudante)
     E->>DB: loss_reporters.refusals + 1 (na 3ª, bloqueado: RN12)
     Note over C,DB: commit
-    C-->>F: 200 com as recusas do estudante, se ficou bloqueado e as sugestões retomadas
+    C-->>F: 200 com as recusas do estudante, se ficou bloqueado, as sugestões retomadas e as encerradas
 ```
 
 Com o objeto Disponível e as sugestões Em espera de volta a Nova, o funcionário pode convocar a próxima perda que combina (RN18).
+
+### A perda recusada se encerra
+
+A seção 6.2 manda a perda voltar a Aberto depois da recusa, mas aí ela ficaria editável de novo, e a RN06 diz que a descrição não muda mais depois de uma convocação. Quem foi recusado poderia ajustar o texto ao que viu no balcão. Por isso, a perda passa a **Recusado**, uma situação final nova (D26), e as outras sugestões dela, com outros objetos, passam a Encerrada. Se o estudante ainda procura o objeto, ele registra a perda de novo, e o limite de 5 registros (RN05) e o bloqueio (RN12) continuam valendo.
+
+O vencimento da convocação (RET-02) não muda: lá ninguém viu o objeto, então a perda volta a Aberto como a seção 6.2 manda.
 
 ### Bloqueio depois de 3 recusas (RN12)
 
 As recusas ficam na linha do estudante em `loss_reporters`, a mesma do limite de 5 registros (RN05, [`limite-registros-abertos.md`](limite-registros-abertos.md)). O registro de perda já lê essa linha com trava antes de contar, e agora também recusa o estudante bloqueado (409, `StudentBlockedException`). Uma recusa e um registro simultâneos do mesmo estudante disputam a mesma versão, então não passam os dois com a contagem antiga.
 
-O desbloqueio pelo administrador não faz parte deste card (D26).
+O desbloqueio pelo administrador é o card [#75](https://github.com/p1lloww/cade-backend/issues/75) (ADM-07). Até ele entrar, o bloqueio só sai pelo banco (D26).
 
 ## 5. Como cada entidade muda
 
@@ -153,7 +159,8 @@ O desbloqueio pelo administrador não faz parte deste card (D26).
 | `FoundItem` | Reservado → Devolvido | Reservado → Disponível | `FOUND_ITEM_HANDED_OVER` / `FOUND_ITEM_RELEASED` |
 | `MatchSuggestion` (a convocada) | Convocada → Concluída | Convocada → Recusada | `MATCH_COMPLETED` / `MATCH_REFUSED` |
 | `MatchSuggestion` (Em espera do objeto) | continuam (RF33 é o RET-06) | Em espera → Nova | — / `MATCH_RESUMED` |
-| `LossReport` | Convocado → Concluído | Convocado → Aberto | `LOSS_REPORT_COMPLETED` / `LOSS_REPORT_RELEASED` |
+| `MatchSuggestion` (Novas ou Em espera da perda, com outros objetos) | continuam | → Encerrada | — / `MATCH_CLOSED` |
+| `LossReport` | Convocado → Concluído | Convocado → Recusado (final) | `LOSS_REPORT_COMPLETED` / `LOSS_REPORT_REFUSED` |
 | `Pickup` (nova) | gravada | — | `PICKUP_REGISTERED` |
 | `LossReporter` | — | recusas + 1 | `STUDENT_REFUSAL_RECORDED`; na 3ª, também `STUDENT_BLOCKED` |
 
@@ -201,7 +208,7 @@ As respostas não trazem o id do estudante, o texto da perda nem os dados reserv
 - [`CounterServiceTest`](../../src/test/java/br/ucsal/cade/pickup/service/counter/CounterServiceTest.java):
   - as transições nos quatro módulos e o histórico, na retirada e na recusa;
   - a verificação insuficiente que não grava nada;
-  - as sugestões Em espera que voltam a Nova;
+  - as sugestões Em espera que voltam a Nova, e as outras da perda recusada que são encerradas;
   - o bloqueio na 3ª recusa, com o registro de perda recusado depois;
   - a convocação encerrada que não aceita outra decisão;
   - a retirada e a recusa simultâneas, em Virtual Threads, das quais só uma passa.

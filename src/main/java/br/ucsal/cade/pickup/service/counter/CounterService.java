@@ -4,6 +4,7 @@ import br.ucsal.cade.founditems.api.FoundItemReservations;
 import br.ucsal.cade.lossreports.api.LossReportSummons;
 import br.ucsal.cade.lossreports.api.RecordedRefusal;
 import br.ucsal.cade.lossreports.api.StudentRefusals;
+import br.ucsal.cade.matching.api.RefusedSuggestion;
 import br.ucsal.cade.matching.api.SuggestionSummons;
 import br.ucsal.cade.pickup.api.event.PickupRegisteredEvent;
 import br.ucsal.cade.pickup.exception.SummonsNotFoundException;
@@ -46,6 +47,7 @@ public class CounterService {
     static final String PICKUP_REASON = "Retirada registrada com documento, matrícula e verificação conferidos.";
     static final String REFUSED_ACTION = "SUMMONS_REFUSED";
     static final String RELEASE_REASON = "A verificação falhou no balcão; o objeto volta a ficar disponível.";
+    static final String REPORT_REFUSED_REASON = "A verificação falhou no balcão; o registro de perda se encerra.";
 
     private static final Logger log = LoggerFactory.getLogger(CounterService.class);
 
@@ -112,8 +114,9 @@ public class CounterService {
     }
 
     /**
-     * O objeto volta a Disponível, a perda a Aberto e as sugestões Em espera do objeto a Nova, para o funcionário
-     * convocar a próxima (RN18). A recusa conta para o estudante (RN12).
+     * O objeto volta a Disponível e as sugestões Em espera dele a Nova, para o funcionário convocar a próxima (RN18).
+     * A perda se encerra como Recusada, com as outras sugestões dela, para a descrição nunca mais mudar depois da
+     * convocação (RN06, D26). A recusa conta para o estudante (RN12).
      *
      * @param reason por que a verificação falhou, para o histórico
      */
@@ -124,14 +127,15 @@ public class CounterService {
 
         close(summons, s -> s.refuse(staffId, clock.instant(), reason), "Refusal");
         foundItems.release(summons.getFoundItemId(), staffId, RELEASE_REASON);
-        List<UUID> resumed = suggestions.refuse(summons.getSuggestionId(), staffId);
-        lossReports.release(summons.getLossReportId(), staffId, RELEASE_REASON);
+        RefusedSuggestion suggestion = suggestions.refuse(summons.getSuggestionId(), staffId);
+        lossReports.refuse(summons.getLossReportId(), staffId, REPORT_REFUSED_REASON);
         RecordedRefusal refusal = refusals.record(summons.getStudentId(), staffId);
 
         audit(staffId, REFUSED_ACTION, Summons.class, summons.getId(), reason);
         logOutcomeAfterCommit(summons, "Summons " + summons.getId() + " refused (student refusals="
-                + refusal.refusals() + ", blocked=" + refusal.blocked() + ", resumed=" + resumed.size() + ")");
-        return new RefusedSummons(summons, refusal, resumed);
+                + refusal.refusals() + ", blocked=" + refusal.blocked() + ", resumed=" + suggestion.resumed().size()
+                + ", closed=" + suggestion.closed().size() + ")");
+        return new RefusedSummons(summons, refusal, suggestion);
     }
 
     private SummonsAtCounter atCounter(Summons summons) {

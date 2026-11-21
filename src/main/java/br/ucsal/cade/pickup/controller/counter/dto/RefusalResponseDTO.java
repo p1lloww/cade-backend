@@ -17,12 +17,14 @@ public record RefusalResponseDTO(
         @Schema(description = "Se o estudante ficou impedido de abrir novos registros (3 recusas, RN12).")
         boolean studentBlocked,
         @Schema(description = "Sugestões do mesmo objeto que voltaram a Nova, para convocar a próxima (RN18).")
-        List<UUID> resumed) {
+        List<UUID> resumed,
+        @Schema(description = "Outras sugestões da perda, encerradas porque a perda se encerrou com a recusa.")
+        List<UUID> closed) {
 
     public static RefusalResponseDTO from(RefusedSummons refused) {
         Summons summons = refused.summons();
         return new RefusalResponseDTO(summons.getId(), summons.getStatus().code(), summons.getStatus().label(),
                 summons.getRefusalReason(), refused.refusal().refusals(), refused.refusal().blocked(),
-                refused.resumed());
+                refused.suggestion().resumed(), refused.suggestion().closed());
     }
 }

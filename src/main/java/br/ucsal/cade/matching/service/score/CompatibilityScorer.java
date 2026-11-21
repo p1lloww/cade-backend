@@ -1,5 +1,11 @@
 package br.ucsal.cade.matching.service.score;
 
+import br.ucsal.cade.matching.service.score.candidate.MatchCandidate;
+import br.ucsal.cade.matching.service.score.config.MatchingProperties;
+import br.ucsal.cade.matching.service.score.criterion.CompatibilityCriterion;
+import br.ucsal.cade.matching.service.score.result.Compatibility;
+import br.ucsal.cade.matching.service.score.result.CompatibilityBand;
+
 import org.springframework.stereotype.Service;
 
 /** Calcula a compatibilidade de um par objeto × perda (RF21). A sugestão é apoio: quem decide é o funcionário (RN08). */
@@ -19,7 +25,8 @@ public class CompatibilityScorer {
         return new Compatibility(score, bandOf(score));
     }
 
-    private CompatibilityBand bandOf(int score) {
+    /** A faixa de uma nota já gravada, pelas faixas atuais de {@code cade.matching.bands}. */
+    public CompatibilityBand bandOf(int score) {
         if (score >= bands.high()) {
             return CompatibilityBand.HIGH;
         }

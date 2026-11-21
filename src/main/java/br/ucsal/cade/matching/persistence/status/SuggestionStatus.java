@@ -36,6 +36,9 @@ public sealed interface SuggestionStatus {
 
     List<SuggestionStatus> ALL = List.of(NEW, ON_HOLD, SUMMONED, COMPLETED, DISCARDED, REFUSED, EXPIRED, CLOSED);
 
+    /** As que ainda pedem atenção do funcionário; as finais saem das listas. */
+    List<SuggestionStatus> ACTIVE = List.of(NEW, ON_HOLD, SUMMONED);
+
     /** Toda sugestão nasce Nova: o cruzamento encontrou compatibilidade média ou alta. */
     static SuggestionStatus initial() {
         return NEW;

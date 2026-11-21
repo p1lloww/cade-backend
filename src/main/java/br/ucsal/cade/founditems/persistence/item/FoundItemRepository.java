@@ -20,4 +20,7 @@ public interface FoundItemRepository extends JpaRepository<FoundItem, UUID> {
 
     @EntityGraph(attributePaths = "category")
     List<FoundItem> findWithCategoryByCategoryIdAndStatusIn(UUID categoryId, Collection<FoundItemStatus> statuses);
+
+    @EntityGraph(attributePaths = "category")
+    List<FoundItem> findWithCategoryByIdIn(Collection<UUID> ids);
 }

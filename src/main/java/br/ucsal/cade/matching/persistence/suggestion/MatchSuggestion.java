@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -46,6 +47,10 @@ public class MatchSuggestion {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** Duas decisões ao mesmo tempo sobre a mesma sugestão (descartar e convocar): só a primeira vale. */
+    @Version
+    private long version;
+
     protected MatchSuggestion() {
     }
 
@@ -67,6 +72,11 @@ public class MatchSuggestion {
      */
     public static MatchSuggestion suggest(UUID foundItemId, UUID lossReportId, int score, Instant createdAt) {
         return new MatchSuggestion(foundItemId, lossReportId, score, createdAt);
+    }
+
+    /** Nova → Descartada. O motivo vai para o histórico, não para a sugestão (RN08). */
+    public void discard() {
+        status = status.discard();
     }
 
     public UUID getId() {
@@ -91,5 +101,9 @@ public class MatchSuggestion {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public long getVersion() {
+        return version;
     }
 }

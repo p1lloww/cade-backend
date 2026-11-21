@@ -69,6 +69,11 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Soma dos critérios | `SumOfCriteria` |
 | Pesos e faixas da compatibilidade | `MatchingProperties` (`cade.matching.*`) |
 | Critério de compatibilidade (`CriterioCompatibilidade`) | `CompatibilityCriterion` |
+| Sugestão ativa (aparece nas listas do funcionário: Nova, Em espera, Convocada) | `SuggestionStatus.ACTIVE` |
+| Sugestões de um objeto ou de uma perda, comparação lado a lado, descarte | `SuggestionService` (`forFoundItem`, `forLossReport`, `find`, `discard`), rotas `GET /found-items/{id}/suggestions`, `GET /loss-reports/{id}/suggestions`, `GET /suggestions/{id}`, `POST /suggestions/{id}/discard` |
+| Sugestão com o objeto e a perda lado a lado | `ComparedSuggestion` (service), `SuggestionResponseDTO` (resposta) |
+| Objeto e perda como o funcionário os compara (RF23) | `ComparableFoundItems` (`founditems.api`), `ComparableLossReports` (`lossreports.api`) |
+| Sugestão descartada (histórico) | ação `MATCH_DISCARDED`, com o motivo do funcionário |
 | Convocação | `Summons` |
 | Retirada | `Pickup` |
 | Recusa no balcão | `PickupRefusal` |

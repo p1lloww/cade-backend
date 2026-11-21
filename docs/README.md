@@ -18,6 +18,8 @@ eles.
 | [autorizacao.md](tecnico/autorizacao.md) | CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D09, D20) |
 | [registro-perda.md](tecnico/registro-perda.md) | o registro de perda em UML: classes, sequência com os eventos, situações e foto (PER-01) |
 | [limite-registros-abertos.md](tecnico/limite-registros-abertos.md) | como o lock otimista garante no máximo 5 registros de perda em andamento por estudante, mesmo com registros simultâneos (RN05) |
+| [modulo-cruzamento.md](tecnico/modulo-cruzamento.md) | guia de leitura do módulo de cruzamento: mapa das pastas, como a nota é calculada, a vida de uma sugestão e o que o funcionário decide, com diagramas (CRU-01 a CRU-03) |
+| [cruzamento.md](tecnico/cruzamento.md) | o cruzamento disparado pelos eventos de cadastro, depois do commit e numa Virtual Thread, com os casos de falha (CRU-02, D23) |
 | [login-codigos.md](tecnico/login-codigos.md) | como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18) |
 
 ## `entrega/`: anexos do manual do POOALAB

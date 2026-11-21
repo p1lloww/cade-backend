@@ -20,4 +20,7 @@ public interface LossReportRepository extends JpaRepository<LossReport, UUID> {
 
     @EntityGraph(attributePaths = "locations")
     List<LossReport> findWithLocationsByCategoryIdAndStatusIn(UUID categoryId, Collection<LossReportStatus> statuses);
+
+    @EntityGraph(attributePaths = {"category", "locations"})
+    List<LossReport> findWithCategoryAndLocationsByIdIn(Collection<UUID> ids);
 }

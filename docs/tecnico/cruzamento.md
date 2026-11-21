@@ -1,5 +1,7 @@
 # Cruzamento por evento (CRU-02)
 
+> Para a visão geral do módulo (pastas, nota, sugestões e decisão do funcionário), comece pelo [guia do módulo de cruzamento](modulo-cruzamento.md).
+
 Como um objeto cadastrado ou uma perda registrada viram sugestões para o funcionário, sem que o cadastro espere o cálculo. As regras estão nos requisitos (RF20, RNF08, seções 6.3, 7.1 e 7.2) e nas decisões D05, D10 e D23. A nota em si (critérios, pesos e faixas) é do CRU-01: ver a D22 e a seção "Strategy + Composite" de [pooa-no-projeto.md](../entrega/pooa-no-projeto.md).
 
 ## 1. Classes envolvidas
@@ -93,6 +95,6 @@ A perda registrada segue o mesmo caminho, com `LossReportRegisteredEvent` e `mat
 
 ## 4. Onde está testado
 
-- [`MatchingServiceTest`](../../src/test/java/br/ucsal/cade/matching/service/suggestion/MatchingServiceTest.java): de ponta a ponta com o banco do Testcontainers. O exemplo da RN07 (80, alta) nos dois sentidos, média gravada e baixa descartada, categoria diferente fora, par sem duplicar, falha sem desfazer o cadastro, e o cruzamento numa Virtual Thread que já enxerga o objeto confirmado.
-- [`MatchingListenerTest`](../../src/test/java/br/ucsal/cade/matching/service/suggestion/MatchingListenerTest.java): a exceção do cruzamento não sobe para quem publicou.
+- [`MatchingServiceTest`](../../src/test/java/br/ucsal/cade/matching/service/matching/MatchingServiceTest.java): de ponta a ponta com o banco do Testcontainers. O exemplo da RN07 (80, alta) nos dois sentidos, média gravada e baixa descartada, categoria diferente fora, par sem duplicar, falha sem desfazer o cadastro, e o cruzamento numa Virtual Thread que já enxerga o objeto confirmado.
+- [`MatchingListenerTest`](../../src/test/java/br/ucsal/cade/matching/service/matching/MatchingListenerTest.java): a exceção do cruzamento não sobe para quem publicou.
 - [`SuggestionStatusTest`](../../src/test/java/br/ucsal/cade/matching/persistence/status/SuggestionStatusTest.java): as 9 transições permitidas da seção 6.3 e as 55 proibidas.

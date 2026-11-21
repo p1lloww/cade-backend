@@ -99,7 +99,7 @@ sequenceDiagram
     C->>A: handOver(objeto)
     A->>DB: objeto → Devolvido
     C->>M: complete(sugestão)
-    M->>DB: sugestão → Concluída
+    M->>DB: sugestão → Concluída; as outras Novas ou Em espera da perda → Encerrada
     C->>P: complete(perda)
     P->>DB: perda → Concluído
     C->>DB: INSERT pickups (documento, matrícula, verificação, funcionário, data e hora)
@@ -159,7 +159,7 @@ O desbloqueio pelo administrador é o card [#75](https://github.com/p1lloww/cade
 | `FoundItem` | Reservado → Devolvido | Reservado → Disponível | `FOUND_ITEM_HANDED_OVER` / `FOUND_ITEM_RELEASED` |
 | `MatchSuggestion` (a convocada) | Convocada → Concluída | Convocada → Recusada | `MATCH_COMPLETED` / `MATCH_REFUSED` |
 | `MatchSuggestion` (Em espera do objeto) | continuam (RF33 é o RET-06) | Em espera → Nova | — / `MATCH_RESUMED` |
-| `MatchSuggestion` (Novas ou Em espera da perda, com outros objetos) | continuam | → Encerrada | — / `MATCH_CLOSED` |
+| `MatchSuggestion` (Novas ou Em espera da perda, com outros objetos) | → Encerrada | → Encerrada | `MATCH_CLOSED` / `MATCH_CLOSED` |
 | `LossReport` | Convocado → Concluído | Convocado → Recusado (final) | `LOSS_REPORT_COMPLETED` / `LOSS_REPORT_REFUSED` |
 | `Pickup` (nova) | gravada | — | `PICKUP_REGISTERED` |
 | `LossReporter` | — | recusas + 1 | `STUDENT_REFUSAL_RECORDED`; na 3ª, também `STUDENT_BLOCKED` |
@@ -208,7 +208,7 @@ As respostas não trazem o id do estudante, o texto da perda nem os dados reserv
 - [`CounterServiceTest`](../../src/test/java/br/ucsal/cade/pickup/service/counter/CounterServiceTest.java):
   - as transições nos quatro módulos e o histórico, na retirada e na recusa;
   - a verificação insuficiente que não grava nada;
-  - as sugestões Em espera que voltam a Nova, e as outras da perda recusada que são encerradas;
+  - as sugestões Em espera que voltam a Nova, e as outras da perda que são encerradas, na recusa e na retirada;
   - o bloqueio na 3ª recusa, com o registro de perda recusado depois;
   - a convocação encerrada que não aceita outra decisão;
   - a retirada e a recusa simultâneas, em Virtual Threads, das quais só uma passa.

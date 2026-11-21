@@ -211,6 +211,7 @@ O fluxo no balcão: o funcionário abre a convocação, e o `CounterService` bus
 **Perguntas prováveis**
 - *Não era mais simples um `switch`?* Para um texto só, sim, e era o que o RET-01 tinha (`WhatToBring`). Com três coisas que variam juntas por risco, o `switch` se repetiria em três lugares. Com o Strategy, tudo o que vale para o risco alto está numa classe só.
 - *Qual a diferença para o Strategy do cruzamento?* No cruzamento, as estratégias **somam** (Composite): todos os critérios valem ao mesmo tempo. No balcão, **uma** estratégia é escolhida pelo risco. É o mesmo padrão em dois usos diferentes.
+- *Hoje as regras só devolvem dados. Por que não um `enum` com atributos?* Para os textos e as verificações de hoje, um `enum` também serviria. As classes ficam prontas para regras com comportamento próprio, como as perguntas de conferência por categoria (RF44, ADM-04), que entram no checklist de cada risco sem mexer nos outros, e o `VerificationRules` confere na subida que nenhum risco ficou sem regra.
 - *Por que as regras são beans do Spring e não um `Map` montado à mão?* Para que uma regra nova entre só com uma classe anotada. A verificação na subida garante que nenhum risco fica sem regra.
 - *Por que o risco vem da convocação, e não do objeto na hora da retirada?* Ele é congelado na convocação (D25), porque o estudante foi avisado do que levar com base nele.
 

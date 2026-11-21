@@ -265,6 +265,22 @@ class CounterServiceTest {
     }
 
     @Test
+    void theOtherSuggestionsOfTheCompletedReportAreClosed() {
+        UUID report = lose(student);
+        MatchSuggestion summoned = suggest(find(), report, 80);
+        MatchSuggestion otherItem = suggest(find(), report, 60);
+        MatchSuggestion otherReport = suggest(find(), lose(), 70);
+        Summons summons = summonsService.summon(summoned.getId(), staff).summons();
+
+        service.registerPickup(summons.getId(), check(VerificationMethod.DETAIL_CONFIRMED), staff);
+
+        assertThat(suggestionStatus(otherItem.getId())).isEqualTo(SuggestionStatus.CLOSED);
+        assertThat(suggestionStatus(otherReport.getId())).isEqualTo(SuggestionStatus.NEW);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_records WHERE entity_id = ? AND action = ?",
+                Long.class, otherItem.getId(), "MATCH_CLOSED")).isOne();
+    }
+
+    @Test
     void everyChangeOfTheRefusalGoesToTheHistoryWithTheStaffAsAuthor() {
         Summons summons = summon(find(), lose(student));
 

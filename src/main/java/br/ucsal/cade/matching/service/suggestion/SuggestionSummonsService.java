@@ -36,6 +36,7 @@ class SuggestionSummonsService implements SuggestionSummons {
     static final String RESUMED_REASON = "A convocação do mesmo objeto foi recusada; a sugestão volta a valer (RN18).";
     static final String CLOSED_ACTION = "MATCH_CLOSED";
     static final String CLOSED_REASON = "A perda foi encerrada pela recusa no balcão.";
+    static final String CLOSED_BY_PICKUP_REASON = "A perda foi concluída com a retirada de outro objeto.";
 
     private static final Logger log = LoggerFactory.getLogger(SuggestionSummonsService.class);
 
@@ -82,7 +83,9 @@ class SuggestionSummonsService implements SuggestionSummons {
         MatchSuggestion suggestion = load(suggestionId);
         change(suggestion, MatchSuggestion::complete, "Completion");
         audit(staffId, COMPLETED_ACTION, suggestion, COMPLETED_REASON);
-        log.debug("Suggestion {} completed by {}", suggestionId, staffId);
+        List<MatchSuggestion> ofTheReport = closeOthersOfTheReport(suggestion, staffId, CLOSED_BY_PICKUP_REASON);
+        log.debug("Suggestion {} completed by {}; {} of the report closed", suggestionId, staffId,
+                ofTheReport.size());
     }
 
     @Override
@@ -99,16 +102,21 @@ class SuggestionSummonsService implements SuggestionSummons {
             audit(staffId, RESUMED_ACTION, other, RESUMED_REASON);
         });
 
-        List<MatchSuggestion> ofTheReport = suggestions.findByLossReportIdAndStatusInAndIdNot(
-                suggestion.getLossReportId(), List.of(SuggestionStatus.NEW, SuggestionStatus.ON_HOLD),
-                suggestion.getId());
-        ofTheReport.forEach(other -> {
-            other.close();
-            audit(staffId, CLOSED_ACTION, other, CLOSED_REASON);
-        });
+        List<MatchSuggestion> ofTheReport = closeOthersOfTheReport(suggestion, staffId, CLOSED_REASON);
         log.debug("Suggestion {} refused by {}; {} suggestion(s) of the item resumed, {} of the report closed",
                 suggestionId, staffId, onHold.size(), ofTheReport.size());
         return new RefusedSuggestion(ids(onHold), ids(ofTheReport));
+    }
+
+    /** As outras sugestões Novas ou Em espera da perda, encerradas porque a perda se encerrou (seção 6.3, D26). */
+    private List<MatchSuggestion> closeOthersOfTheReport(MatchSuggestion suggestion, UUID staffId, String reason) {
+        List<MatchSuggestion> others = suggestions.findByLossReportIdAndStatusInAndIdNot(suggestion.getLossReportId(),
+                List.of(SuggestionStatus.NEW, SuggestionStatus.ON_HOLD), suggestion.getId());
+        others.forEach(other -> {
+            other.close();
+            audit(staffId, CLOSED_ACTION, other, reason);
+        });
+        return others;
     }
 
     private static List<UUID> ids(List<MatchSuggestion> suggestions) {

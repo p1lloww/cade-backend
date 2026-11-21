@@ -31,7 +31,8 @@ public interface SuggestionSummons {
 
     /**
      * Convocada → Concluída: o estudante retirou o objeto (RF29), com o registro no histórico (RF43). As outras
-     * sugestões do objeto continuam como estão; encerrá-las é o RF33. Só roda dentro da transação da retirada.
+     * sugestões Novas ou Em espera da mesma perda são encerradas, porque a perda se conclui (D26). As outras sugestões
+     * do objeto continuam como estão; encerrá-las é o RF33. Só roda dentro da transação da retirada.
      *
      * @throws NotFoundException se a sugestão não existe
      * @throws InvalidStatusTransitionException se a sugestão não está Convocada

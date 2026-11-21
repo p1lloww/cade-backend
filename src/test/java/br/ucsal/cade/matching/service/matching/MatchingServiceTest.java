@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -127,7 +128,15 @@ class MatchingServiceTest {
     @Test
     void aFailureInMatchingKeepsTheRegistration() {
         doThrow(new IllegalStateException("falha simulada")).when(matching).matchFoundItem(any());
+        AtomicBoolean reportMatched = new AtomicBoolean();
+        doAnswer(invocation -> {
+            Object result = invocation.callRealMethod();
+            reportMatched.set(true);
+            return result;
+        }).when(matching).matchLossReport(any());
         UUID report = lose(category("Fone"), "Fone JBL preto", "Bloco 400", "Sala 421", today());
+        // Sem esperar, o cruzamento da perda pode rodar depois do cadastro do objeto e achar o par pelo outro lado.
+        await().atMost(WAIT).untilTrue(reportMatched);
 
         UUID item = find("Fone preto", "Bloco 400", "Sala 421", today());
 

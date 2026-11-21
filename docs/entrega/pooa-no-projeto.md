@@ -18,7 +18,7 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 | ★ SOLID: inversão de dependência | `EmailSender`, `PhotoStorage`, `Clock` | Trocar o SMTP ou o disco sem mexer em quem usa; testar prazos sem esperar | Na `main`; `PhotoStorage` na PR #65 |
 | SOLID: aberto/fechado | `ApiException` e subclasses; `CompatibilityCriterion` | Um tipo novo de erro não exige mudar o tratador; um critério novo não exige mudar a soma | Na `main`; critérios no CRU-01 |
 | SOLID: segregação de interfaces | `AuditRecordRepository` | O histórico não tem método de exclusão (RN19) | Na `main` (ADM-01) |
-| Collections e Streams | `RoleRequirement`, `AuthorizationConfiguration`, `FoundItemStatus`, `WordsCriterion`, `LocationCriterion` | Calcular os perfis aceitos e a hierarquia a partir do enum; as palavras em comum e o melhor local do cruzamento | Na `main`; cruzamento no CRU-01 |
+| Collections e Streams | `RoleRequirement`, `AuthorizationConfiguration`, `FoundItemStatus`, `WordsCriterion`, `LocationCriterion`, `PublicCountsService` | Calcular os perfis aceitos e a hierarquia a partir do enum; as palavras em comum e o melhor local do cruzamento; as contagens da página pública por mês e categoria | Na `main`; cruzamento no CRU-01; página pública no PUB-02 |
 | Records e enums com comportamento | `AuditEvent`, `Role`, `RiskLevel`, `LostPeriod`, `LossLocation`, `MatchingProperties`, `CompatibilityBand` | Dados imutáveis validados na criação; regra junto do dado | Na `main`; `RiskLevel` na PR #65; período e local no PER-01; pesos e faixas no CRU-01 |
 | GRASP: especialista na informação | `FoundItemStatus`, `RiskLevel.canBeRaisedTo`, `FoundItem.register` | A regra fica na classe que tem os dados para decidir | Na `main`; `FoundItem` na PR #65 |
 | Baixo acoplamento (módulos) | `ModuleBoundariesTest` (ArchUnit) | Módulos só se falam pela `api` e nas direções da D10 | Na `main` (GES-01) |
@@ -257,8 +257,9 @@ O fluxo no balcão: o funcionário abre a convocação, e o `CounterService` bus
 - [`RoleRequirement`](../../src/main/java/br/ucsal/cade/shared/security/authorization/RoleRequirement.java): os perfis aceitos por uma rota, já com a hierarquia, num `EnumSet` montado por stream.
 - [`AuthorizationConfiguration`](../../src/main/java/br/ucsal/cade/shared/security/authorization/AuthorizationConfiguration.java): a hierarquia de perfis do Spring (`ROLE_ADMIN > ROLE_STAFF`) gerada a partir do enum com `flatMap`, para a regra ficar num lugar só.
 - [`FoundItemStatus.fromCode`](../../src/main/java/br/ucsal/cade/founditems/persistence/status/FoundItemStatus.java): a situação a partir do código gravado no banco.
+- [`PublicCountsService`](../../src/main/java/br/ucsal/cade/publicpage/service/counts/PublicCountsService.java) (PUB-02): as contagens chegam como linhas (categoria, mês, quantidade). Um `groupingBy` num `TreeMap` em ordem inversa junta as linhas por mês, do mais recente para o mais antigo. Em cada mês, um `Comparator` composto põe a categoria com mais objetos primeiro, com o nome como desempate, e um `mapToLong(...).sum()` dá o total. É a "contagem da página pública" que a seção 7.3 dos requisitos cita.
 
-**Próximos:** a ordenação e a filtragem das sugestões (CRU), as contagens do painel (ADM-06) e da página pública (PUB-02) são o uso principal previsto nos requisitos (seção 7.3).
+**Próximos:** as contagens do painel (ADM-06), no mesmo estilo das da página pública.
 
 ---
 

@@ -1,6 +1,7 @@
 package br.ucsal.cade.pickup.persistence.summons;
 
 import br.ucsal.cade.pickup.persistence.status.SummonsStatus;
+import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.RiskLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -69,7 +70,7 @@ public class Summons {
     private Instant closedAt;
 
     /** Por que a verificação falhou no balcão (RF31); só nas recusadas. */
-    @Column(length = 500)
+    @Column(length = AuditEvent.MAX_REASON_LENGTH)
     private String refusalReason;
 
     @Version

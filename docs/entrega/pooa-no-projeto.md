@@ -10,11 +10,11 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 
 | Conteúdo | Onde | Problema que resolve | Situação |
 |---|---|---|---|
-| ★ State | `FoundItemStatus`, `LossReportStatus` | O objeto e o registro de perda só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01 |
-| ★ Observer (eventos) | `LoginCodeRequestedEvent` → `LoginCodeEmailListener`; `AuditEvent` → `AuditRecorder`; `LossReportRegisteredEvent` | Um módulo avisa que algo aconteceu sem conhecer quem reage | Na `main` (AVI-01, ADM-01); perda no PER-01 |
+| ★ State | `FoundItemStatus`, `LossReportStatus`, `SuggestionStatus` | O objeto, o registro de perda e a sugestão só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01; sugestão no CRU-02 |
+| ★ Observer (eventos) | `EventPublisher`; `LoginCodeRequestedEvent` → `LoginCodeEmailListener`; `AuditEvent` → `AuditRecorder`; `FoundItemRegisteredEvent` e `LossReportRegisteredEvent` → `MatchingListener` | Um módulo avisa que algo aconteceu sem conhecer quem reage | Na `main` (AVI-01, ADM-01); cruzamento no CRU-02 |
 | ★ Concorrência: lock otimista | `LossReporter` + `OPTIMISTIC_FORCE_INCREMENT` | Dois registros simultâneos não passam do limite de 5 em andamento (RN05) | PER-01 |
 | ★ Anotações e reflexão | `@RequiresRole`, `RoleRequirement`, `RouteAuthorizationCoverageTest` | Cada rota declara quem pode usá-la, e um teste impede que uma rota fique aberta por esquecimento | Na `main` (ACE-03) |
-| Virtual Threads | `AsyncConfiguration` + `spring.threads.virtual.enabled` | O e-mail é enviado sem prender a resposta ao usuário | Na `main` (AVI-01) |
+| Virtual Threads | `AsyncConfiguration` + `spring.threads.virtual.enabled` | O e-mail e o cruzamento rodam sem prender a resposta ao usuário | Na `main` (AVI-01); cruzamento no CRU-02 |
 | ★ SOLID: inversão de dependência | `EmailSender`, `PhotoStorage`, `Clock` | Trocar o SMTP ou o disco sem mexer em quem usa; testar prazos sem esperar | Na `main`; `PhotoStorage` na PR #65 |
 | SOLID: aberto/fechado | `ApiException` e subclasses; `CompatibilityCriterion` | Um tipo novo de erro não exige mudar o tratador; um critério novo não exige mudar a soma | Na `main`; critérios no CRU-01 |
 | SOLID: segregação de interfaces | `AuditRecordRepository` | O histórico não tem método de exclusão (RN19) | Na `main` (ADM-01) |
@@ -49,7 +49,7 @@ O `sealed` faz o compilador conhecer todas as situações: os `switch` de `code(
 
 **Registro de perda (PER-01):** o [`LossReportStatus`](../../src/main/java/br/ucsal/cade/lossreports/persistence/status/LossReportStatus.java) segue o mesmo modelo para a seção 6.2, e ainda diz se o registro pode ser editado (`isEditable`, RN06) e quais situações contam para o limite de 5 (`ACTIVE`, RN05). Os testes em [`LossReportStatusTest.java`](../../src/test/java/br/ucsal/cade/lossreports/persistence/status/LossReportStatusTest.java) cobrem as 8 transições permitidas e as 34 proibidas.
 
-**Próximo:** a sugestão do cruzamento (seção 6.3).
+**Sugestão (CRU-02):** o [`SuggestionStatus`](../../src/main/java/br/ucsal/cade/matching/persistence/status/SuggestionStatus.java) cobre a seção 6.3 (Nova, Em espera, Convocada e os cinco finais). Os testes em [`SuggestionStatusTest.java`](../../src/test/java/br/ucsal/cade/matching/persistence/status/SuggestionStatusTest.java) cobrem as 9 transições permitidas e as 55 proibidas.
 
 **Perguntas prováveis**
 - *Por que não um enum com um `switch`?* O enum concentraria todas as transições num método só. Com o State, cada situação guarda as próprias regras, e o `sealed` dá a mesma garantia do enum: não existe situação fora da lista.
@@ -61,18 +61,20 @@ O `sealed` faz o compilador conhecer todas as situações: os `switch` de `code(
 
 **Problema.** Quando um código de login é gerado, alguém precisa enviar o e-mail. Mas o módulo de acesso não deveria conhecer o módulo de avisos, e o envio não deveria atrasar a resposta. O mesmo vale para o histórico (RF43): toda ação relevante precisa ser registrada sem que cada módulo dependa do módulo de administração.
 
-**Como.** Quem faz a ação publica um evento (o sujeito) e não sabe quem ouve. Os ouvintes (os observadores) reagem. O Spring faz o papel do registro de observadores (`ApplicationEventPublisher` e `@EventListener`).
+**Como.** Quem faz a ação publica um evento (o sujeito) e não sabe quem ouve. Os ouvintes (os observadores) reagem. Quem publica usa a interface [`EventPublisher`](../../src/main/java/br/ucsal/cade/shared/event/EventPublisher.java) (o `PublicadorEventos` dos requisitos); por trás dela, o Spring faz o papel do registro de observadores (`ApplicationEventPublisher` e `@EventListener`). Se o RabbitMQ entrar, troca só a implementação.
 
 ```
 LoginService ──publica──► LoginCodeRequestedEvent ──► LoginCodeEmailListener (depois do commit, @Async)
 qualquer módulo ──publica──► AuditEvent ──► AuditRecorder (síncrono, na mesma transação)
+FoundItemService ──publica──► FoundItemRegisteredEvent ─┐
+LossReportService ─publica──► LossReportRegisteredEvent ─┴► MatchingListener (depois do commit, @Async)
 ```
 
-Os dois ouvintes mostram as duas formas do padrão: o e-mail roda **depois do commit e em outra thread**, porque uma falha no envio não pode desfazer o login (D05). Já o histórico roda **na mesma transação**, porque uma ação sem histórico não pode ser gravada (RNF07, complemento da D10).
+Os ouvintes mostram as duas formas do padrão: o e-mail e o cruzamento rodam **depois do commit e em outra thread**, porque uma falha neles não pode desfazer o login nem o cadastro (D05, RNF08). Já o histórico roda **na mesma transação**, porque uma ação sem histórico não pode ser gravada (RNF07, complemento da D10).
 
 **Onde:** [`LoginCodeRequestedEvent.java`](../../src/main/java/br/ucsal/cade/access/api/event/LoginCodeRequestedEvent.java), [`LoginCodeEmailListener.java`](../../src/main/java/br/ucsal/cade/notifications/service/login/LoginCodeEmailListener.java), [`AuditEvent.java`](../../src/main/java/br/ucsal/cade/shared/audit/AuditEvent.java), [`AuditRecorder.java`](../../src/main/java/br/ucsal/cade/administration/service/audit/AuditRecorder.java); testes em [`AuditRecorderTest.java`](../../src/test/java/br/ucsal/cade/administration/service/audit/AuditRecorderTest.java) (commit grava, rollback não grava, sem transação falha).
 
-**Próximos:** o `FoundItemRegisteredEvent` (PR #65) e o [`LossReportRegisteredEvent`](../../src/main/java/br/ucsal/cade/lossreports/api/event/LossReportRegisteredEvent.java) (PER-01) serão ouvidos pelo cruzamento (CRU-02), que calcula as sugestões em segundo plano. Pela D10, `lossreports` não pode chamar `matching` (é o cruzamento que depende das perdas), então o evento é o único caminho.
+**Cruzamento (CRU-02):** o [`MatchingListener`](../../src/main/java/br/ucsal/cade/matching/service/suggestion/MatchingListener.java) ouve o `FoundItemRegisteredEvent` e o `LossReportRegisteredEvent` e chama o [`MatchingService`](../../src/main/java/br/ucsal/cade/matching/service/suggestion/MatchingService.java), que grava as sugestões médias e altas. Pela D10, `founditems` e `lossreports` não podem chamar `matching` (é o cruzamento que depende deles), então o evento é o único caminho. O fluxo, com os casos de falha, está em [`cruzamento.md`](../tecnico/cruzamento.md); o [`MatchingServiceTest.java`](../../src/test/java/br/ucsal/cade/matching/service/suggestion/MatchingServiceTest.java) confere de ponta a ponta, inclusive que uma falha no cruzamento não desfaz o cadastro.
 
 **Perguntas prováveis**
 - *Por que eventos e não chamar o serviço de e-mail direto?* Pela D10, `access` não pode depender de `notifications`. O evento inverte a dependência: quem ouve conhece o evento, e quem publica não conhece ninguém.
@@ -154,7 +156,7 @@ SameCategoryGate
 
 **Onde:** [`AsyncConfiguration.java`](../../src/main/java/br/ucsal/cade/shared/event/AsyncConfiguration.java), [`application.yml`](../../src/main/resources/application.yml) (`spring.threads.virtual.enabled`) e o `@Async` do [`LoginCodeEmailListener.java`](../../src/main/java/br/ucsal/cade/notifications/service/login/LoginCodeEmailListener.java).
 
-**Próximos:** o cruzamento (CRU-02) roda no mesmo esquema.
+**Cruzamento (CRU-02):** o [`MatchingListener`](../../src/main/java/br/ucsal/cade/matching/service/suggestion/MatchingListener.java) roda no mesmo esquema: o funcionário cadastra o próximo objeto sem esperar as sugestões do anterior. O teste `matchesInAVirtualThreadAfterTheCommit` do [`MatchingServiceTest.java`](../../src/test/java/br/ucsal/cade/matching/service/suggestion/MatchingServiceTest.java) confere que o cruzamento roda numa Virtual Thread (`Thread.isVirtual()`) e já enxerga o objeto confirmado.
 
 ---
 
@@ -166,6 +168,7 @@ SameCategoryGate
 |---|---|---|
 | [`EmailSender`](../../src/main/java/br/ucsal/cade/shared/mail/EmailSender.java) (o `ServicoEmail` dos requisitos) | [`SmtpEmailSender`](../../src/main/java/br/ucsal/cade/shared/mail/SmtpEmailSender.java) | Trocar Gmail por Mailpit ou por uma caixa interna no modo demonstração (DEM) sem mexer em quem envia |
 | `PhotoStorage` (o `ArmazenamentoFotos`, PR #65) | `LocalPhotoStorage` | Guardar fotos em disco hoje e em outro lugar amanhã |
+| [`EventPublisher`](../../src/main/java/br/ucsal/cade/shared/event/EventPublisher.java) (o `PublicadorEventos`, CRU-02) | `SpringEventPublisher` | Trocar os eventos do Spring pelo RabbitMQ sem mexer em quem publica (seção 7.2) |
 | `java.time.Clock` ([`TimeConfiguration`](../../src/main/java/br/ucsal/cade/shared/time/TimeConfiguration.java)) | relógio real; nos testes, o `MutableClock` | Testar prazos (10 minutos do código, 90 dias do objeto) sem esperar |
 
 **Aberto/fechado (O).** Todo erro de negócio herda de [`ApiException`](../../src/main/java/br/ucsal/cade/shared/exception/ApiException.java), e cada subclasse diz o próprio status HTTP (`BadRequestException`, `ConflictException`, `TooManyRequestsException`). Um único tratador, o [`ApiExceptionHandler`](../../src/main/java/br/ucsal/cade/shared/web/error/ApiExceptionHandler.java), transforma qualquer uma numa resposta em português. Um erro novo é uma classe nova, sem mudar o tratador.

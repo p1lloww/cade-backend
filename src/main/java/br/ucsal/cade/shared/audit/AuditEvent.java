@@ -5,8 +5,8 @@ import java.util.UUID;
 
 /**
  * Contrato do evento de histórico (RF43, RNF07, RN19, D10). Qualquer módulo que realiza uma ação relevante publica
- * este evento com o {@code ApplicationEventPublisher}, dentro da mesma transação da ação. O módulo de administração
- * ouve o evento de forma síncrona e grava o registro, então, se a gravação falhar, a ação inteira é desfeita.
+ * este evento com o {@code EventPublisher}, dentro da mesma transação da ação. O módulo de administração ouve o
+ * evento de forma síncrona e grava o registro, então, se a gravação falhar, a ação inteira é desfeita.
  * <p>
  * O autor vem da claim {@code sub} do JWT, que guarda o id do usuário. Para ações do sistema (tarefas agendadas,
  * cruzamento automático), use {@link #SYSTEM_ACTOR}. O autor nunca é nulo, para que quem esquecer de informá-lo

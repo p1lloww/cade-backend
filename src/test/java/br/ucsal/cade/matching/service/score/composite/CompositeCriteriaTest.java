@@ -1,14 +1,19 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.composite;
+
+import br.ucsal.cade.matching.service.score.candidate.FoundItemProfile;
+import br.ucsal.cade.matching.service.score.candidate.MatchCandidate;
+import br.ucsal.cade.matching.service.score.candidate.Place;
+import br.ucsal.cade.matching.service.score.criterion.CompatibilityCriterion;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static br.ucsal.cade.matching.service.score.Candidates.CELULAR;
-import static br.ucsal.cade.matching.service.score.Candidates.DAY;
-import static br.ucsal.cade.matching.service.score.Candidates.candidate;
-import static br.ucsal.cade.matching.service.score.Candidates.found;
-import static br.ucsal.cade.matching.service.score.Candidates.lost;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.CELULAR;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.DAY;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.candidate;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.found;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.lost;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CompositeCriteriaTest {

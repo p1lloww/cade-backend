@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.suggestion;
+package br.ucsal.cade.matching.service.matching;
 
 import br.ucsal.cade.founditems.api.event.FoundItemRegisteredEvent;
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;

@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.suggestion;
+package br.ucsal.cade.matching.service.matching;
 
 import br.ucsal.cade.founditems.api.MatchableFoundItem;
 import br.ucsal.cade.founditems.api.MatchableFoundItems;
@@ -6,12 +6,12 @@ import br.ucsal.cade.lossreports.api.MatchableLossReport;
 import br.ucsal.cade.lossreports.api.MatchableLossReports;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestionRepository;
-import br.ucsal.cade.matching.service.score.Compatibility;
+import br.ucsal.cade.matching.service.score.result.Compatibility;
 import br.ucsal.cade.matching.service.score.CompatibilityScorer;
-import br.ucsal.cade.matching.service.score.FoundItemProfile;
-import br.ucsal.cade.matching.service.score.LossReportProfile;
-import br.ucsal.cade.matching.service.score.MatchCandidate;
-import br.ucsal.cade.matching.service.score.Place;
+import br.ucsal.cade.matching.service.score.candidate.FoundItemProfile;
+import br.ucsal.cade.matching.service.score.candidate.LossReportProfile;
+import br.ucsal.cade.matching.service.score.candidate.MatchCandidate;
+import br.ucsal.cade.matching.service.score.candidate.Place;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.event.EventPublisher;
 import org.springframework.stereotype.Service;

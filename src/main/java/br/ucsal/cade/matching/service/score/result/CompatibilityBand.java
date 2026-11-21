@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.result;
 
 /** Faixa da compatibilidade (RN07). Sugestões baixas não aparecem por padrão. */
 public enum CompatibilityBand {

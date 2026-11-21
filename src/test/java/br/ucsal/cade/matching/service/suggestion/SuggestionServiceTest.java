@@ -1,5 +1,7 @@
 package br.ucsal.cade.matching.service.suggestion;
 
+import br.ucsal.cade.matching.exception.SuggestionNotFoundException;
+
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.founditems.service.item.FoundItemService;
 import br.ucsal.cade.founditems.service.item.RegisterFoundItem;
@@ -9,7 +11,7 @@ import br.ucsal.cade.lossreports.service.report.RegisterLossReport;
 import br.ucsal.cade.matching.persistence.status.SuggestionStatus;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestionRepository;
-import br.ucsal.cade.matching.service.score.CompatibilityBand;
+import br.ucsal.cade.matching.service.score.result.CompatibilityBand;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;

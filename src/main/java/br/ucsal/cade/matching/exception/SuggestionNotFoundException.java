@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.suggestion;
+package br.ucsal.cade.matching.exception;
 
 import br.ucsal.cade.shared.exception.NotFoundException;
 

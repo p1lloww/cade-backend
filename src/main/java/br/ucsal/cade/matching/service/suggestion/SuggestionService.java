@@ -1,5 +1,7 @@
 package br.ucsal.cade.matching.service.suggestion;
 
+import br.ucsal.cade.matching.exception.SuggestionNotFoundException;
+
 import br.ucsal.cade.founditems.api.ComparableFoundItem;
 import br.ucsal.cade.founditems.api.ComparableFoundItems;
 import br.ucsal.cade.lossreports.api.ComparableLossReport;

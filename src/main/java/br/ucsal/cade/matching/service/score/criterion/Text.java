@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.criterion;
 
 import java.text.Normalizer;
 import java.util.Arrays;

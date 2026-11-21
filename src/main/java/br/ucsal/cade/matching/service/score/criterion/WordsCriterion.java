@@ -1,4 +1,7 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.criterion;
+
+import br.ucsal.cade.matching.service.score.candidate.MatchCandidate;
+import br.ucsal.cade.matching.service.score.config.MatchingProperties;
 
 import java.util.Set;
 

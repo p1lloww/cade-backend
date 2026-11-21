@@ -3,7 +3,7 @@ package br.ucsal.cade.matching.service.suggestion;
 import br.ucsal.cade.founditems.api.ComparableFoundItem;
 import br.ucsal.cade.lossreports.api.ComparableLossReport;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
-import br.ucsal.cade.matching.service.score.CompatibilityBand;
+import br.ucsal.cade.matching.service.score.result.CompatibilityBand;
 
 /** A sugestão com o objeto e a perda lado a lado, como o funcionário decide (RF22, RF23). */
 public record ComparedSuggestion(MatchSuggestion suggestion, CompatibilityBand band, ComparableFoundItem foundItem,

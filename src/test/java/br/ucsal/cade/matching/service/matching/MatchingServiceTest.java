@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.suggestion;
+package br.ucsal.cade.matching.service.matching;
 
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.founditems.persistence.item.FoundItemRepository;

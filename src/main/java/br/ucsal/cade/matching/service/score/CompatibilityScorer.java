@@ -1,5 +1,11 @@
 package br.ucsal.cade.matching.service.score;
 
+import br.ucsal.cade.matching.service.score.candidate.MatchCandidate;
+import br.ucsal.cade.matching.service.score.config.MatchingProperties;
+import br.ucsal.cade.matching.service.score.criterion.CompatibilityCriterion;
+import br.ucsal.cade.matching.service.score.result.Compatibility;
+import br.ucsal.cade.matching.service.score.result.CompatibilityBand;
+
 import org.springframework.stereotype.Service;
 
 /** Calcula a compatibilidade de um par objeto × perda (RF21). A sugestão é apoio: quem decide é o funcionário (RN08). */

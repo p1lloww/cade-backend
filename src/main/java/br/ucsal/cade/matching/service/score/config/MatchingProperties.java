@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.config;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;

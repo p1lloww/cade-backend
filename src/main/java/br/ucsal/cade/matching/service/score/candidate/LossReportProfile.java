@@ -1,4 +1,4 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.candidate;
 
 import java.time.LocalDate;
 import java.util.List;

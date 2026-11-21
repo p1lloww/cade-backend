@@ -1,4 +1,6 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.result;
+
+import br.ucsal.cade.matching.service.score.composite.SumOfCriteria;
 
 import java.util.Objects;
 

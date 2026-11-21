@@ -1,4 +1,11 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.config;
+
+import br.ucsal.cade.matching.service.score.composite.SameCategoryGate;
+import br.ucsal.cade.matching.service.score.composite.SumOfCriteria;
+import br.ucsal.cade.matching.service.score.criterion.CompatibilityCriterion;
+import br.ucsal.cade.matching.service.score.criterion.DateCriterion;
+import br.ucsal.cade.matching.service.score.criterion.LocationCriterion;
+import br.ucsal.cade.matching.service.score.criterion.WordsCriterion;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -12,14 +19,14 @@ import java.util.List;
  */
 @Configuration
 @EnableConfigurationProperties(MatchingProperties.class)
-class MatchingConfiguration {
+public class MatchingConfiguration {
 
     @Bean
     CompatibilityCriterion compatibilityCriteria(MatchingProperties properties) {
         return criteriaOf(properties);
     }
 
-    static CompatibilityCriterion criteriaOf(MatchingProperties properties) {
+    public static CompatibilityCriterion criteriaOf(MatchingProperties properties) {
         return new SameCategoryGate(new SumOfCriteria(List.of(
                 new DateCriterion(properties.date()),
                 new LocationCriterion(properties.location()),

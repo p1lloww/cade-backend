@@ -1,11 +1,13 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.criterion;
+
+import br.ucsal.cade.matching.service.score.candidate.Candidates;
 
 import org.junit.jupiter.api.Test;
 
-import static br.ucsal.cade.matching.service.score.Candidates.DAY;
-import static br.ucsal.cade.matching.service.score.Candidates.candidate;
-import static br.ucsal.cade.matching.service.score.Candidates.found;
-import static br.ucsal.cade.matching.service.score.Candidates.lost;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.DAY;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.candidate;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.found;
+import static br.ucsal.cade.matching.service.score.candidate.Candidates.lost;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class WordsCriterionTest {

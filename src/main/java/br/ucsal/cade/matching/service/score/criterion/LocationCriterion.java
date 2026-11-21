@@ -1,4 +1,8 @@
-package br.ucsal.cade.matching.service.score;
+package br.ucsal.cade.matching.service.score.criterion;
+
+import br.ucsal.cade.matching.service.score.candidate.MatchCandidate;
+import br.ucsal.cade.matching.service.score.candidate.Place;
+import br.ucsal.cade.matching.service.score.config.MatchingProperties;
 
 /**
  * Mesma sala ou mesmo bloco (RN07). Vale o local da perda que mais pontua, e sala não informada no mesmo bloco conta

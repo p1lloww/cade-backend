@@ -6,6 +6,7 @@ import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.RiskLevel;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -74,6 +75,24 @@ class LossReportTest {
 
         assertThatThrownBy(() -> report.getLocations().add(LossLocation.of("Bloco B", null)))
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void summoningAnOpenReportLocksTheDescription() {
+        LossReport report = register(rooms(1));
+
+        report.summon();
+
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.SUMMONED);
+        assertThat(report.getStatus().isEditable()).isFalse();
+    }
+
+    @Test
+    void aSummonedReportCannotBeSummonedAgain() {
+        LossReport report = register(rooms(1));
+        report.summon();
+
+        assertThatThrownBy(report::summon).isInstanceOf(InvalidStatusTransitionException.class);
     }
 
     private static List<LossLocation> rooms(int count) {

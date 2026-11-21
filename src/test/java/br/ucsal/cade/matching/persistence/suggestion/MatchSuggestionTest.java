@@ -56,4 +56,24 @@ class MatchSuggestionTest {
         assertThatThrownBy(suggestion::discard).isInstanceOf(InvalidStatusTransitionException.class);
         assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.DISCARDED);
     }
+
+    @Test
+    void summoningANewSuggestionMakesItSummoned() {
+        MatchSuggestion suggestion = MatchSuggestion.suggest(UUID.randomUUID(), UUID.randomUUID(), 80, NOW);
+
+        suggestion.summon();
+
+        assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.SUMMONED);
+        assertThatThrownBy(suggestion::discard).isInstanceOf(InvalidStatusTransitionException.class);
+    }
+
+    @Test
+    void aSuggestionOnHoldCannotBeSummoned() {
+        MatchSuggestion suggestion = MatchSuggestion.suggest(UUID.randomUUID(), UUID.randomUUID(), 80, NOW);
+
+        suggestion.putOnHold();
+
+        assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.ON_HOLD);
+        assertThatThrownBy(suggestion::summon).isInstanceOf(InvalidStatusTransitionException.class);
+    }
 }

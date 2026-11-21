@@ -10,9 +10,9 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 
 | Conteúdo | Onde | Problema que resolve | Situação |
 |---|---|---|---|
-| ★ State | `FoundItemStatus`, `LossReportStatus`, `SuggestionStatus` | O objeto, o registro de perda e a sugestão só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01; sugestão no CRU-02 |
+| ★ State | `FoundItemStatus`, `LossReportStatus`, `SuggestionStatus`, `SummonsStatus` | O objeto, o registro de perda, a sugestão e a convocação só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01; sugestão no CRU-02; convocação no RET-01 |
 | ★ Observer (eventos) | `EventPublisher`; `LoginCodeRequestedEvent` → `LoginCodeEmailListener`; `AuditEvent` → `AuditRecorder`; `FoundItemRegisteredEvent` e `LossReportRegisteredEvent` → `MatchingListener` | Um módulo avisa que algo aconteceu sem conhecer quem reage | Na `main` (AVI-01, ADM-01); cruzamento no CRU-02 |
-| ★ Concorrência: lock otimista | `LossReporter` + `OPTIMISTIC_FORCE_INCREMENT`; `@Version` em `MatchSuggestion` | Dois registros simultâneos não passam do limite de 5 em andamento (RN05); duas decisões simultâneas sobre a mesma sugestão não valem as duas | PER-01; sugestão no CRU-03 |
+| ★ Concorrência: lock otimista | `LossReporter` + `OPTIMISTIC_FORCE_INCREMENT`; `@Version` em `MatchSuggestion` e `FoundItem` | Dois registros simultâneos não passam do limite de 5 em andamento (RN05); duas decisões simultâneas sobre a mesma sugestão não valem as duas; um objeto nunca tem duas convocações ativas (RN18) | PER-01; sugestão no CRU-03; convocação no RET-01 |
 | ★ Anotações e reflexão | `@RequiresRole`, `RoleRequirement`, `RouteAuthorizationCoverageTest` | Cada rota declara quem pode usá-la, e um teste impede que uma rota fique aberta por esquecimento | Na `main` (ACE-03) |
 | Virtual Threads | `AsyncConfiguration` + `spring.threads.virtual.enabled` | O e-mail e o cruzamento rodam sem prender a resposta ao usuário | Na `main` (AVI-01); cruzamento no CRU-02 |
 | ★ SOLID: inversão de dependência | `EmailSender`, `PhotoStorage`, `Clock` | Trocar o SMTP ou o disco sem mexer em quem usa; testar prazos sem esperar | Na `main`; `PhotoStorage` na PR #65 |
@@ -118,6 +118,18 @@ public @interface RequiresRole { Role[] value(); }
 **Perguntas prováveis**
 - *Por que otimista e não pessimista?* Conflito de verdade é raro (o mesmo estudante enviando dois registros no mesmo instante). O otimista não deixa ninguém esperando; só quem perde a corrida tenta de novo.
 - *Por que não um `@Version` no próprio registro?* Num cadastro, o registro ainda não existe: duas inserções não disputam nada. É preciso uma linha que as duas leiam.
+
+### Uma convocação ativa por objeto (RET-01)
+
+**Problema.** Um objeto pode ter duas sugestões (duas perdas que combinam), e dois funcionários podem convocar ao mesmo tempo, cada um por uma. As duas leem o objeto Disponível; sem proteção, as duas convocam, e o mesmo objeto fica prometido a dois estudantes (RN18).
+
+**Como.** O `FoundItem` tem `@Version`. A convocação reserva o objeto e grava essa mudança antes de mexer nas sugestões e na perda; a segunda convocação espera a linha do objeto, encontra a versão já alterada, falha e é desfeita inteira (409). Gravar o objeto primeiro dá uma ordem fixa de travas, sem deadlock entre as sugestões.
+
+**Onde:** [`SummonsService.java`](../../src/main/java/br/ucsal/cade/pickup/service/summons/SummonsService.java), [`FoundItemReservationsService.java`](../../src/main/java/br/ucsal/cade/founditems/service/item/FoundItemReservationsService.java); fluxo em [`convocacao.md`](../tecnico/convocacao.md); teste em [`SummonsServiceTest.java`](../../src/test/java/br/ucsal/cade/pickup/service/summons/SummonsServiceTest.java) (6 convocações simultâneas do mesmo objeto em Virtual Threads terminam com exatamente uma).
+
+**Perguntas prováveis**
+- *Por que a versão do objeto, e não uma restrição única no banco?* A restrição precisaria valer só para convocações ativas (índice parcial), que o `ddl-auto` não cria (D06). A linha do objeto já muda de situação na convocação, então a versão dela resolve sem tabela nova.
+- *Por que gravar o objeto antes?* Para que toda convocação do mesmo objeto dispute a mesma linha primeiro (D25).
 
 ---
 

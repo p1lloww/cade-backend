@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -79,6 +80,10 @@ public class FoundItem {
     @Column(nullable = false, updatable = false)
     private Instant registeredAt;
 
+    /** Duas convocações ao mesmo tempo do mesmo objeto: só a primeira reserva o objeto (RN18). */
+    @Version
+    private long version;
+
     protected FoundItem() {
     }
 
@@ -125,6 +130,11 @@ public class FoundItem {
                     + defaultRisk.label() + " da categoria.");
         }
         return requested;
+    }
+
+    /** Disponível ou Não reclamado → Reservado: um estudante foi convocado para retirar o objeto (RF26). */
+    public void reserve() {
+        status = status.reserve();
     }
 
     private static String blankToNull(String value) {
@@ -181,5 +191,9 @@ public class FoundItem {
 
     public Instant getRegisteredAt() {
         return registeredAt;
+    }
+
+    public long getVersion() {
+        return version;
     }
 }

@@ -74,7 +74,13 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Sugestão com o objeto e a perda lado a lado | `ComparedSuggestion` (service), `SuggestionResponseDTO` (resposta) |
 | Objeto e perda como o funcionário os compara (RF23) | `ComparableFoundItems` (`founditems.api`), `ComparableLossReports` (`lossreports.api`) |
 | Sugestão descartada (histórico) | ação `MATCH_DISCARDED`, com o motivo do funcionário |
-| Convocação | `Summons` |
+| Convocação | `Summons` (tabela `summons`; uma por sugestão), criada pelo `SummonsService.summon`; rota `POST /suggestions/{id}/summon` (funcionário) |
+| Situação da convocação (Ativa, Concluída, Recusada, Vencida) | `SummonsStatus` (`ACTIVE`, `COMPLETED`, `REFUSED`, `EXPIRED`); ações `complete`, `refuse`, `expire` |
+| Convocar (a parte de cada módulo) | `FoundItemReservations.reserve` (`founditems.api`), `LossReportSummons.summon` (`lossreports.api`), `SuggestionSummons.pairOf` e `summon` (`matching.api`); `FoundItem.reserve`, `LossReport.summon`, `MatchSuggestion.summon` e `putOnHold` |
+| Local, horário, prazo e o que levar (RF26) | `PickupInstructions` (`pickup.api`); valores de `cade.pickup.*` (`PickupProperties`) e texto por risco em `WhatToBring` |
+| Prazo para retirar (RN15) | `Summons.expiresAt`, a partir de `cade.pickup.deadline` |
+| Evento convocacao.criada | `SummonsCreatedEvent` (`pickup.api.event`) |
+| Convocação no histórico | ações `SUMMONS_CREATED`, `FOUND_ITEM_RESERVED`, `LOSS_REPORT_SUMMONED`, `MATCH_SUMMONED` e `MATCH_ON_HOLD` |
 | Retirada | `Pickup` |
 | Recusa no balcão | `PickupRefusal` |
 | Destino de não reclamado (bazar, descarte, outro) | `Disposal` |

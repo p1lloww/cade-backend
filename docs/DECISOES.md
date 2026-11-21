@@ -227,6 +227,21 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - Se precisar valer na hora, o caminho é conferir o perfil no banco ao validar o token, ou encurtar a validade do token.
 - **Situação:** fechada.
 
+## D25 — Convocação: ordem das mudanças, sugestões em espera e o que o estudante recebe
+- **Origem:** o RET-01 junta numa transação objeto, perda e sugestão (seção 7.1) e exige uma convocação ativa por objeto (RN18) com lock otimista. Os requisitos não definiam em que ordem as mudanças são gravadas, o que acontece com as outras sugestões da mesma perda nem o texto de "o que levar" (RF26).
+- **Decisão (21/11/2026):**
+  - **Módulos:** a convocação (`Summons`) fica no `pickup`, que muda as entidades dos outros módulos pelas interfaces `FoundItemReservations`, `LossReportSummons` e `SuggestionSummons`, na `api` de cada um. Cada módulo muda a própria entidade e grava o próprio histórico; as implementações exigem a transação da convocação (`Propagation.MANDATORY`).
+  - **Lock:** o `FoundItem` ganha `@Version`. O objeto é reservado e gravado (flush) antes de qualquer sugestão mudar, para que convocações simultâneas do mesmo objeto disputem sempre a mesma linha primeiro: a segunda perde no `@Version` (409) em vez de travar em deadlock nas sugestões.
+  - **Em espera:** só as outras sugestões **Novas do mesmo objeto** vão para Em espera (RN18). As outras sugestões da mesma perda, com outros objetos, continuam Novas; convocar uma delas é recusado enquanto a perda está Convocada, porque a seção 6.2 só convoca a partir de Aberto.
+  - **O que o estudante recebe:** local e horário da sala vêm de `cade.pickup.place` e `cade.pickup.hours`, e o prazo de `cade.pickup.deadline` (7 dias, RN15). O "o que levar" depende do risco gravado na convocação: sempre documento com foto (RN10), mais o desbloqueio ou a prova para risco alto e o aviso de entrega só ao titular para documentos (RN09). O texto não conta o que o funcionário vai conferir (RN03).
+- **Motivo:** o lock otimista pedido no card só funciona se houver uma linha que toda convocação do mesmo objeto atualiza; a do objeto já muda de situação, então basta a versão. Gravar o objeto primeiro dá uma ordem fixa de travas.
+- **Consequências:**
+  - Um banco local criado antes do RET-01 não ganha a coluna `version` em `found_items` (o `ddl-auto: update` não consegue criar coluna `NOT NULL` numa tabela com linhas); é preciso `docker compose down -v`.
+  - Uma sugestão criada pelo cruzamento no mesmo instante da convocação pode nascer Nova para um objeto já Reservado. Convocá-la é recusado pela situação do objeto, e ela volta a valer se a convocação vencer.
+  - O que levar por risco é um `switch` simples (`WhatToBring`); as regras de conferência no balcão por risco (RET-03) podem absorvê-lo.
+- **Detalhes:** [`docs/tecnico/convocacao.md`](tecnico/convocacao.md).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -242,3 +257,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **20/11/2026 — D22 registrada:** detalhes da nota de compatibilidade (período, vários locais, palavras que contam), na implementação do CRU-01.
 - **21/11/2026 — D23 registrada:** quem entra no cruzamento, sugestão única por par e falha sem efeito no cadastro, na implementação do CRU-02.
 - **21/11/2026 — D24 registrada:** a mudança de perfil de funcionário vale no próximo login, na implementação do ADM-02.
+- **21/11/2026 — D25 registrada:** ordem das mudanças na convocação, sugestões em espera e o que o estudante recebe, na implementação do RET-01.

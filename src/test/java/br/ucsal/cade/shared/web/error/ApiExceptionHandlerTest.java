@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -50,6 +51,11 @@ class ApiExceptionHandlerTest {
             throw new AccessDeniedException("role STUDENT cannot do this");
         }
 
+        @PostMapping("/concurrent-change")
+        void concurrentChange() {
+            throw new ObjectOptimisticLockingFailureException("LossReporter", "some-id");
+        }
+
         @PostMapping("/unexpected")
         void unexpected() {
             throw new IllegalStateException("connection refused: postgres:5432");
@@ -91,6 +97,15 @@ class ApiExceptionHandlerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value(ApiExceptionHandler.FORBIDDEN_MESSAGE));
+    }
+
+    @Test
+    void turnsAnOptimisticLockFailureIntoA409AskingToTryAgain() throws Exception {
+        mvc.perform(post("/concurrent-change"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value(ApiExceptionHandler.CONCURRENT_CHANGE_MESSAGE))
+                .andExpect(content().string(not(containsString("LossReporter"))));
     }
 
     @Test

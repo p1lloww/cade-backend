@@ -46,6 +46,14 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Registro de perda | `LossReport` |
 | Situação do registro (Aberto, Aguardando informações, Convocado, Concluído, Vencido, Cancelado) | `LossReportStatus` (`OPEN`, `AWAITING_INFO`, `SUMMONED`, `COMPLETED`, `EXPIRED`, `CANCELLED`) |
 | Detalhe que só o dono conhece | `secretDetail` |
+| Pedir informações, retomar, convocar, liberar, concluir, vencer, cancelar (ações sobre o registro) | `requestInfo`, `resume`, `summon`, `release`, `complete`, `expire`, `cancel` |
+| Registro em andamento (conta para o limite de 5, RN05) | `LossReportStatus.ACTIVE` (Aberto, Aguardando informações, Convocado) |
+| Local da perda (bloco e sala) | `LossLocation` |
+| Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
+| Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
+| Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
+| Evento perda.registrada | `LossReportRegisteredEvent` (`lossreports.api.event`) |
+| Lock do limite de registros | `LossReporter` (tabela `loss_reporters`) |
 | Sugestão (par objeto × perda) | `MatchSuggestion` |
 | Situação da sugestão (Nova, Em espera, Convocada, Concluída, Descartada, Recusada, Vencida, Encerrada) | `SuggestionStatus` (`NEW`, `ON_HOLD`, `SUMMONED`, `COMPLETED`, `DISCARDED`, `REFUSED`, `EXPIRED`, `CLOSED`) |
 | Compatibilidade (nota de 0 a 100) | `score` |

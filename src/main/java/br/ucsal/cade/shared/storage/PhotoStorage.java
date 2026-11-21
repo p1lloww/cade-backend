@@ -20,9 +20,7 @@ public interface PhotoStorage {
      */
     String save(byte[] content);
 
-    /** A foto guardada com esta chave, ou vazio se ela não existe. */
     Optional<StoredPhoto> load(String key);
 
-    /** Apaga a foto, se existir; usado quando o registro dono dela não chega a ser gravado. */
     void delete(String key);
 }

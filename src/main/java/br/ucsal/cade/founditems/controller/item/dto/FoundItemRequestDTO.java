@@ -18,7 +18,7 @@ import java.util.UUID;
  * obrigatórios (RF04).
  */
 @Schema(description = "Cadastro de um objeto achado. Só foto, categoria, bloco, sala e data são obrigatórios.")
-public record FoundItemForm(
+public record FoundItemRequestDTO(
 
         @Schema(description = "Foto do objeto (JPEG, PNG ou WebP, até 5 MB).", type = "string", format = "binary")
         @NotNull(message = "Envie a foto do objeto.")

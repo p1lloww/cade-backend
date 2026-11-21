@@ -19,7 +19,8 @@ public class CompatibilityScorer {
         return new Compatibility(score, bandOf(score));
     }
 
-    private CompatibilityBand bandOf(int score) {
+    /** A faixa de uma nota já gravada, pelas faixas atuais de {@code cade.matching.bands}. */
+    public CompatibilityBand bandOf(int score) {
         if (score >= bands.high()) {
             return CompatibilityBand.HIGH;
         }

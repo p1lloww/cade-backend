@@ -1,6 +1,7 @@
 package br.ucsal.cade.matching.persistence.suggestion;
 
 import br.ucsal.cade.matching.persistence.status.SuggestionStatus;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -36,5 +37,23 @@ class MatchSuggestionTest {
     void refusesAScoreOutsideZeroToOneHundred(int score) {
         assertThatThrownBy(() -> MatchSuggestion.suggest(UUID.randomUUID(), UUID.randomUUID(), score, NOW))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void discardingANewSuggestionMakesItDiscarded() {
+        MatchSuggestion suggestion = MatchSuggestion.suggest(UUID.randomUUID(), UUID.randomUUID(), 80, NOW);
+
+        suggestion.discard();
+
+        assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.DISCARDED);
+    }
+
+    @Test
+    void aDiscardedSuggestionCannotBeDiscardedAgain() {
+        MatchSuggestion suggestion = MatchSuggestion.suggest(UUID.randomUUID(), UUID.randomUUID(), 80, NOW);
+        suggestion.discard();
+
+        assertThatThrownBy(suggestion::discard).isInstanceOf(InvalidStatusTransitionException.class);
+        assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.DISCARDED);
     }
 }

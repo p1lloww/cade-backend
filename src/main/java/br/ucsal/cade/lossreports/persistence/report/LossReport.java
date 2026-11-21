@@ -97,6 +97,14 @@ public class LossReport {
         return new LossReport(data, studentId, registeredAt);
     }
 
+    /**
+     * Aberto → Convocado (RF26). Daí em diante a descrição e o detalhe secreto não mudam mais (RN06): toda edição
+     * futura do registro precisa conferir {@link LossReportStatus#isEditable()}.
+     */
+    public void summon() {
+        status = status.summon();
+    }
+
     public UUID getId() {
         return id;
     }

@@ -19,10 +19,8 @@ flowchart LR
     D -- "40 ou mais (média ou alta)" --> E[("Sugestão<br/>Nova")]
     E --> F["Funcionário vê<br/>objeto × perda lado a lado"]
     F -- "não é o mesmo objeto" --> G["Descarta com motivo<br/>(CRU-03)"]
-    F -- "parece ser" --> H["Convoca o estudante<br/>(RET-01, próximo card)"]
+    F -- "parece ser" --> H["Convoca o estudante<br/>(RET-01)"]
 
-    classDef next stroke-dasharray: 5 5
-    class H next
 ```
 
 ## 2. Mapa das pastas
@@ -277,7 +275,7 @@ stateDiagram-v2
 | Nova, Em espera, Convocada | Sim (`SuggestionStatus.ACTIVE`) |
 | Descartada, Concluída, Recusada, Vencida, Encerrada | Não; só por `GET /suggestions/{id}` |
 
-Hoje o código **cria** sugestões (CRU-02) e **descarta** (CRU-03). As outras transições já existem na máquina de estados e vão ser usadas pelos próximos cards (RET-01 convoca, RET-02 vence, RET-03 conclui ou recusa).
+Hoje o código **cria** sugestões (CRU-02), **descarta** (CRU-03), **convoca** e põe as outras do mesmo objeto **em espera** (RET-01, pela `SuggestionSummons` da `api`; fluxo em [`convocacao.md`](convocacao.md)). As outras transições já existem na máquina de estados e vão ser usadas pelos próximos cards (RET-02 vence, RET-03 conclui ou recusa).
 
 ## 5. O que o funcionário faz (CRU-03)
 
@@ -418,8 +416,8 @@ Três garantias:
 
 Nenhuma outra classe muda: a soma, a porta e o `CompatibilityScorer` continuam iguais.
 
-**Uma decisão nova sobre a sugestão** (por exemplo, convocar, na RET-01):
-1. A transição já existe no `SuggestionStatus` (`summon()`).
+**Uma decisão nova sobre a sugestão** (por exemplo, concluir, na RET-03):
+1. A transição já existe no `SuggestionStatus` (`complete()`).
 2. Crie um método na entidade `MatchSuggestion`, como o `discard()`.
 3. Crie a operação no service, com o histórico na mesma transação, e a rota no controller com `@RequiresRole`.
 
@@ -431,7 +429,7 @@ Nenhuma outra classe muda: a soma, a porta e o `CompatibilityScorer` continuam i
 | `score/composite/CompositeCriteriaTest` | Soma, teto de 100 e categoria diferente zerando a nota |
 | `score/CompatibilityScorerTest` | Os exemplos da RN07 com os pesos reais do `application.yml` |
 | `persistence/status/SuggestionStatusTest` | As 9 transições permitidas e as 55 proibidas |
-| `persistence/suggestion/MatchSuggestionTest` | Criação, nota fora de 0 a 100, descarte e segundo descarte recusado |
+| `persistence/suggestion/MatchSuggestionTest` | Criação, nota fora de 0 a 100, descarte e segundo descarte recusado, convocação e espera |
 | `service/matching/MatchingServiceTest` | Cruzamento de ponta a ponta, depois do commit e numa Virtual Thread |
 | `service/suggestion/SuggestionServiceTest` | Ordem por nota, descartadas fora da lista, motivo no histórico, `@Version`, 404 e 409 |
 | `controller/suggestion/SuggestionControllerTest` | As rotas com MockMvc: 200, 400, 401, 403, 404 e 409, e a perda sem o estudante |

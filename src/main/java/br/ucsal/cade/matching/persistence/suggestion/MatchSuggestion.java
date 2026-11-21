@@ -79,6 +79,16 @@ public class MatchSuggestion {
         status = status.discard();
     }
 
+    /** Nova → Convocada: o funcionário convocou o estudante a partir desta sugestão (RF26). */
+    public void summon() {
+        status = status.summon();
+    }
+
+    /** Nova → Em espera: outra sugestão do mesmo objeto foi convocada (RN18). */
+    public void putOnHold() {
+        status = status.putOnHold();
+    }
+
     public UUID getId() {
         return id;
     }

@@ -4,6 +4,7 @@ import br.ucsal.cade.founditems.persistence.status.FoundItemStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.RiskLevel;
 import br.ucsal.cade.shared.exception.BadRequestException;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -99,6 +100,24 @@ class FoundItemTest {
         assertThat(item.getRoom()).isEqualTo("Sala 421");
         assertThat(item.getInternalDescription()).isEqualTo("Fone JBL preto");
         assertThat(item.getReservedDetails()).isNull();
+    }
+
+    @Test
+    void reservingAnAvailableItemMakesItReserved() {
+        FoundItem item = register(data(HEADPHONES, null, null));
+
+        item.reserve();
+
+        assertThat(item.getStatus()).isEqualTo(FoundItemStatus.RESERVED);
+    }
+
+    @Test
+    void aReservedItemCannotBeReservedAgain() {
+        FoundItem item = register(data(HEADPHONES, null, null));
+        item.reserve();
+
+        assertThatThrownBy(item::reserve).isInstanceOf(InvalidStatusTransitionException.class);
+        assertThat(item.getStatus()).isEqualTo(FoundItemStatus.RESERVED);
     }
 
     private static NewFoundItem data(Category category, String storageBox, RiskLevel risk) {

@@ -76,3 +76,8 @@ cade:
     bands:
       high: 70
       medium: 40
+  pickup:
+    # Quanto tempo o objeto fica reservado depois da convocação (RN15) e o que o estudante recebe (RF26).
+    deadline: 7d
+    place: Sala de achados e perdidos da UCSal
+    hours: Das 7h às 21h50

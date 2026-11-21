@@ -30,7 +30,8 @@ public interface FoundItemSearchApi {
             summary = "Buscar objetos",
             description = """
                     Todos os filtros são opcionais e se combinam (o objeto precisa atender a todos). O texto procura \
-                    na descrição interna e nos detalhes reservados, com plural e variações ("chaves" acha "chave"); \
+                    na descrição interna e nos detalhes reservados, sem diferenciar acentos ("termica" acha \
+                    "térmica") e com plural e variações ("chaves" acha "chave"); \
                     todas as palavras precisam aparecer, frases vão entre aspas e "-palavra" exclui. Com texto, os \
                     mais relevantes vêm primeiro; sem texto, os achados mais recentemente. Sem situação, valem \
                     todas. A ordem pedida na página é ignorada, e uma página tem no máximo 100 objetos. Cada objeto \

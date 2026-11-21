@@ -41,7 +41,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Contagens genéricas da página pública (RF41) | `PublicCountsService` (`publicpage`), a partir de `AvailableItemCounts` (`founditems.api`); rota pública `GET /public/found-item-counts` |
 | Objetos disponíveis (para as contagens públicas: estão na sala e podem ser retirados) | situações Disponível e Não reclamado (`AvailableItemCountsService.IN_THE_ROOM`); Reservado fica de fora |
 | Busca de objetos (RF10) | `FoundItemSearchService.search` com os filtros em `FoundItemSearch`; rota `GET /found-items` (funcionário) |
-| Texto da busca | parâmetro `q`, em full-text (`FoundItemRepository.TEXT_VECTOR`, índice `found_items_text_idx` criado pelo `FoundItemTextIndex`) |
+| Texto da busca | parâmetro `q`, em full-text (`FoundItemRepository.TEXT_VECTOR`, configuração `cade_pt` sem acentos e índice `found_items_text_idx`, criados pelo `FoundItemTextIndex`) |
 | Opções dos filtros da busca (categorias, blocos e salas, meses, situações) | `SearchOptions`; rota `GET /found-items/search-options` |
 | Mês em que o objeto foi achado (filtro) | parâmetro `month` (`YearMonth`, `yyyy-MM`) |
 | Caixa do mês (local de guarda) | `StorageBox` (`StorageBox.suggestedFor(data)` sugere "Caixa Novembro/2026", RF05) |

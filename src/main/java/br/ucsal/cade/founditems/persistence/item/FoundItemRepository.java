@@ -16,14 +16,17 @@ import java.util.UUID;
 
 public interface FoundItemRepository extends JpaRepository<FoundItem, UUID> {
 
+    /** Configuração de busca {@code portuguese} sem acentos, criada pelo {@link FoundItemTextIndex}. */
+    String TEXT_CONFIG = "cade_pt";
+
     /**
      * O texto pesquisável do objeto, igual à expressão do índice GIN ({@link FoundItemTextIndex}): a busca só usa o
      * índice se repetir a expressão exatamente.
      */
-    String TEXT_VECTOR = "to_tsvector('portuguese', coalesce(f.internal_description, '') || ' ' || "
+    String TEXT_VECTOR = "to_tsvector('" + TEXT_CONFIG + "', coalesce(f.internal_description, '') || ' ' || "
             + "coalesce(f.reserved_details, ''))";
 
-    String TEXT_QUERY = "websearch_to_tsquery('portuguese', CAST(:text AS text))";
+    String TEXT_QUERY = "websearch_to_tsquery('" + TEXT_CONFIG + "', CAST(:text AS text))";
 
     /** Filtro nulo não filtra. Os valores chegam como texto, para o PostgreSQL saber o tipo mesmo quando são nulos. */
     String SEARCH_FILTERS = " FROM found_items f"

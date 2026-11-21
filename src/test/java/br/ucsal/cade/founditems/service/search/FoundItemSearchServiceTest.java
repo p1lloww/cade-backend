@@ -79,6 +79,15 @@ class FoundItemSearchServiceTest {
     }
 
     @Test
+    void theTextIgnoresAccentsOnBothSides() {
+        UUID bottle = find("Garrafa térmica de café", null);
+        UUID umbrella = find("Guarda-chuva com cabo de madeira", null);
+
+        assertThat(ids(text("garrafa termica cafe"))).containsExactly(bottle);
+        assertThat(ids(text("guarda-chuvá madéira"))).containsExactly(umbrella);
+    }
+
+    @Test
     void theTextAlsoSearchesTheReservedDetails() {
         UUID phone = find("Celular preto", "Adesivo de estrela na capa");
 
@@ -201,7 +210,8 @@ class FoundItemSearchServiceTest {
                 statement.execute("SET enable_seqscan = off");
                 StringBuilder lines = new StringBuilder();
                 try (ResultSet rows = statement.executeQuery("EXPLAIN SELECT f.id FROM found_items f WHERE "
-                        + FoundItemRepository.TEXT_VECTOR + " @@ websearch_to_tsquery('portuguese', 'fone')")) {
+                        + FoundItemRepository.TEXT_VECTOR + " @@ websearch_to_tsquery('"
+                        + FoundItemRepository.TEXT_CONFIG + "', 'fone')")) {
                     while (rows.next()) {
                         lines.append(rows.getString(1)).append('\n');
                     }

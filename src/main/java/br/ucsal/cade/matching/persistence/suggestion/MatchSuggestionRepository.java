@@ -28,6 +28,10 @@ public interface MatchSuggestionRepository extends JpaRepository<MatchSuggestion
     /** As outras sugestões do objeto numa situação, para pô-las em espera quando uma delas é convocada (RN18). */
     List<MatchSuggestion> findByFoundItemIdAndStatusAndIdNot(UUID foundItemId, SuggestionStatus status, UUID id);
 
+    /** As outras sugestões da perda nessas situações, para encerrá-las quando a perda se encerra (D26). */
+    List<MatchSuggestion> findByLossReportIdAndStatusInAndIdNot(UUID lossReportId,
+                                                                Collection<SuggestionStatus> statuses, UUID id);
+
     /**
      * Grava a sugestão, a menos que o par já tenha uma. Um objeto e uma perda cadastrados no mesmo instante disparam
      * dois cruzamentos que podem achar o mesmo par; com o {@code ON CONFLICT}, o segundo não grava nada e não falha,

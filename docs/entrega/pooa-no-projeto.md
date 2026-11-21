@@ -10,9 +10,9 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 
 | Conteúdo | Onde | Problema que resolve | Situação |
 |---|---|---|---|
-| ★ State | `FoundItemStatus`, `LossReportStatus`, `SuggestionStatus`, `SummonsStatus` | O objeto, o registro de perda, a sugestão e a convocação só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01; sugestão no CRU-02; convocação no RET-01 |
+| ★ State | `FoundItemStatus`, `LossReportStatus`, `SuggestionStatus`, `SummonsStatus` | O objeto, o registro de perda, a sugestão e a convocação só mudam de situação pelas transições permitidas (RN01) | Na `main` (ACH-01); perda no PER-01; sugestão no CRU-02; convocação no RET-01; perda Recusada no RET-03 (um estado novo é um record novo, e o `switch` exaustivo aponta cada lugar a ajustar) |
 | ★ Observer (eventos) | `EventPublisher`; `LoginCodeRequestedEvent` → `LoginCodeEmailListener`; `AuditEvent` → `AuditRecorder`; `FoundItemRegisteredEvent` e `LossReportRegisteredEvent` → `MatchingListener` | Um módulo avisa que algo aconteceu sem conhecer quem reage | Na `main` (AVI-01, ADM-01); cruzamento no CRU-02 |
-| ★ Concorrência: lock otimista | `LossReporter` + `OPTIMISTIC_FORCE_INCREMENT`; `@Version` em `MatchSuggestion` e `FoundItem` | Dois registros simultâneos não passam do limite de 5 em andamento (RN05); duas decisões simultâneas sobre a mesma sugestão não valem as duas; um objeto nunca tem duas convocações ativas (RN18) | PER-01; sugestão no CRU-03; convocação no RET-01 |
+| ★ Concorrência: lock otimista | `LossReporter` + `OPTIMISTIC_FORCE_INCREMENT`; `@Version` em `MatchSuggestion`, `FoundItem` e `Summons` | Dois registros simultâneos não passam do limite de 5 em andamento (RN05); duas decisões simultâneas sobre a mesma sugestão não valem as duas; um objeto nunca tem duas convocações ativas (RN18); retirada e recusa da mesma convocação não valem as duas | PER-01; sugestão no CRU-03; convocação no RET-01; balcão no RET-03 |
 | ★ Anotações e reflexão | `@RequiresRole`, `RoleRequirement`, `RouteAuthorizationCoverageTest` | Cada rota declara quem pode usá-la, e um teste impede que uma rota fique aberta por esquecimento | Na `main` (ACE-03) |
 | Virtual Threads | `AsyncConfiguration` + `spring.threads.virtual.enabled` | O e-mail e o cruzamento rodam sem prender a resposta ao usuário | Na `main` (AVI-01); cruzamento no CRU-02 |
 | ★ SOLID: inversão de dependência | `EmailSender`, `PhotoStorage`, `Clock` | Trocar o SMTP ou o disco sem mexer em quem usa; testar prazos sem esperar | Na `main`; `PhotoStorage` na PR #65 |
@@ -23,7 +23,7 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 | GRASP: especialista na informação | `FoundItemStatus`, `RiskLevel.canBeRaisedTo`, `FoundItem.register` | A regra fica na classe que tem os dados para decidir | Na `main`; `FoundItem` na PR #65 |
 | Baixo acoplamento (módulos) | `ModuleBoundariesTest` (ArchUnit) | Módulos só se falam pela `api` e nas direções da D10 | Na `main` (GES-01) |
 | ★ Strategy + Composite | `CompatibilityCriterion`, `SameCategoryGate`, `SumOfCriteria` | A nota do cruzamento soma critérios configuráveis, e um critério novo (a IA do CRU-05) entra sem mudar os outros (RN07, RF21) | CRU-01 |
-| Strategy por risco | regras de conferência no balcão | O que conferir depende do risco do objeto (RN09) | Planejado (RET-03) |
+| ★ Strategy por risco | `VerificationRule`, `LowRiskRule`, `MediumRiskRule`, `HighRiskRule`, `DocumentRule`, `VerificationRules` | O que conferir no balcão, o que basta para entregar e o que o estudante leva dependem do risco do objeto (RN09); um risco novo é uma classe nova | RET-03 |
 
 ---
 
@@ -131,6 +131,14 @@ public @interface RequiresRole { Role[] value(); }
 - *Por que a versão do objeto, e não uma restrição única no banco?* A restrição precisaria valer só para convocações ativas (índice parcial), que o `ddl-auto` não cria (D06). A linha do objeto já muda de situação na convocação, então a versão dela resolve sem tabela nova.
 - *Por que gravar o objeto antes?* Para que toda convocação do mesmo objeto dispute a mesma linha primeiro (D25).
 
+### Uma decisão por convocação no balcão (RET-03)
+
+**Problema.** Dois funcionários podem decidir sobre a mesma convocação ao mesmo tempo: um registra a retirada e o outro a recusa. Sem proteção, o objeto ficaria Devolvido e Disponível ao mesmo tempo.
+
+**Como.** A `Summons` tem `@Version` e é gravada primeiro, antes de objeto, sugestão e perda. A segunda decisão espera a linha, encontra a versão alterada e é desfeita inteira (409).
+
+**Onde:** [`CounterService.java`](../../src/main/java/br/ucsal/cade/pickup/service/counter/CounterService.java); fluxo em [`retirada.md`](../tecnico/retirada.md); teste `aSimultaneousPickupAndRefusalLetOnlyOnePass` em [`CounterServiceTest.java`](../../src/test/java/br/ucsal/cade/pickup/service/counter/CounterServiceTest.java).
+
 ---
 
 ## ★ Strategy + Composite: a nota do cruzamento
@@ -157,6 +165,55 @@ SameCategoryGate
 - *Por que não um método só?* Funcionaria hoje, mas cada critério novo mexeria no mesmo método. Com o Strategy, a IA do CRU-05 é uma classe nova na lista da `MatchingConfiguration`, e os testes dos outros critérios continuam valendo sem mudança.
 - *Onde está o Composite, se a soma tem um nível só?* A raiz já é um composto de compostos: a porta envolve a soma, que contém os critérios. Como `SumOfCriteria` também é um `CompatibilityCriterion`, um grupo de critérios pode entrar dentro de outro (o teste `aNewCriterionEntersWithoutChangingTheOthers` faz isso).
 - *Por que a porta da categoria não é um critério que soma 0?* Porque somar não zera: com a porta, categoria diferente dá 0 mesmo que data, local e palavras batam, como a RN07 exige.
+
+---
+
+## ★ Strategy: conferência por risco no balcão (RET-03)
+
+**Problema.** No balcão, o que o funcionário confere depende do risco do objeto (RN09). Um guarda-chuva pede só documento e uma descrição coerente. Um celular pede desbloqueio na frente do funcionário ou uma prova. Um documento só sai para o titular. Para cada risco mudam **três coisas juntas**:
+1. o checklist que aparece para o funcionário (RF28);
+2. as verificações que bastam para registrar a retirada (RF29);
+3. o que o estudante é avisado para levar (RF26).
+
+Com um `switch (risco)` em cada um desses lugares, a regra de um risco ficaria espalhada em três `switch`, e um risco novo ou um ajuste exigiria lembrar de mudar todos.
+
+**Como.** Cada risco é uma classe que implementa [`VerificationRule`](../../src/main/java/br/ucsal/cade/pickup/service/verification/VerificationRule.java) e responde as três perguntas: [`LowRiskRule`](../../src/main/java/br/ucsal/cade/pickup/service/verification/LowRiskRule.java), [`MediumRiskRule`](../../src/main/java/br/ucsal/cade/pickup/service/verification/MediumRiskRule.java), [`HighRiskRule`](../../src/main/java/br/ucsal/cade/pickup/service/verification/HighRiskRule.java) e [`DocumentRule`](../../src/main/java/br/ucsal/cade/pickup/service/verification/DocumentRule.java). O que é comum a todas, o documento com foto e a matrícula primeiro (RN10) e a recusa de uma verificação que não basta, fica nos métodos `default` da interface. O [`VerificationRules`](../../src/main/java/br/ucsal/cade/pickup/service/verification/VerificationRules.java) é o contexto: recebe as regras do Spring, monta um `EnumMap` por risco e entrega a regra certa. Quem usa (o `CounterService` no balcão e o `SummonsService` na convocação) só chama `forRisk(risco)` e não sabe quantos riscos existem.
+
+```mermaid
+classDiagram
+    direction LR
+    class VerificationRule {
+        <<interface>>
+        +risk() RiskLevel
+        +checklist() List~String~
+        +acceptedMethods() Set~VerificationMethod~
+        +whatToBring() String
+        +requireAccepted(VerificationMethod)
+    }
+    class VerificationRules {
+        +forRisk(RiskLevel) VerificationRule
+    }
+    VerificationRule <|.. LowRiskRule
+    VerificationRule <|.. MediumRiskRule
+    VerificationRule <|.. HighRiskRule
+    VerificationRule <|.. DocumentRule
+    VerificationRules o-- VerificationRule : uma por risco
+    CounterService --> VerificationRules
+    SummonsService --> VerificationRules
+```
+
+O fluxo no balcão: o funcionário abre a convocação, e o `CounterService` busca a regra do risco gravado nela. Antes de mudar qualquer coisa, ele confere se a verificação registrada está entre as aceitas (`requireAccepted`). Se não estiver, responde 400 e nada é gravado. Os diagramas de sequência da retirada e da recusa estão em [`retirada.md`](../tecnico/retirada.md).
+
+**SOLID junto.** Aberto/fechado: um risco novo é uma classe `@Component` nova, sem mexer nas outras nem em quem usa, e o `VerificationRules` recusa subir se um valor do `RiskLevel` ficar sem regra. Responsabilidade única: cada regra conhece só o próprio risco. Inversão de dependência: os serviços dependem da interface, não das regras concretas.
+
+**Onde:** pacote [`pickup.service.verification`](../../src/main/java/br/ucsal/cade/pickup/service/verification/); testes em [`VerificationRulesTest.java`](../../src/test/java/br/ucsal/cade/pickup/service/verification/VerificationRulesTest.java) (cada risco, verificações aceitas e recusadas, subida recusada sem regra ou com regra duplicada) e [`CounterServiceTest.java`](../../src/test/java/br/ucsal/cade/pickup/service/counter/CounterServiceTest.java) (verificação insuficiente para risco alto não grava nada).
+
+**Perguntas prováveis**
+- *Não era mais simples um `switch`?* Para um texto só, sim, e era o que o RET-01 tinha (`WhatToBring`). Com três coisas que variam juntas por risco, o `switch` se repetiria em três lugares. Com o Strategy, tudo o que vale para o risco alto está numa classe só.
+- *Qual a diferença para o Strategy do cruzamento?* No cruzamento, as estratégias **somam** (Composite): todos os critérios valem ao mesmo tempo. No balcão, **uma** estratégia é escolhida pelo risco. É o mesmo padrão em dois usos diferentes.
+- *Hoje as regras só devolvem dados. Por que não um `enum` com atributos?* Para os textos e as verificações de hoje, um `enum` também serviria. As classes ficam prontas para regras com comportamento próprio, como as perguntas de conferência por categoria (RF44, ADM-04), que entram no checklist de cada risco sem mexer nos outros, e o `VerificationRules` confere na subida que nenhum risco ficou sem regra.
+- *Por que as regras são beans do Spring e não um `Map` montado à mão?* Para que uma regra nova entre só com uma classe anotada. A verificação na subida garante que nenhum risco fica sem regra.
+- *Por que o risco vem da convocação, e não do objeto na hora da retirada?* Ele é congelado na convocação (D25), porque o estudante foi avisado do que levar com base nele.
 
 ---
 
@@ -224,7 +281,7 @@ SameCategoryGate
 
 | Conteúdo | Card | Ideia |
 |---|---|---|
-| Strategy | RET-03 | O que conferir no balcão depende do risco do objeto (RN09) |
+| — | — | Nenhum por enquanto: o Strategy por risco entrou no RET-03 |
 
 Se algum desses não entrar até a entrega, esta tabela fica como "limitação declarada", que o manual aceita.
 

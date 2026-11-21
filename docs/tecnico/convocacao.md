@@ -149,4 +149,6 @@ Uma perda Aguardando informações também é recusada: a seção 6.2 só permit
 
 - [`SummonsServiceTest`](../../src/test/java/br/ucsal/cade/pickup/service/summons/SummonsServiceTest.java): as três transições e a convocação gravada, o histórico com o funcionário como autor, as outras sugestões em espera (e as de outros objetos intactas), a descrição travada, o prazo e o que levar, o evento, as recusas sem nada gravado e as convocações simultâneas em Virtual Threads (6 sugestões do mesmo objeto e 3 cliques na mesma sugestão terminam com exatamente uma convocação).
 - [`SummonsControllerTest`](../../src/test/java/br/ucsal/cade/pickup/controller/summons/SummonsControllerTest.java): a rota com MockMvc, 201, 404, 409, 403 e 401.
-- [`SummonsStatusTest`](../../src/test/java/br/ucsal/cade/pickup/persistence/status/SummonsStatusTest.java) e [`WhatToBringTest`](../../src/test/java/br/ucsal/cade/pickup/service/summons/WhatToBringTest.java): situações da convocação e o texto de cada risco.
+- [`SummonsStatusTest`](../../src/test/java/br/ucsal/cade/pickup/persistence/status/SummonsStatusTest.java): situações da convocação. O texto do que levar por risco é testado em [`VerificationRulesTest`](../../src/test/java/br/ucsal/cade/pickup/service/verification/VerificationRulesTest.java) desde o RET-03.
+
+O que acontece depois, no balcão (retirada e recusa), está em [`retirada.md`](retirada.md).

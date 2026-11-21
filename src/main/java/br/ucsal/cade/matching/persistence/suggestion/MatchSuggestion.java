@@ -89,6 +89,26 @@ public class MatchSuggestion {
         status = status.putOnHold();
     }
 
+    /** Em espera → Nova: a convocação do mesmo objeto foi recusada ou venceu (RN18). */
+    public void resume() {
+        status = status.resume();
+    }
+
+    /** Convocada → Concluída: o estudante retirou o objeto (RF29). */
+    public void complete() {
+        status = status.complete();
+    }
+
+    /** Convocada → Recusada: a verificação falhou no balcão (RF31). */
+    public void refuse() {
+        status = status.refuse();
+    }
+
+    /** Nova ou Em espera → Encerrada: a perda ou o objeto desta sugestão não está mais em jogo. */
+    public void close() {
+        status = status.close();
+    }
+
     public UUID getId() {
         return id;
     }

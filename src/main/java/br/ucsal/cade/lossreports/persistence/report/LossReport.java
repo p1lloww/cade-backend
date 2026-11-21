@@ -105,6 +105,21 @@ public class LossReport {
         status = status.summon();
     }
 
+    /** Convocado → Concluído: o estudante retirou o objeto (RF29). */
+    public void complete() {
+        status = status.complete();
+    }
+
+    /** Convocado → Aberto: a convocação venceu (RN15). */
+    public void release() {
+        status = status.release();
+    }
+
+    /** Convocado → Recusado: a verificação falhou no balcão (RF31), e o registro se encerra (D26). */
+    public void refuse() {
+        status = status.refuse();
+    }
+
     public UUID getId() {
         return id;
     }

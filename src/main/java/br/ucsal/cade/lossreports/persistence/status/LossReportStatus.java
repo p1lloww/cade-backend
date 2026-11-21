@@ -14,12 +14,15 @@ import java.util.List;
  *   <tr><td>{@link #resume()} (retomar)</td><td>Aguardando informações</td><td>Aberto</td></tr>
  *   <tr><td>{@link #summon()} (convocar)</td><td>Aberto</td><td>Convocado</td></tr>
  *   <tr><td>{@link #release()} (liberar)</td><td>Convocado</td><td>Aberto</td></tr>
+ *   <tr><td>{@link #refuse()} (recusar)</td><td>Convocado</td><td>Recusado</td></tr>
  *   <tr><td>{@link #complete()} (concluir)</td><td>Convocado</td><td>Concluído</td></tr>
  *   <tr><td>{@link #expire()} (30 dias)</td><td>Aberto</td><td>Vencido</td></tr>
  *   <tr><td>{@link #cancel()} (cancelar)</td><td>Aberto, Aguardando informações</td><td>Cancelado</td></tr>
  * </table>
  *
- * <p>Concluído, Vencido e Cancelado são finais.
+ * <p>Concluído, Vencido, Cancelado e Recusado são finais. Recusado não está na seção 6.2: a verificação falhou no
+ * balcão, e o registro se encerra em vez de voltar a Aberto, para que a descrição nunca mais mude depois de uma
+ * convocação (RN06, D26).
  */
 public sealed interface LossReportStatus {
 
@@ -29,8 +32,10 @@ public sealed interface LossReportStatus {
     Completed COMPLETED = new Completed();
     Expired EXPIRED = new Expired();
     Cancelled CANCELLED = new Cancelled();
+    Refused REFUSED = new Refused();
 
-    List<LossReportStatus> ALL = List.of(OPEN, AWAITING_INFO, SUMMONED, COMPLETED, EXPIRED, CANCELLED);
+    List<LossReportStatus> ALL = List.of(OPEN, AWAITING_INFO, SUMMONED, COMPLETED, EXPIRED, CANCELLED,
+            REFUSED);
 
     List<LossReportStatus> ACTIVE = ALL.stream().filter(status -> !status.isFinal()).toList();
 
@@ -64,9 +69,14 @@ public sealed interface LossReportStatus {
         throw refused("convocar");
     }
 
-    /** Volta para Aberto: a convocação venceu (RN15) ou a verificação falhou no balcão. */
+    /** Volta para Aberto: a convocação venceu (RN15). */
     default LossReportStatus release() {
         throw refused("liberar");
+    }
+
+    /** A verificação falhou no balcão (RF31): o registro se encerra (D26). */
+    default LossReportStatus refuse() {
+        throw refused("recusar");
     }
 
     default LossReportStatus complete() {
@@ -84,7 +94,7 @@ public sealed interface LossReportStatus {
 
     default boolean isFinal() {
         return switch (this) {
-            case Completed _, Expired _, Cancelled _ -> true;
+            case Completed _, Expired _, Cancelled _, Refused _ -> true;
             case Open _, AwaitingInfo _, Summoned _ -> false;
         };
     }
@@ -93,7 +103,7 @@ public sealed interface LossReportStatus {
     default boolean isEditable() {
         return switch (this) {
             case Open _, AwaitingInfo _ -> true;
-            case Summoned _, Completed _, Expired _, Cancelled _ -> false;
+            case Summoned _, Completed _, Expired _, Cancelled _, Refused _ -> false;
         };
     }
 
@@ -105,6 +115,7 @@ public sealed interface LossReportStatus {
             case Completed _ -> "COMPLETED";
             case Expired _ -> "EXPIRED";
             case Cancelled _ -> "CANCELLED";
+            case Refused _ -> "REFUSED";
         };
     }
 
@@ -116,6 +127,7 @@ public sealed interface LossReportStatus {
             case Completed _ -> "Concluído";
             case Expired _ -> "Vencido";
             case Cancelled _ -> "Cancelado";
+            case Refused _ -> "Recusado";
         };
     }
 
@@ -167,6 +179,11 @@ public sealed interface LossReportStatus {
         }
 
         @Override
+        public LossReportStatus refuse() {
+            return REFUSED;
+        }
+
+        @Override
         public LossReportStatus complete() {
             return COMPLETED;
         }
@@ -179,5 +196,8 @@ public sealed interface LossReportStatus {
     }
 
     record Cancelled() implements LossReportStatus {
+    }
+
+    record Refused() implements LossReportStatus {
     }
 }

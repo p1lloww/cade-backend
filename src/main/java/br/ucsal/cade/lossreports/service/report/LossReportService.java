@@ -5,6 +5,7 @@ import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;
 import br.ucsal.cade.lossreports.persistence.report.NewLossReport;
+import br.ucsal.cade.lossreports.persistence.reporter.LossReporter;
 import br.ucsal.cade.lossreports.persistence.reporter.LossReporterRepository;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.audit.AuditEvent;
@@ -53,7 +54,10 @@ public class LossReportService {
         this.clock = clock;
     }
 
-    /** No máximo 5 registros em andamento por estudante (RN05); o registro vai para o histórico (RF43). */
+    /**
+     * No máximo 5 registros em andamento por estudante (RN05), e nenhum depois de 3 recusas no balcão (RN12). O
+     * registro vai para o histórico (RF43).
+     */
     @Transactional
     public LossReport register(RegisterLossReport request, UUID studentId) {
         log.debug("Registering loss report: student={}, category={}, locations={}, photo={}", studentId,
@@ -118,7 +122,12 @@ public class LossReportService {
 
     private long requireRoomForAnotherReport(UUID studentId) {
         reporters.createIfAbsent(studentId);
-        reporters.findLockedByStudentId(studentId).orElseThrow();
+        LossReporter reporter = reporters.findLockedByStudentId(studentId).orElseThrow();
+        if (reporter.isBlocked()) {
+            log.info("Loss report refused: student {} is blocked after {} refusals at the counter", studentId,
+                    reporter.getRefusals());
+            throw new StudentBlockedException();
+        }
         long active = reports.countByStudentIdAndStatusIn(studentId, LossReportStatus.ACTIVE);
         if (active >= MAX_ACTIVE_REPORTS) {
             log.info("Loss report refused: student {} already has {} active reports (limit {})", studentId, active,

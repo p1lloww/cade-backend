@@ -1,6 +1,7 @@
 package br.ucsal.cade.pickup.persistence.summons;
 
 import br.ucsal.cade.pickup.persistence.status.SummonsStatus;
+import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.RiskLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,7 +19,8 @@ import java.util.UUID;
 
 /**
  * Convocação: o funcionário chamou o estudante para retirar o objeto a partir de uma sugestão (RF26). O objeto fica
- * reservado até a retirada, a recusa no balcão ou o fim do prazo (RN15).
+ * reservado até a retirada, a recusa no balcão ou o fim do prazo (RN15). Retirada e recusa disputam a linha pelo
+ * {@code @Version}: das duas, só uma é gravada.
  *
  * <p>Sugestão, objeto, perda e estudante são referências por id, sem chave estrangeira: as tabelas são de outros
  * módulos (D10). Uma sugestão é convocada no máximo uma vez.
@@ -62,6 +64,15 @@ public class Summons {
     @Column(nullable = false, updatable = false)
     private Instant expiresAt;
 
+    /** Quem registrou a retirada ou a recusa; nulo enquanto Ativa ou depois de vencer. */
+    private UUID closedBy;
+
+    private Instant closedAt;
+
+    /** Por que a verificação falhou no balcão (RF31); só nas recusadas. */
+    @Column(length = AuditEvent.MAX_REASON_LENGTH)
+    private String refusalReason;
+
     @Version
     private long version;
 
@@ -86,6 +97,24 @@ public class Summons {
     /** Uma convocação Ativa, que vence em {@code expiresAt} se o estudante não retirar o objeto (RN15). */
     public static Summons issue(NewSummons data, Instant summonedAt, Instant expiresAt) {
         return new Summons(data, Objects.requireNonNull(summonedAt), Objects.requireNonNull(expiresAt));
+    }
+
+    /** Ativa → Concluída: o estudante retirou o objeto no balcão (RF29). */
+    public void complete(UUID staffId, Instant at) {
+        status = status.complete();
+        close(staffId, at);
+    }
+
+    /** Ativa → Recusada: a verificação falhou no balcão (RF31); conta para o limite de recusas (RN12). */
+    public void refuse(UUID staffId, Instant at, String reason) {
+        status = status.refuse();
+        close(staffId, at);
+        refusalReason = reason;
+    }
+
+    private void close(UUID staffId, Instant at) {
+        closedBy = Objects.requireNonNull(staffId);
+        closedAt = Objects.requireNonNull(at);
     }
 
     public UUID getId() {
@@ -126,6 +155,18 @@ public class Summons {
 
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public UUID getClosedBy() {
+        return closedBy;
+    }
+
+    public Instant getClosedAt() {
+        return closedAt;
+    }
+
+    public String getRefusalReason() {
+        return refusalReason;
     }
 
     public long getVersion() {

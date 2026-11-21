@@ -146,7 +146,7 @@ Isso já existia (ACE-02) e só é lembrado aqui. O token emitido no login leva 
 Em toda requisição, o `SecurityConfiguration` confere a assinatura, o emissor e a validade, e transforma `"role":
 "STAFF"` na *authority* `ROLE_STAFF` do Spring Security. O banco **não** é consultado.
 
-**Consequência:** se o administrador muda o perfil de alguém (ADM-02, `PUT /users/{id}/role`), a mudança só vale no
+**Consequência (D24):** se o administrador muda o perfil de alguém (ADM-02, `PUT /users/{id}/role`), a mudança só vale no
 **próximo login**. O token antigo continua com o perfil antigo até vencer (8 h). O Swagger da rota avisa isso, para o
 front poder mostrar a mensagem ao administrador.
 

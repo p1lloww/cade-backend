@@ -34,6 +34,12 @@ public sealed interface LossReportStatus {
 
     List<LossReportStatus> ACTIVE = ALL.stream().filter(status -> !status.isFinal()).toList();
 
+    /**
+     * Situações em que o registro entra no cruzamento (RF20, D23): o estudante ainda procura o objeto e ninguém foi
+     * convocado por ele.
+     */
+    List<LossReportStatus> MATCHABLE = List.of(OPEN, AWAITING_INFO);
+
     static LossReportStatus initial() {
         return OPEN;
     }

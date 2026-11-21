@@ -186,6 +186,36 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   **Motivo:** a RN04 existe para que um objeto nunca tenha conferência mais fraca do que a categoria exige, e isso continua garantido. Proibir qualquer redução deixaria um erro de digitação sem correção no dia a dia da sala; o histórico com motivo e o bloqueio durante a convocação cobrem o risco de alguém reduzir de má-fé. A edição fica no ACH-07.
 - **Situação:** fechada.
 
+## D22 — Detalhes da nota de compatibilidade que a RN07 não define
+- **Decisão (20/11/2026):** a nota da RN07 segue estas regras nos pontos em que a tabela não é explícita:
+  - **Período:** a duração do período conta como incerteza. Os dias usados na tabela de data são o maior entre a duração (fim − início) e os dias entre o fim e o achado; a tolerância de 1 dia vale antes do início. Uma data só tem duração zero, e o resultado é exatamente o da RN07. Exemplos: perda de 03/11 a 05/11 com o objeto achado em 04/11 ou 08/11 vale 40; perda de 01/11 a 10/11 vale no máximo 20; um período de 15 dias ou mais não pontua na data.
+  - **Vários locais:** vale o local da perda que mais pontua. Sala não informada no mesmo bloco conta como mesmo bloco (15). Bloco e sala são comparados sem diferença de maiúsculas, acentos e espaços extras.
+  - **Palavras em comum:** contam as palavras distintas com 3 letras ou mais, sem maiúsculas nem acento, tiradas as palavras vazias ("com", "para", "cor"...) e as palavras do nome da categoria, que os dois lados já têm em comum. Do lado do objeto, a descrição comparada é a descrição interna; objeto sem descrição não pontua em palavras.
+  - Os pesos, os limites de dias, o mínimo de letras e as faixas ficam em `cade.matching.*` no `application.yml` (RF21).
+- **Motivo:** o exemplo da RN07 ("fone JBL preto" × "fone preto" = 80) só fecha se "fone", o nome da categoria, não contar. Contar o período a partir do melhor dia premiaria quem informa um período longo e vago, a mesma "pesca" que a RN05 tenta impedir; tratar a duração como incerteza não prejudica quem informa um período curto ("segunda a quarta") e tira os pontos de data de quem não sabe quando perdeu.
+- **Consequências:**
+  - Uma perda vaga (período longo, sem local, descrição genérica) fica na faixa baixa ou média, nunca no topo da lista do funcionário.
+  - "421" e "Sala 421" são salas diferentes para o cruzamento; se isso aparecer na prática, a normalização de sala entra como ajuste desta decisão.
+  - Não há radical nem sinônimo: "preto" e "preta" são palavras diferentes. A IA do CRU-05 é o lugar para esse tipo de semelhança.
+- **Detalhes:** a seção "Strategy + Composite" de [pooa-no-projeto.md](entrega/pooa-no-projeto.md) e os testes de `matching.service.score`.
+- **Situação:** fechada.
+
+## D23 — Cruzamento por evento: quem entra e como a sugestão é gravada
+- **Origem:** o RF20 diz que o cruzamento compara com "os registros abertos do outro lado", e a seção 6.3 diz que só compatibilidade média ou alta vira sugestão. Faltava definir quais situações contam como abertas, o que acontece com um par repetido e com uma falha.
+- **Decisão (21/11/2026):**
+  - **Quem entra:** objetos Disponível ou Não reclamado (os que ainda podem ser convocados, seção 6.1) e registros de perda Aberto ou Aguardando informações (o estudante ainda procura e ninguém foi convocado por ele). Só a mesma categoria é consultada, porque categoria diferente zera a nota (RN07).
+  - **O que é gravado:** a `MatchSuggestion` (situação Nova) com a nota, para os pares de faixa média ou alta. A faixa não é gravada: sai da nota pelas faixas de `cade.matching.bands`. Cada sugestão criada vai para o histórico como `MATCH_SUGGESTED`, com o autor `AuditEvent.SYSTEM_ACTOR`.
+  - **Par repetido:** cada par objeto × perda tem no máximo uma sugestão (chave única), e a gravação é um `INSERT ... ON CONFLICT DO NOTHING`. Um objeto e uma perda cadastrados no mesmo instante disparam dois cruzamentos que podem achar o mesmo par; o segundo não grava nada e não falha.
+  - **Falha:** o ouvinte registra o erro no log e não tenta de novo. O cadastro já foi confirmado e não é afetado (RNF08); as sugestões daquela rodada se perdem, como na limitação da D05.
+  - **Interfaces:** o cruzamento lê os dois lados pelas interfaces `MatchableFoundItems` e `MatchableLossReports`, na `api` de cada módulo, que devolvem só o que a nota usa (sem foto, detalhe reservado, detalhe secreto nem estudante). Os serviços publicam eventos pela `EventPublisher` (`shared.event`), e não direto pelo Spring.
+- **Motivo:** o cruzamento só roda quando alguém cadastra; uma sugestão para um objeto que não pode mais ser convocado ou para uma perda que não está mais em busca só ocuparia a lista do funcionário. Guardar a nota, e não a faixa, deixa o ajuste das faixas valer para as sugestões que já existem.
+- **Consequências:**
+  - Um registro que volta de Convocado para Aberto não é cruzado de novo com os objetos cadastrados enquanto estava convocado; as sugestões antigas dele continuam valendo.
+  - Uma sugestão baixa nunca é gravada: baixar a faixa média depois não traz de volta pares que já foram calculados.
+  - Ainda não há recálculo quando o objeto ou a perda mudam (edição, novo local); se entrar, ele usa o mesmo `MatchingService`.
+- **Detalhes:** [`docs/tecnico/cruzamento.md`](tecnico/cruzamento.md).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -198,3 +228,5 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — Complemento na D10:** histórico gravado por evento síncrono na mesma transação (`MANDATORY`), na implementação do ADM-01.
 - **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.
 - **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).
+- **20/11/2026 — D22 registrada:** detalhes da nota de compatibilidade (período, vários locais, palavras que contam), na implementação do CRU-01.
+- **21/11/2026 — D23 registrada:** quem entra no cruzamento, sugestão única por par e falha sem efeito no cadastro, na implementação do CRU-02.

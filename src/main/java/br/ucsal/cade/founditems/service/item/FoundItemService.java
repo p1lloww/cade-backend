@@ -7,11 +7,11 @@ import br.ucsal.cade.founditems.persistence.item.NewFoundItem;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
+import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.NotFoundException;
 import br.ucsal.cade.shared.storage.PhotoStorage;
 import br.ucsal.cade.shared.storage.StoredPhoto;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -33,11 +33,11 @@ public class FoundItemService {
     private final FoundItemRepository items;
     private final CategoryRepository categories;
     private final PhotoStorage photos;
-    private final ApplicationEventPublisher events;
+    private final EventPublisher events;
     private final Clock clock;
 
     FoundItemService(FoundItemRepository items, CategoryRepository categories, PhotoStorage photos,
-                     ApplicationEventPublisher events, Clock clock) {
+                     EventPublisher events, Clock clock) {
         this.items = items;
         this.categories = categories;
         this.photos = photos;
@@ -63,9 +63,9 @@ public class FoundItemService {
         FoundItem item = items.save(FoundItem.register(data, photoKey, registeredBy, clock.instant(),
                 LocalDate.now(clock)));
 
-        events.publishEvent(new AuditEvent(registeredBy, REGISTERED_ACTION, FoundItem.class.getSimpleName(),
+        events.publish(new AuditEvent(registeredBy, REGISTERED_ACTION, FoundItem.class.getSimpleName(),
                 item.getId(), REGISTERED_REASON));
-        events.publishEvent(new FoundItemRegisteredEvent(item.getId(), category.getId(), item.getFoundOn()));
+        events.publish(new FoundItemRegisteredEvent(item.getId(), category.getId(), item.getFoundOn()));
         return item;
     }
 

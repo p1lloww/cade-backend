@@ -6,11 +6,11 @@ import br.ucsal.cade.access.persistence.logincode.LoginCodeStore;
 import br.ucsal.cade.access.persistence.user.User;
 import br.ucsal.cade.access.persistence.user.UserRepository;
 import br.ucsal.cade.access.service.user.InstitutionalEmailPolicy;
+import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.TooManyRequestsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -44,12 +44,12 @@ public class LoginService {
     private final LoginCodeGenerator generator;
     private final PasswordEncoder encoder;
     private final LoginCodeProperties properties;
-    private final ApplicationEventPublisher events;
+    private final EventPublisher events;
     private final Clock clock;
 
     LoginService(LoginCodeStore codes, UserRepository users, InstitutionalEmailPolicy emailPolicy,
                  LoginCodeGenerator generator, PasswordEncoder encoder, LoginCodeProperties properties,
-                 ApplicationEventPublisher events, Clock clock) {
+                 EventPublisher events, Clock clock) {
         this.codes = codes;
         this.users = users;
         this.emailPolicy = emailPolicy;
@@ -84,7 +84,7 @@ public class LoginService {
             codes.find(email).ifPresent(current -> refuseIfWaiting(current, now));
             throw new TooManyRequestsException(RESEND_MESSAGE, properties.resendInterval());
         }
-        events.publishEvent(new LoginCodeRequestedEvent(email, code, issued.expiresAt()));
+        events.publish(new LoginCodeRequestedEvent(email, code, issued.expiresAt()));
     }
 
     /**

@@ -54,9 +54,19 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
 | Evento perda.registrada | `LossReportRegisteredEvent` (`lossreports.api.event`) |
 | Lock do limite de registros | `LossReporter` (tabela `loss_reporters`) |
-| Sugestão (par objeto × perda) | `MatchSuggestion` |
+| Sugestão (par objeto × perda) | `MatchSuggestion` (tabela `match_suggestions`; um par tem no máximo uma) |
 | Situação da sugestão (Nova, Em espera, Convocada, Concluída, Descartada, Recusada, Vencida, Encerrada) | `SuggestionStatus` (`NEW`, `ON_HOLD`, `SUMMONED`, `COMPLETED`, `DISCARDED`, `REFUSED`, `EXPIRED`, `CLOSED`) |
-| Compatibilidade (nota de 0 a 100) | `score` |
+| Pôr em espera, retomar, convocar, descartar, concluir, recusar, vencer, encerrar (ações sobre a sugestão) | `putOnHold`, `resume`, `summon`, `discard`, `complete`, `refuse`, `expire`, `close` |
+| Cruzamento (calcular as sugestões de um objeto ou de uma perda) | `MatchingService` (`matchFoundItem`, `matchLossReport`), disparado pelo `MatchingListener` depois do commit |
+| Objetos que entram no cruzamento (Disponível, Não reclamado) | `MatchableFoundItems` (`founditems.api`), `FoundItemStatus.MATCHABLE` |
+| Perdas que entram no cruzamento (Aberto, Aguardando informações) | `MatchableLossReports` (`lossreports.api`), `LossReportStatus.MATCHABLE` |
+| Sugestão criada (histórico) | ação `MATCH_SUGGESTED`, autor `AuditEvent.SYSTEM_ACTOR` |
+| Compatibilidade (nota de 0 a 100) | `Compatibility` (`score`), calculada pelo `CompatibilityScorer` |
+| Faixa da compatibilidade (alta, média, baixa) | `CompatibilityBand` (`HIGH`, `MEDIUM`, `LOW`) |
+| Par objeto × perda avaliado pelo cruzamento | `MatchCandidate` (`FoundItemProfile`, `LossReportProfile`, `Place`) |
+| Categoria igual (obrigatória), data, local, palavras em comum | `SameCategoryGate`, `DateCriterion`, `LocationCriterion`, `WordsCriterion` |
+| Soma dos critérios | `SumOfCriteria` |
+| Pesos e faixas da compatibilidade | `MatchingProperties` (`cade.matching.*`) |
 | Critério de compatibilidade (`CriterioCompatibilidade`) | `CompatibilityCriterion` |
 | Convocação | `Summons` |
 | Retirada | `Pickup` |
@@ -77,6 +87,6 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 |---|---|
 | `ArmazenamentoFotos` | `PhotoStorage` (`shared.storage`, D21), implementado pelo `LocalPhotoStorage` (pasta `PHOTOS_DIR`) |
 | `ServicoEmail` | `EmailSender` (`shared.mail`), implementado pelo `SmtpEmailSender` |
-| `PublicadorEventos` | `EventPublisher` (`shared.event`) |
+| `PublicadorEventos` | `EventPublisher` (`shared.event`), implementado pelo `SpringEventPublisher` (eventos do Spring, D05) |
 | `CriterioCompatibilidade` | `CompatibilityCriterion` |
 | `@RequerPerfil` | `@RequiresRole` (`shared.security.authorization`), meta-anotação de `@PreAuthorize` aplicada pelo Spring Security (D20); o administrador atende às rotas de funcionário (`Role.satisfies`, `RoleHierarchy`) |

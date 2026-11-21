@@ -53,7 +53,12 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Lock do limite de registros | `LossReporter` (tabela `loss_reporters`) |
 | Sugestão (par objeto × perda) | `MatchSuggestion` |
 | Situação da sugestão (Nova, Em espera, Convocada, Concluída, Descartada, Recusada, Vencida, Encerrada) | `SuggestionStatus` (`NEW`, `ON_HOLD`, `SUMMONED`, `COMPLETED`, `DISCARDED`, `REFUSED`, `EXPIRED`, `CLOSED`) |
-| Compatibilidade (nota de 0 a 100) | `score` |
+| Compatibilidade (nota de 0 a 100) | `Compatibility` (`score`), calculada pelo `CompatibilityScorer` |
+| Faixa da compatibilidade (alta, média, baixa) | `CompatibilityBand` (`HIGH`, `MEDIUM`, `LOW`) |
+| Par objeto × perda avaliado pelo cruzamento | `MatchCandidate` (`FoundItemProfile`, `LossReportProfile`, `Place`) |
+| Categoria igual (obrigatória), data, local, palavras em comum | `SameCategoryGate`, `DateCriterion`, `LocationCriterion`, `WordsCriterion` |
+| Soma dos critérios | `SumOfCriteria` |
+| Pesos e faixas da compatibilidade | `MatchingProperties` (`cade.matching.*`) |
 | Critério de compatibilidade (`CriterioCompatibilidade`) | `CompatibilityCriterion` |
 | Convocação | `Summons` |
 | Retirada | `Pickup` |

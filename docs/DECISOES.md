@@ -186,6 +186,20 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   **Motivo:** a RN04 existe para que um objeto nunca tenha conferência mais fraca do que a categoria exige, e isso continua garantido. Proibir qualquer redução deixaria um erro de digitação sem correção no dia a dia da sala; o histórico com motivo e o bloqueio durante a convocação cobrem o risco de alguém reduzir de má-fé. A edição fica no ACH-07.
 - **Situação:** fechada.
 
+## D22 — Detalhes da nota de compatibilidade que a RN07 não define
+- **Decisão (20/11/2026):** a nota da RN07 segue estas regras nos pontos em que a tabela não é explícita:
+  - **Período:** a duração do período conta como incerteza. Os dias usados na tabela de data são o maior entre a duração (fim − início) e os dias entre o fim e o achado; a tolerância de 1 dia vale antes do início. Uma data só tem duração zero, e o resultado é exatamente o da RN07. Exemplos: perda de 03/11 a 05/11 com o objeto achado em 04/11 ou 08/11 vale 40; perda de 01/11 a 10/11 vale no máximo 20; um período de 15 dias ou mais não pontua na data.
+  - **Vários locais:** vale o local da perda que mais pontua. Sala não informada no mesmo bloco conta como mesmo bloco (15). Bloco e sala são comparados sem diferença de maiúsculas, acentos e espaços extras.
+  - **Palavras em comum:** contam as palavras distintas com 3 letras ou mais, sem maiúsculas nem acento, tiradas as palavras vazias ("com", "para", "cor"...) e as palavras do nome da categoria, que os dois lados já têm em comum. Do lado do objeto, a descrição comparada é a descrição interna; objeto sem descrição não pontua em palavras.
+  - Os pesos, os limites de dias, o mínimo de letras e as faixas ficam em `cade.matching.*` no `application.yml` (RF21).
+- **Motivo:** o exemplo da RN07 ("fone JBL preto" × "fone preto" = 80) só fecha se "fone", o nome da categoria, não contar. Contar o período a partir do melhor dia premiaria quem informa um período longo e vago, a mesma "pesca" que a RN05 tenta impedir; tratar a duração como incerteza não prejudica quem informa um período curto ("segunda a quarta") e tira os pontos de data de quem não sabe quando perdeu.
+- **Consequências:**
+  - Uma perda vaga (período longo, sem local, descrição genérica) fica na faixa baixa ou média, nunca no topo da lista do funcionário.
+  - "421" e "Sala 421" são salas diferentes para o cruzamento; se isso aparecer na prática, a normalização de sala entra como ajuste desta decisão.
+  - Não há radical nem sinônimo: "preto" e "preta" são palavras diferentes. A IA do CRU-05 é o lugar para esse tipo de semelhança.
+- **Detalhes:** a seção "Strategy + Composite" de [pooa-no-projeto.md](entrega/pooa-no-projeto.md) e os testes de `matching.service.score`.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -198,3 +212,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — Complemento na D10:** histórico gravado por evento síncrono na mesma transação (`MANDATORY`), na implementação do ADM-01.
 - **18/11/2026 — D21 registrada:** categorias e fotos no núcleo compartilhado e risco do objeto (RN04), na implementação do ACH-02.
 - **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).
+- **20/11/2026 — D22 registrada:** detalhes da nota de compatibilidade (período, vários locais, palavras que contam), na implementação do CRU-01.

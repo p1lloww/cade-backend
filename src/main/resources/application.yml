@@ -58,3 +58,21 @@ cade:
     # No Docker, um volume (compose.yaml); fora dele, a pasta data/ do projeto, ignorada pelo Git.
     directory: ${PHOTOS_DIR:data/photos}
     max-size: 5MB
+  matching:
+    # Pesos e faixas da compatibilidade (RN07, D22). A soma dos máximos (40 + 30 + 3 × 10) dá 100.
+    date:
+      recent-days: 3
+      recent-points: 40
+      close-days: 14
+      close-points: 20
+      tolerance-days: 1
+    location:
+      same-room-points: 30
+      same-block-points: 15
+    words:
+      points-each: 10
+      max-counted: 3
+      min-length: 3
+    bands:
+      high: 70
+      medium: 40

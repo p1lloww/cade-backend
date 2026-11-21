@@ -77,12 +77,22 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Convocação | `Summons` (tabela `summons`; uma por sugestão), criada pelo `SummonsService.summon`; rota `POST /suggestions/{id}/summon` (funcionário) |
 | Situação da convocação (Ativa, Concluída, Recusada, Vencida) | `SummonsStatus` (`ACTIVE`, `COMPLETED`, `REFUSED`, `EXPIRED`); ações `complete`, `refuse`, `expire` |
 | Convocar (a parte de cada módulo) | `FoundItemReservations.reserve` (`founditems.api`), `LossReportSummons.summon` (`lossreports.api`), `SuggestionSummons.pairOf` e `summon` (`matching.api`); `FoundItem.reserve`, `LossReport.summon`, `MatchSuggestion.summon` e `putOnHold` |
-| Local, horário, prazo e o que levar (RF26) | `PickupInstructions` (`pickup.api`); valores de `cade.pickup.*` (`PickupProperties`) e texto por risco em `WhatToBring` |
+| Local, horário, prazo e o que levar (RF26) | `PickupInstructions` (`pickup.api`); valores de `cade.pickup.*` (`PickupProperties`) e texto por risco em `VerificationRule.whatToBring` |
 | Prazo para retirar (RN15) | `Summons.expiresAt`, a partir de `cade.pickup.deadline` |
 | Evento convocacao.criada | `SummonsCreatedEvent` (`pickup.api.event`) |
 | Convocação no histórico | ações `SUMMONS_CREATED`, `FOUND_ITEM_RESERVED`, `LOSS_REPORT_SUMMONED`, `MATCH_SUMMONED` e `MATCH_ON_HOLD` |
-| Retirada | `Pickup` |
-| Recusa no balcão | `PickupRefusal` |
+| Balcão (o que conferir, retirada e recusa) | `CounterService` (`pickup.service.counter`); rotas `GET /summons`, `GET /summons/{id}`, `POST /summons/{id}/pickup` e `POST /summons/{id}/refusal` (funcionário) |
+| Regra de conferência por risco (RN09) | `VerificationRule` (`LowRiskRule`, `MediumRiskRule`, `HighRiskRule`, `DocumentRule`), escolhida pelo `VerificationRules` |
+| O que conferir (checklist do funcionário, RF28) | `VerificationRule.checklist()` |
+| Verificação feita no balcão (descrição coerente, detalhe, desbloqueio, prova, foto do titular) | `VerificationMethod` (`DESCRIPTION_MATCHED`, `DETAIL_CONFIRMED`, `DEVICE_UNLOCKED`, `PROOF_OF_OWNERSHIP`, `HOLDER_PHOTO_MATCHED`) |
+| Documento com foto (RG, CNH, carteirinha, passaporte, outro) | `IdDocumentType` (`RG`, `CNH`, `STUDENT_CARD`, `PASSPORT`, `OTHER`) |
+| Matrícula | `enrollment` |
+| Retirada | `Pickup` (tabela `pickups`; uma por convocação), com o que foi conferido em `CounterCheck` |
+| Recusa no balcão | `Summons.refuse` (convocação Recusada, com `refusalReason`); `CounterService.refuse` |
+| Recusas do estudante e bloqueio (RN12) | `LossReporter.refusals` e `isBlocked()` (3 recusas, `MAX_REFUSALS`); `StudentRefusals.record` (`lossreports.api`); `StudentBlockedException` |
+| Fim da convocação (a parte de cada módulo) | `FoundItemReservations.handOver` e `release`, `LossReportSummons.complete` e `release`, `SuggestionSummons.complete` e `refuse` |
+| Evento retirada.registrada | `PickupRegisteredEvent` (`pickup.api.event`) |
+| Balcão no histórico | ações `SUMMONS_COMPLETED`, `PICKUP_REGISTERED`, `FOUND_ITEM_HANDED_OVER`, `LOSS_REPORT_COMPLETED`, `MATCH_COMPLETED`; na recusa, `SUMMONS_REFUSED`, `FOUND_ITEM_RELEASED`, `LOSS_REPORT_RELEASED`, `MATCH_REFUSED`, `MATCH_RESUMED`, `STUDENT_REFUSAL_RECORDED` e `STUDENT_BLOCKED` |
 | Destino de não reclamado (bazar, descarte, outro) | `Disposal` |
 | Histórico | `AuditEvent` (contrato em `shared.audit`) |
 | Perfil de funcionário dado ou retirado (no histórico) | ações `STAFF_ROLE_GRANTED` e `STAFF_ROLE_REVOKED`, com o motivo informado pelo administrador |

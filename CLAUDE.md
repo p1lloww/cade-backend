@@ -11,13 +11,14 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D25 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D26 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
 - `docs/tecnico/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
 - `docs/tecnico/registro-perda.md`: o registro de perda em diagramas (classes, sequência com os eventos, situações).
 - `docs/tecnico/limite-registros-abertos.md`: o lock otimista que garante no máximo 5 registros de perda em andamento por estudante (RN05), com os fluxos em Mermaid.
 - `docs/tecnico/modulo-cruzamento.md`: guia de leitura do módulo `matching` (pastas, nota, sugestão e decisão do funcionário), com diagramas.
 - `docs/tecnico/cruzamento.md`: o cruzamento disparado pelos eventos de cadastro, depois do commit e numa Virtual Thread, com os casos de falha (D23).
 - `docs/tecnico/convocacao.md`: a convocação, que muda objeto, perda e sugestão na mesma transação, e o lock otimista que garante uma convocação ativa por objeto (RN18, D25).
+- `docs/tecnico/retirada.md`: o balcão, com as regras de conferência por risco (Strategy), a retirada, a recusa e o bloqueio após 3 recusas (RN09 a RN12, D26).
 - `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 

@@ -238,8 +238,30 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Consequências:**
   - Um banco local criado antes do RET-01 não ganha a coluna `version` em `found_items` (o `ddl-auto: update` não consegue criar coluna `NOT NULL` numa tabela com linhas); é preciso `docker compose down -v`.
   - Uma sugestão criada pelo cruzamento no mesmo instante da convocação pode nascer Nova para um objeto já Reservado. Convocá-la é recusado pela situação do objeto, e ela volta a valer se a convocação vencer.
-  - O que levar por risco é um `switch` simples (`WhatToBring`); as regras de conferência no balcão por risco (RET-03) podem absorvê-lo.
+  - O que levar por risco é um `switch` simples (`WhatToBring`); as regras de conferência no balcão por risco (RET-03) podem absorvê-lo. *(Absorvido no RET-03: o texto vem de `VerificationRule.whatToBring`, D26.)*
 - **Detalhes:** [`docs/tecnico/convocacao.md`](tecnico/convocacao.md).
+- **Situação:** fechada.
+
+## D26 — Balcão: regras por risco, onde contar as recusas e o que fica fora do RET-03
+- **Origem:** o RET-03 pede conferência por risco como estratégias, registro da retirada e da recusa e bloqueio após 3 recusas (RN09 a RN12). Os requisitos não definiam:
+  - quais verificações bastam para cada risco;
+  - o que a retirada guarda do documento;
+  - onde ficam as recusas;
+  - como desbloquear o estudante.
+- **Decisão (21/11/2026):**
+  - **Regras:** uma `VerificationRule` por risco (`pickup.service.verification`), com o checklist do funcionário, as verificações que bastam (`VerificationMethod`) e o que o estudante leva. A verificação registrada é conferida contra a regra antes de qualquer mudança (400 se não basta). No risco baixo, um detalhe que não aparece na foto também vale, por ser mais forte que a descrição. No alto, vale o desbloqueio ou a prova (nota fiscal, número de série).
+  - **Retirada:** a `Pickup` guarda o tipo e o número do documento com foto, a matrícula, a verificação, uma observação opcional, o funcionário, a data e a hora, como o formulário de papel de hoje (RF29). Ela nunca muda depois de gravada.
+  - **Ordem e lock:** a `Summons` (com `@Version`) é gravada primeiro. Depois vêm objeto, sugestão e perda, pelas interfaces da `api` de cada módulo (`MANDATORY`, como na D25). Retirada, recusa e o vencimento do RET-02 disputam a mesma linha, e só uma decisão passa.
+  - **Recusas:** contadas em `LossReporter.refusals`, a linha por estudante que já existe para a RN05. O `lossreports` não pode depender do `pickup` (D10), e o bloqueio impede justamente abrir registros de perda. Com 3 recusas, o registro de perda responde 409.
+  - **Recusa e sugestões:** a convocada passa a Recusada, e as Em espera do mesmo objeto voltam a Nova (seção 6.3).
+- **Motivo:** guardar as recusas no `lossreports` deixa a regra do bloqueio junto do registro que ela barra, sem dependência nova entre módulos, e aproveita a trava que já protege o limite de 5 registros.
+- **Consequências:**
+  - **O desbloqueio pelo administrador não faz parte do RET-03** e não tinha card. Até existir, o bloqueio só sai pelo banco (`UPDATE loss_reporters SET refusals = 0`). Fica proposto um card P2 em Administração.
+  - Encerrar as outras sugestões do objeto e avisar os estudantes (RF33, RET-06), o e-mail de confirmação (AVI-02) e o atalho de balcão sem convocação (RET-04) também ficam fora. O `PickupRegisteredEvent` (`retirada.registrada`) fica pronto para eles.
+  - As perguntas de conferência por categoria (RF44, ADM-04) ainda não existem. Quando entrarem, somam-se ao checklist da regra.
+  - Uma perda que volta a Aberto depois da recusa passa a ser editável de novo (`LossReportStatus.isEditable`), embora a RN06 diga que a descrição trava "depois de uma convocação". Isso precisa ser resolvido no PER-07.
+  - Um banco local já existente ganha a coluna `refusals` sozinho (há valor padrão), mas `summons` ganha três colunas que aceitam nulo; não é preciso zerar o banco.
+- **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md).
 - **Situação:** fechada.
 
 ---
@@ -258,3 +280,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D23 registrada:** quem entra no cruzamento, sugestão única por par e falha sem efeito no cadastro, na implementação do CRU-02.
 - **21/11/2026 — D24 registrada:** a mudança de perfil de funcionário vale no próximo login, na implementação do ADM-02.
 - **21/11/2026 — D25 registrada:** ordem das mudanças na convocação, sugestões em espera e o que o estudante recebe, na implementação do RET-01.
+- **21/11/2026 — D26 registrada:** regras de conferência por risco, retirada com documento e verificação, recusas no `LossReporter` e o que fica fora (desbloqueio pelo administrador, RF33), na implementação do RET-03. Nota na D25: o `WhatToBring` foi absorvido pelas regras.

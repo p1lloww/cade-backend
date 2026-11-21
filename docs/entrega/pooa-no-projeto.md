@@ -16,13 +16,13 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 | ★ Anotações e reflexão | `@RequiresRole`, `RoleRequirement`, `RouteAuthorizationCoverageTest` | Cada rota declara quem pode usá-la, e um teste impede que uma rota fique aberta por esquecimento | Na `main` (ACE-03) |
 | Virtual Threads | `AsyncConfiguration` + `spring.threads.virtual.enabled` | O e-mail é enviado sem prender a resposta ao usuário | Na `main` (AVI-01) |
 | ★ SOLID: inversão de dependência | `EmailSender`, `PhotoStorage`, `Clock` | Trocar o SMTP ou o disco sem mexer em quem usa; testar prazos sem esperar | Na `main`; `PhotoStorage` na PR #65 |
-| SOLID: aberto/fechado | `ApiException` e subclasses | Um tipo novo de erro não exige mudar o tratador | Na `main` |
+| SOLID: aberto/fechado | `ApiException` e subclasses; `CompatibilityCriterion` | Um tipo novo de erro não exige mudar o tratador; um critério novo não exige mudar a soma | Na `main`; critérios no CRU-01 |
 | SOLID: segregação de interfaces | `AuditRecordRepository` | O histórico não tem método de exclusão (RN19) | Na `main` (ADM-01) |
-| Collections e Streams | `RoleRequirement`, `AuthorizationConfiguration`, `FoundItemStatus` | Calcular os perfis aceitos e a hierarquia a partir do enum | Na `main` |
-| Records e enums com comportamento | `AuditEvent`, `Role`, `RiskLevel`, `LostPeriod`, `LossLocation` | Dados imutáveis validados na criação; regra junto do dado | Na `main`; `RiskLevel` na PR #65; período e local no PER-01 |
+| Collections e Streams | `RoleRequirement`, `AuthorizationConfiguration`, `FoundItemStatus`, `WordsCriterion`, `LocationCriterion` | Calcular os perfis aceitos e a hierarquia a partir do enum; as palavras em comum e o melhor local do cruzamento | Na `main`; cruzamento no CRU-01 |
+| Records e enums com comportamento | `AuditEvent`, `Role`, `RiskLevel`, `LostPeriod`, `LossLocation`, `MatchingProperties`, `CompatibilityBand` | Dados imutáveis validados na criação; regra junto do dado | Na `main`; `RiskLevel` na PR #65; período e local no PER-01; pesos e faixas no CRU-01 |
 | GRASP: especialista na informação | `FoundItemStatus`, `RiskLevel.canBeRaisedTo`, `FoundItem.register` | A regra fica na classe que tem os dados para decidir | Na `main`; `FoundItem` na PR #65 |
 | Baixo acoplamento (módulos) | `ModuleBoundariesTest` (ArchUnit) | Módulos só se falam pela `api` e nas direções da D10 | Na `main` (GES-01) |
-| Strategy + Composite | `CompatibilityCriterion` | A nota do cruzamento soma critérios configuráveis (RN07) | Planejado (CRU-01) |
+| ★ Strategy + Composite | `CompatibilityCriterion`, `SameCategoryGate`, `SumOfCriteria` | A nota do cruzamento soma critérios configuráveis, e um critério novo (a IA do CRU-05) entra sem mudar os outros (RN07, RF21) | CRU-01 |
 | Strategy por risco | regras de conferência no balcão | O que conferir depende do risco do objeto (RN09) | Planejado (RET-03) |
 
 ---
@@ -119,6 +119,33 @@ public @interface RequiresRole { Role[] value(); }
 
 ---
 
+## ★ Strategy + Composite: a nota do cruzamento
+
+**Problema.** A compatibilidade entre um objeto e uma perda (RN07) soma critérios de natureza diferente: data, local e palavras em comum, com a categoria como porta (categoria diferente zera tudo). Os pesos precisam ser configuráveis (RF21), e o CRU-05 vai acrescentar a IA como critério extra. Um método único com um `if` por critério cresceria e mudaria a cada ajuste.
+
+**Como.**
+- **Strategy:** cada critério implementa [`CompatibilityCriterion`](../../src/main/java/br/ucsal/cade/matching/service/score/CompatibilityCriterion.java), com um método só, `score(candidato)`: [`DateCriterion`](../../src/main/java/br/ucsal/cade/matching/service/score/DateCriterion.java), [`LocationCriterion`](../../src/main/java/br/ucsal/cade/matching/service/score/LocationCriterion.java) e [`WordsCriterion`](../../src/main/java/br/ucsal/cade/matching/service/score/WordsCriterion.java). Cada um conhece só a própria regra e os próprios pesos.
+- **Composite:** [`SumOfCriteria`](../../src/main/java/br/ucsal/cade/matching/service/score/SumOfCriteria.java) soma uma lista de critérios e também é um critério; [`SameCategoryGate`](../../src/main/java/br/ucsal/cade/matching/service/score/SameCategoryGate.java) envolve outro critério e zera a nota quando a categoria é diferente. A nota inteira é uma árvore montada pela [`MatchingConfiguration`](../../src/main/java/br/ucsal/cade/matching/service/score/MatchingConfiguration.java), e quem calcula ([`CompatibilityScorer`](../../src/main/java/br/ucsal/cade/matching/service/score/CompatibilityScorer.java)) chama `score` na raiz sem saber quantos critérios existem:
+
+```
+SameCategoryGate
+└── SumOfCriteria
+    ├── DateCriterion       (40 / 20 / 0)
+    ├── LocationCriterion   (30 / 15 / 0)
+    └── WordsCriterion      (10 por palavra, até 3)
+```
+
+- **Pesos configuráveis:** os números da RN07 e as faixas ficam em `cade.matching.*` no `application.yml`, lidos pelo record [`MatchingProperties`](../../src/main/java/br/ucsal/cade/matching/service/score/MatchingProperties.java) e conferidos na subida. As regras que a RN07 não detalha (período, sala não informada, palavras que não contam) estão na D22.
+
+**Onde:** os testes em [`CompatibilityScorerTest.java`](../../src/test/java/br/ucsal/cade/matching/service/score/CompatibilityScorerTest.java) usam os pesos do `application.yml` de verdade e conferem os dois exemplos da RN07 (fone na sala 421 = 80, alta; registro só com "iPhone" = 50, média); cada critério tem o próprio teste, e o [`CompositeCriteriaTest.java`](../../src/test/java/br/ucsal/cade/matching/service/score/CompositeCriteriaTest.java) cobre a soma, o teto de 100 e a porta.
+
+**Perguntas prováveis**
+- *Por que não um método só?* Funcionaria hoje, mas cada critério novo mexeria no mesmo método. Com o Strategy, a IA do CRU-05 é uma classe nova na lista da `MatchingConfiguration`, e os testes dos outros critérios continuam valendo sem mudança.
+- *Onde está o Composite, se a soma tem um nível só?* A raiz já é um composto de compostos: a porta envolve a soma, que contém os critérios. Como `SumOfCriteria` também é um `CompatibilityCriterion`, um grupo de critérios pode entrar dentro de outro (o teste `aNewCriterionEntersWithoutChangingTheOthers` faz isso).
+- *Por que a porta da categoria não é um critério que soma 0?* Porque somar não zera: com a porta, categoria diferente dá 0 mesmo que data, local e palavras batam, como a RN07 exige.
+
+---
+
 ## Virtual Threads
 
 **Problema.** Enviar um e-mail pelo Gmail leva alguns segundos. Se isso acontecesse na mesma thread da requisição, o usuário esperaria o e-mail sair para ver a resposta.
@@ -182,8 +209,6 @@ public @interface RequiresRole { Role[] value(); }
 
 | Conteúdo | Card | Ideia |
 |---|---|---|
-| Strategy | CRU-01 | Cada critério do cruzamento (categoria, data, local, palavras) é uma `CompatibilityCriterion`; um critério novo não muda o cálculo |
-| Composite | CRU-01 | A nota combina os critérios como se fossem um critério só (RN07) |
 | Strategy | RET-03 | O que conferir no balcão depende do risco do objeto (RN09) |
 
 Se algum desses não entrar até a entrega, esta tabela fica como "limitação declarada", que o manual aceita.

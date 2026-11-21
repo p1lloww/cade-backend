@@ -65,6 +65,30 @@ public class User {
         this.role = Role.ADMIN;
     }
 
+    /** Dá o perfil de funcionário a um estudante (RF03). */
+    public void grantStaff() {
+        requireNotAdmin();
+        if (role == Role.STAFF) {
+            throw RoleChangeNotAllowedException.alreadyStaff();
+        }
+        this.role = Role.STAFF;
+    }
+
+    /** Retira o perfil de funcionário: a conta volta a ser de estudante (RF03). */
+    public void revokeStaff() {
+        requireNotAdmin();
+        if (role != Role.STAFF) {
+            throw RoleChangeNotAllowedException.notStaff();
+        }
+        this.role = Role.STUDENT;
+    }
+
+    private void requireNotAdmin() {
+        if (role == Role.ADMIN) {
+            throw RoleChangeNotAllowedException.adminAccount();
+        }
+    }
+
     public boolean hasRole(Role role) {
         return this.role == role;
     }

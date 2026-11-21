@@ -1,0 +1,89 @@
+package br.ucsal.cade.access.service.user;
+
+import br.ucsal.cade.access.persistence.user.RoleChangeNotAllowedException;
+import br.ucsal.cade.access.persistence.user.User;
+import br.ucsal.cade.access.persistence.user.UserRepository;
+import br.ucsal.cade.shared.audit.AuditEvent;
+import br.ucsal.cade.shared.event.EventPublisher;
+import br.ucsal.cade.shared.security.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+/**
+ * Gestão dos funcionários pelo administrador (RF03). O perfil novo só vale a partir do próximo login, porque o token
+ * já emitido leva o perfil antigo até vencer.
+ */
+@Service
+public class UserRoleService {
+
+    static final String GRANTED_ACTION = "STAFF_ROLE_GRANTED";
+    static final String REVOKED_ACTION = "STAFF_ROLE_REVOKED";
+
+    private static final Logger log = LoggerFactory.getLogger(UserRoleService.class);
+    private static final Sort BY_EMAIL = Sort.by("email");
+
+    private final UserRepository users;
+    private final EventPublisher events;
+
+    UserRoleService(UserRepository users, EventPublisher events) {
+        this.users = users;
+        this.events = events;
+    }
+
+    /**
+     * Perfil nulo e e-mail nulo ou vazio não filtram. A ordem é sempre pelo e-mail: a ordem pedida é ignorada, para
+     * que um campo inexistente não vire erro do banco.
+     */
+    @Transactional(readOnly = true)
+    public Page<User> search(Role role, String emailPart, Pageable pageable) {
+        log.debug("Searching users: role={}, page={}, size={}", role, pageable.getPageNumber(), pageable.getPageSize());
+        String normalizedPart = emailPart == null ? "" : User.normalize(emailPart);
+        Pageable byEmail = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), BY_EMAIL);
+        return users.search(role, normalizedPart, byEmail);
+    }
+
+    /**
+     * Dá ou retira o perfil de funcionário e grava o histórico na mesma transação (RF43, D10).
+     *
+     * @param adminId id da conta do administrador (claim {@code sub} do token)
+     */
+    @Transactional
+    public User changeRole(UUID userId, ChangeRole request, UUID adminId) {
+        log.debug("Changing role of user {} to {} by {}", userId, request.role(), adminId);
+        User user = users.findById(userId).orElseThrow(() -> {
+            log.info("Role change refused: user {} not found", userId);
+            return new UserNotFoundException();
+        });
+
+        String action;
+        try {
+            action = switch (request.role()) {
+                case STAFF -> {
+                    user.grantStaff();
+                    yield GRANTED_ACTION;
+                }
+                case STUDENT -> {
+                    user.revokeStaff();
+                    yield REVOKED_ACTION;
+                }
+                case ADMIN -> throw new IllegalArgumentException("ADMIN is refused by the request validation");
+            };
+        } catch (RoleChangeNotAllowedException e) {
+            log.info("Role change refused for user {}: current role is {}", userId, user.getRole());
+            throw e;
+        }
+
+        events.publish(new AuditEvent(adminId, action, User.class.getSimpleName(), user.getId(),
+                request.reason()));
+        log.info("{} for user {} by {}", action, userId, adminId);
+        return user;
+    }
+}

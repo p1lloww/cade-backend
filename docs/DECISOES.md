@@ -216,6 +216,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/cruzamento.md`](tecnico/cruzamento.md).
 - **Situação:** fechada.
 
+## D24 — Mudança de perfil vale no próximo login
+- **Origem:** o ADM-02 dá e retira o perfil de funcionário (RF03), mas o perfil viaja dentro do JWT, que não tem estado (D03, D09).
+- **Decisão (21/11/2026):** a mudança de perfil é gravada na conta na hora, mas o token que a pessoa já tem continua com o perfil antigo até vencer (no máximo 8 h, `cade.jwt.ttl`). O perfil novo vale a partir do próximo login.
+- **Motivo:** conferir o perfil no banco a cada requisição tiraria a vantagem do token sem estado e exigiria mudar a validação do token, perto da entrega.
+- **Consequências:**
+  - Quem perde o perfil de funcionário ainda pode usar as rotas de funcionário por até 8 h. Para o MVP isso é aceito.
+  - Quem ganha o perfil precisa sair e entrar de novo para ver as telas de funcionário.
+  - O Swagger da rota `PUT /users/{id}/role` e o [`autorizacao.md`](tecnico/autorizacao.md) avisam isso ao front.
+  - Se precisar valer na hora, o caminho é conferir o perfil no banco ao validar o token, ou encurtar a validade do token.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -230,3 +241,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **18/11/2026 — Complemento na D21:** o risco de um objeto pode subir e descer, nunca abaixo do risco da categoria; a mudança vai para o histórico com motivo e é proibida com o objeto Reservado (ACH-07).
 - **20/11/2026 — D22 registrada:** detalhes da nota de compatibilidade (período, vários locais, palavras que contam), na implementação do CRU-01.
 - **21/11/2026 — D23 registrada:** quem entra no cruzamento, sugestão única por par e falha sem efeito no cadastro, na implementação do CRU-02.
+- **21/11/2026 — D24 registrada:** a mudança de perfil de funcionário vale no próximo login, na implementação do ADM-02.

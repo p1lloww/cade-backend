@@ -17,6 +17,7 @@ import br.ucsal.cade.pickup.api.event.SummonsCreatedEvent;
 import br.ucsal.cade.pickup.persistence.status.SummonsStatus;
 import br.ucsal.cade.pickup.persistence.summons.Summons;
 import br.ucsal.cade.pickup.persistence.summons.SummonsRepository;
+import br.ucsal.cade.pickup.service.verification.VerificationRules;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.RiskLevel;
@@ -65,6 +66,9 @@ class SummonsServiceTest {
 
     @Autowired
     private SummonsRepository summonses;
+
+    @Autowired
+    private VerificationRules rules;
 
     @Autowired
     private MatchSuggestionRepository suggestions;
@@ -186,7 +190,7 @@ class SummonsServiceTest {
         assertThat(issued.instructions().deadline()).isEqualTo(issued.summons().getExpiresAt());
         assertThat(issued.instructions().place()).isEqualTo("Sala de achados e perdidos da UCSal");
         assertThat(issued.instructions().hours()).isEqualTo("Das 7h às 21h50");
-        assertThat(issued.instructions().whatToBring()).isEqualTo(WhatToBring.forRisk(RiskLevel.HIGH));
+        assertThat(issued.instructions().whatToBring()).isEqualTo(rules.forRisk(RiskLevel.HIGH).whatToBring());
     }
 
     @Test

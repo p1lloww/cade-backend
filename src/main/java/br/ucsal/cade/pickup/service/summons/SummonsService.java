@@ -12,6 +12,7 @@ import br.ucsal.cade.pickup.api.event.SummonsCreatedEvent;
 import br.ucsal.cade.pickup.persistence.summons.NewSummons;
 import br.ucsal.cade.pickup.persistence.summons.Summons;
 import br.ucsal.cade.pickup.persistence.summons.SummonsRepository;
+import br.ucsal.cade.pickup.service.verification.VerificationRules;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.event.EventPublisher;
 import org.slf4j.Logger;
@@ -48,16 +49,19 @@ public class SummonsService {
     private final FoundItemReservations foundItems;
     private final LossReportSummons lossReports;
     private final PickupProperties properties;
+    private final VerificationRules rules;
     private final EventPublisher events;
     private final Clock clock;
 
     SummonsService(SummonsRepository repository, SuggestionSummons suggestions, FoundItemReservations foundItems,
-                   LossReportSummons lossReports, PickupProperties properties, EventPublisher events, Clock clock) {
+                   LossReportSummons lossReports, PickupProperties properties, VerificationRules rules,
+                   EventPublisher events, Clock clock) {
         this.repository = repository;
         this.suggestions = suggestions;
         this.foundItems = foundItems;
         this.lossReports = lossReports;
         this.properties = properties;
+        this.rules = rules;
         this.events = events;
         this.clock = clock;
     }
@@ -92,7 +96,7 @@ public class SummonsService {
 
     private PickupInstructions instructionsFor(Summons summons) {
         return new PickupInstructions(properties.place(), properties.hours(), summons.getExpiresAt(),
-                WhatToBring.forRisk(summons.getRisk()));
+                rules.forRisk(summons.getRisk()).whatToBring());
     }
 
     private void logOutcomeAfterCommit(Summons summons, SummonedSuggestion summoned) {

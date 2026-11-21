@@ -1,5 +1,7 @@
 # Cruzamento por evento (CRU-02)
 
+> Para a visão geral do módulo (pastas, nota, sugestões e decisão do funcionário), comece pelo [guia do módulo de cruzamento](modulo-cruzamento.md).
+
 Como um objeto cadastrado ou uma perda registrada viram sugestões para o funcionário, sem que o cadastro espere o cálculo. As regras estão nos requisitos (RF20, RNF08, seções 6.3, 7.1 e 7.2) e nas decisões D05, D10 e D23. A nota em si (critérios, pesos e faixas) é do CRU-01: ver a D22 e a seção "Strategy + Composite" de [pooa-no-projeto.md](../entrega/pooa-no-projeto.md).
 
 ## 1. Classes envolvidas

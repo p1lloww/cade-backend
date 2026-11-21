@@ -1,4 +1,4 @@
-package br.ucsal.cade.access.dto.request;
+package br.ucsal.cade.access.controller.user.dto;
 
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.security.Role;

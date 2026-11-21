@@ -1,16 +1,13 @@
 package br.ucsal.cade.access.service.user;
 
-import br.ucsal.cade.access.dto.request.RoleChangeRequestDTO;
-import br.ucsal.cade.access.dto.response.UserResponseDTO;
+import br.ucsal.cade.access.persistence.user.RoleChangeNotAllowedException;
 import br.ucsal.cade.access.persistence.user.User;
 import br.ucsal.cade.access.persistence.user.UserRepository;
 import br.ucsal.cade.shared.audit.AuditEvent;
-import br.ucsal.cade.shared.exception.RoleChangeNotAllowedException;
-import br.ucsal.cade.shared.exception.UserNotFoundException;
+import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.security.Role;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,9 +31,9 @@ public class UserRoleService {
     private static final Sort BY_EMAIL = Sort.by("email");
 
     private final UserRepository users;
-    private final ApplicationEventPublisher events;
+    private final EventPublisher events;
 
-    UserRoleService(UserRepository users, ApplicationEventPublisher events) {
+    UserRoleService(UserRepository users, EventPublisher events) {
         this.users = users;
         this.events = events;
     }
@@ -46,11 +43,11 @@ public class UserRoleService {
      * que um campo inexistente não vire erro do banco.
      */
     @Transactional(readOnly = true)
-    public Page<UserResponseDTO> search(Role role, String emailPart, Pageable pageable) {
+    public Page<User> search(Role role, String emailPart, Pageable pageable) {
         log.debug("Searching users: role={}, page={}, size={}", role, pageable.getPageNumber(), pageable.getPageSize());
         String normalizedPart = emailPart == null ? "" : User.normalize(emailPart);
         Pageable byEmail = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), BY_EMAIL);
-        return users.search(role, normalizedPart, byEmail).map(UserResponseDTO::from);
+        return users.search(role, normalizedPart, byEmail);
     }
 
     /**
@@ -59,7 +56,7 @@ public class UserRoleService {
      * @param adminId id da conta do administrador (claim {@code sub} do token)
      */
     @Transactional
-    public UserResponseDTO changeRole(UUID userId, RoleChangeRequestDTO request, UUID adminId) {
+    public User changeRole(UUID userId, ChangeRole request, UUID adminId) {
         log.debug("Changing role of user {} to {} by {}", userId, request.role(), adminId);
         User user = users.findById(userId).orElseThrow(() -> {
             log.info("Role change refused: user {} not found", userId);
@@ -77,16 +74,16 @@ public class UserRoleService {
                     user.revokeStaff();
                     yield REVOKED_ACTION;
                 }
-                case ADMIN -> throw new IllegalArgumentException("ADMIN is refused by RoleChangeRequestDTO validation");
+                case ADMIN -> throw new IllegalArgumentException("ADMIN is refused by the request validation");
             };
         } catch (RoleChangeNotAllowedException e) {
             log.info("Role change refused for user {}: current role is {}", userId, user.getRole());
             throw e;
         }
 
-        events.publishEvent(new AuditEvent(adminId, action, User.class.getSimpleName(), user.getId(),
+        events.publish(new AuditEvent(adminId, action, User.class.getSimpleName(), user.getId(),
                 request.reason()));
         log.info("{} for user {} by {}", action, userId, adminId);
-        return UserResponseDTO.from(user);
+        return user;
     }
 }

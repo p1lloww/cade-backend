@@ -1,7 +1,9 @@
 package br.ucsal.cade.access.controller.user;
 
-import br.ucsal.cade.access.dto.request.RoleChangeRequestDTO;
-import br.ucsal.cade.access.dto.response.UserResponseDTO;
+import br.ucsal.cade.access.controller.user.dto.RoleChangeRequestDTO;
+import br.ucsal.cade.access.controller.user.dto.UserResponseDTO;
+import br.ucsal.cade.access.persistence.user.User;
+import br.ucsal.cade.access.service.user.ChangeRole;
 import br.ucsal.cade.access.service.user.UserRoleService;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
@@ -37,13 +39,15 @@ class UserController implements UserApi {
     public PagedModel<UserResponseDTO> search(@RequestParam(required = false) Role role,
                                               @RequestParam(required = false) String email,
                                               Pageable pageable) {
-        return new PagedModel<>(service.search(role, email, pageable));
+        return new PagedModel<>(service.search(role, email, pageable).map(UserResponseDTO::from));
     }
 
     @Override
     @PutMapping(path = "/{id}/role", consumes = MediaType.APPLICATION_JSON_VALUE)
     public UserResponseDTO changeRole(@PathVariable UUID id, @Valid @RequestBody RoleChangeRequestDTO request,
                                       @AuthenticationPrincipal Jwt token) {
-        return service.changeRole(id, request, UUID.fromString(token.getSubject()));
+        User changed = service.changeRole(id, new ChangeRole(request.role(), request.reason()),
+                UUID.fromString(token.getSubject()));
+        return UserResponseDTO.from(changed);
     }
 }

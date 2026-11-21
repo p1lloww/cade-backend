@@ -1,4 +1,6 @@
-package br.ucsal.cade.shared.exception;
+package br.ucsal.cade.access.persistence.user;
+
+import br.ucsal.cade.shared.exception.ConflictException;
 
 /** Mudança de perfil que não faz sentido para a conta (RF03): responde 409. */
 public class RoleChangeNotAllowedException extends ConflictException {

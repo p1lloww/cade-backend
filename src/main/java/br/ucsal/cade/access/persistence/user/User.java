@@ -1,6 +1,5 @@
 package br.ucsal.cade.access.persistence.user;
 
-import br.ucsal.cade.shared.exception.RoleChangeNotAllowedException;
 import br.ucsal.cade.shared.security.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

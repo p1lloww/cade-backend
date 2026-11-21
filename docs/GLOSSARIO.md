@@ -25,8 +25,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Usuário | `User` |
 | Perfil (estudante, funcionário, administrador) | `Role` (`STUDENT`, `STAFF`, `ADMIN`), em `shared.security` porque `@RequiresRole` é usada por todos os módulos |
 | Administrador inicial (criado na instalação) | `InitialAdminInitializer` (variável `ADMIN_EMAIL`) |
-| Dar e retirar o perfil de funcionário (RF03) | `User.grantStaff`, `User.revokeStaff`, chamados pelo `UserRoleService.changeRole`; rota `PUT /users/{id}/role` (só administrador) |
-| Mudança de perfil recusada (já é funcionário, não é funcionário, conta do administrador) | `RoleChangeNotAllowedException` (HTTP 409, `ConflictException`) |
+| Dar e retirar o perfil de funcionário (RF03) | `User.grantStaff`, `User.revokeStaff`, chamados pelo `UserRoleService.changeRole` com o comando `ChangeRole` (perfil e motivo); rota `PUT /users/{id}/role` (só administrador) |
+| Mudança de perfil recusada (já é funcionário, não é funcionário, conta do administrador) | `RoleChangeNotAllowedException` (`access.persistence.user`; HTTP 409, `ConflictException`) |
+| Conta não encontrada | `UserNotFoundException` (`access.service.user`; HTTP 404, `NotFoundException`) |
 | Lista de contas (gestão de funcionários) | `UserRoleService.search`, rota `GET /users` (só administrador, sempre ordenada por e-mail) |
 | Código de login | `LoginCode` (tabela `login_codes`), gravado pelo `LoginCodeStore` (D18) |
 | Bloqueio por tentativas erradas | `LoginCode.blockedUntil`, `LoginCodeStore.registerFailure` (D18) |

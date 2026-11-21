@@ -1,4 +1,4 @@
-package br.ucsal.cade.access.dto.response;
+package br.ucsal.cade.access.controller.user.dto;
 
 import br.ucsal.cade.access.persistence.user.User;
 import br.ucsal.cade.shared.security.Role;

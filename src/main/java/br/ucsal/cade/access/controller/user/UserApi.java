@@ -1,7 +1,7 @@
 package br.ucsal.cade.access.controller.user;
 
-import br.ucsal.cade.access.dto.request.RoleChangeRequestDTO;
-import br.ucsal.cade.access.dto.response.UserResponseDTO;
+import br.ucsal.cade.access.controller.user.dto.RoleChangeRequestDTO;
+import br.ucsal.cade.access.controller.user.dto.UserResponseDTO;
 import br.ucsal.cade.shared.security.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

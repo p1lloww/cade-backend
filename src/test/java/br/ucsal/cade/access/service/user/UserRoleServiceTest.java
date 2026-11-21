@@ -1,14 +1,11 @@
 package br.ucsal.cade.access.service.user;
 
 import br.ucsal.cade.TestcontainersConfiguration;
-import br.ucsal.cade.access.dto.request.RoleChangeRequestDTO;
-import br.ucsal.cade.access.dto.response.UserResponseDTO;
+import br.ucsal.cade.access.persistence.user.RoleChangeNotAllowedException;
 import br.ucsal.cade.access.persistence.user.User;
 import br.ucsal.cade.access.persistence.user.UserRepository;
 import br.ucsal.cade.administration.persistence.audit.AuditRecord;
 import br.ucsal.cade.administration.persistence.audit.AuditRecordRepository;
-import br.ucsal.cade.shared.exception.RoleChangeNotAllowedException;
-import br.ucsal.cade.shared.exception.UserNotFoundException;
 import br.ucsal.cade.shared.security.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +41,10 @@ class UserRoleServiceTest {
     void grantingStaffChangesTheRoleAndRecordsTheReason() {
         User student = users.save(User.newStudent(uniqueEmail(), NOW));
 
-        UserResponseDTO changed = service.changeRole(student.getId(),
-                new RoleChangeRequestDTO(Role.STAFF, "Contratada para a sala de achados."), ADMIN_ID);
+        User changed = service.changeRole(student.getId(),
+                new ChangeRole(Role.STAFF, "Contratada para a sala de achados."), ADMIN_ID);
 
-        assertThat(changed.role()).isEqualTo(Role.STAFF);
+        assertThat(changed.getRole()).isEqualTo(Role.STAFF);
         assertThat(users.findById(student.getId())).get().extracting(User::getRole).isEqualTo(Role.STAFF);
         List<AuditRecord> history = recordsFor(student.getId());
         assertThat(history).singleElement().satisfies(record -> {
@@ -64,10 +61,10 @@ class UserRoleServiceTest {
         staff.grantStaff();
         staff = users.save(staff);
 
-        UserResponseDTO changed = service.changeRole(staff.getId(),
-                new RoleChangeRequestDTO(Role.STUDENT, "Saiu da sala de achados."), ADMIN_ID);
+        User changed = service.changeRole(staff.getId(),
+                new ChangeRole(Role.STUDENT, "Saiu da sala de achados."), ADMIN_ID);
 
-        assertThat(changed.role()).isEqualTo(Role.STUDENT);
+        assertThat(changed.getRole()).isEqualTo(Role.STUDENT);
         assertThat(recordsFor(staff.getId())).singleElement()
                 .extracting(AuditRecord::getAction).isEqualTo(UserRoleService.REVOKED_ACTION);
     }
@@ -77,7 +74,7 @@ class UserRoleServiceTest {
         User student = users.save(User.newStudent(uniqueEmail(), NOW));
 
         assertThatThrownBy(() -> service.changeRole(student.getId(),
-                new RoleChangeRequestDTO(Role.STUDENT, "Engano."), ADMIN_ID))
+                new ChangeRole(Role.STUDENT, "Engano."), ADMIN_ID))
                 .isInstanceOf(RoleChangeNotAllowedException.class);
 
         assertThat(users.findById(student.getId())).get().extracting(User::getRole).isEqualTo(Role.STUDENT);
@@ -89,7 +86,7 @@ class UserRoleServiceTest {
         User admin = users.save(User.newAdmin(uniqueEmail(), NOW));
 
         assertThatThrownBy(() -> service.changeRole(admin.getId(),
-                new RoleChangeRequestDTO(Role.STUDENT, "Teste."), ADMIN_ID))
+                new ChangeRole(Role.STUDENT, "Teste."), ADMIN_ID))
                 .isInstanceOf(RoleChangeNotAllowedException.class);
 
         assertThat(users.findById(admin.getId())).get().extracting(User::getRole).isEqualTo(Role.ADMIN);
@@ -99,7 +96,7 @@ class UserRoleServiceTest {
     @Test
     void anUnknownAccountIsNotFound() {
         assertThatThrownBy(() -> service.changeRole(UUID.randomUUID(),
-                new RoleChangeRequestDTO(Role.STAFF, "Teste."), ADMIN_ID))
+                new ChangeRole(Role.STAFF, "Teste."), ADMIN_ID))
                 .isInstanceOf(UserNotFoundException.class);
     }
 
@@ -110,7 +107,7 @@ class UserRoleServiceTest {
 
         var found = service.search(null, "  " + email.toUpperCase() + " ", PageRequest.of(0, 20, Sort.by("email")));
 
-        assertThat(found.getContent()).extracting(UserResponseDTO::email).containsExactly(email);
+        assertThat(found.getContent()).extracting(User::getEmail).containsExactly(email);
     }
 
     private List<AuditRecord> recordsFor(UUID userId) {

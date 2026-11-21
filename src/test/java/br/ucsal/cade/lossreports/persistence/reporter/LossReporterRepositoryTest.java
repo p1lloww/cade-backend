@@ -90,6 +90,20 @@ class LossReporterRepositoryTest {
                 student)).isOne();
     }
 
+    @Test
+    void aNewStudentStartsWithoutRefusalsAndIsBlockedOnTheThird() {
+        LossReporter reporter = reporters.findById(student).orElseThrow();
+        assertThat(reporter.getRefusals()).isZero();
+
+        for (int i = 1; i < LossReporter.MAX_REFUSALS; i++) {
+            reporter.recordRefusal();
+            assertThat(reporter.isBlocked()).isFalse();
+        }
+        reporter.recordRefusal();
+
+        assertThat(reporter.isBlocked()).isTrue();
+    }
+
     private long version() {
         return jdbc.queryForObject("SELECT version FROM loss_reporters WHERE student_id = ?", Long.class, student);
     }

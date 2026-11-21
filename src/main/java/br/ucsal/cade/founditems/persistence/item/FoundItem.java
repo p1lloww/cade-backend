@@ -137,6 +137,16 @@ public class FoundItem {
         status = status.reserve();
     }
 
+    /** Reservado → Devolvido: o dono retirou o objeto no balcão (RF29). */
+    public void handOver() {
+        status = status.handOver();
+    }
+
+    /** Reservado → Disponível: a verificação falhou no balcão ou a convocação venceu. */
+    public void release() {
+        status = status.release();
+    }
+
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.strip();
     }

@@ -6,6 +6,7 @@ import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;
+import br.ucsal.cade.lossreports.persistence.reporter.LossReporter;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
@@ -126,6 +127,29 @@ class LossReportServiceTest {
         register();
 
         assertThat(activeReports()).isEqualTo(LossReportService.MAX_ACTIVE_REPORTS);
+    }
+
+    @Test
+    void aStudentWithThreeRefusalsCannotRegister() {
+        register();
+        jdbc.update("UPDATE loss_reporters SET refusals = ? WHERE student_id = ?", LossReporter.MAX_REFUSALS,
+                student);
+
+        assertThatThrownBy(this::register)
+                .isInstanceOf(StudentBlockedException.class)
+                .isInstanceOf(ConflictException.class);
+        assertThat(activeReports()).isOne();
+    }
+
+    @Test
+    void twoRefusalsDoNotBlock() {
+        register();
+        jdbc.update("UPDATE loss_reporters SET refusals = ? WHERE student_id = ?", LossReporter.MAX_REFUSALS - 1,
+                student);
+
+        register();
+
+        assertThat(activeReports()).isEqualTo(2);
     }
 
     @Test

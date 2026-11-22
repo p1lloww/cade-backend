@@ -103,11 +103,27 @@ O CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) roda o mesmo `./mv
 
 ## Dados de teste e demonstração
 
-_A preencher:_ usuários fictícios do perfil `demo` e roteiro em [demo/](demo/).
+Para a demonstração, o back-end tem o **modo `demo`**: contas fictícias de estudante, funcionário e administrador com login direto (sem código de e-mail) e dados de exemplo, inclusive o caso do registro genérico "iPhone". Liga-se com `SPRING_PROFILES_ACTIVE=demo` (veja o [.env.example](.env.example)) e só existe com esse profile: sem ele, `/demo/*` responde 404.
+
+| Perfil | E-mail fictício |
+|---|---|
+| Estudante | estudante.demo@ucsal.edu.br |
+| Funcionário | funcionario.demo@ucsal.edu.br |
+| Administrador | admin.demo@ucsal.edu.br |
+
+Como ligar, os dados criados e o roteiro passo a passo estão em [demo/README.md](demo/README.md). **Nunca use o profile `demo` num ambiente real**, porque ele dispensa o código de login.
 
 ## Roteiro do fluxo principal
 
-_A preencher._
+Com o modo `demo` ligado (seção acima), o fluxo principal, de ponta a ponta, em cerca de 2 minutos pelo Swagger:
+
+1. **Estudante:** vê as perdas registradas (`GET /loss-reports/mine`).
+2. **Funcionário:** abre a sugestão do fone, de compatibilidade alta (`GET /loss-reports/{id}/suggestions`), e compara os dois lados (`GET /suggestions/{id}`).
+3. **Convocar** (`POST /suggestions/{id}/summon`): o objeto fica reservado e o e-mail de convocação chega ao Mailpit (http://localhost:8025).
+4. **Balcão:** confere pelo risco e registra a retirada (`POST /summons/{id}/pickup`).
+5. **Caso do "iPhone" genérico:** a sugestão sai com nota baixa e, se convocada, a verificação falha no balcão e a recusa fica registrada (`POST /summons/{id}/refusal`).
+
+Cada rota, com os perfis e os exemplos, está no [demo/README.md](demo/README.md) e no Swagger.
 
 ## Limitações conhecidas e próximos passos
 

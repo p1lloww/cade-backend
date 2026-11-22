@@ -56,6 +56,12 @@ class LossReportController implements LossReportApi {
     }
 
     @Override
+    @GetMapping("/mine")
+    public List<LossReportResponseDTO> mine(@AuthenticationPrincipal Jwt token) {
+        return service.listOf(UUID.fromString(token.getSubject())).stream().map(LossReportResponseDTO::from).toList();
+    }
+
+    @Override
     @GetMapping("/{id}/photo")
     public ResponseEntity<byte[]> photo(@PathVariable UUID id, @AuthenticationPrincipal Jwt token) {
         StoredPhoto photo = service.photoOf(id, UUID.fromString(token.getSubject()));

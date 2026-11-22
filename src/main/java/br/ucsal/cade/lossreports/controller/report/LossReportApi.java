@@ -4,6 +4,7 @@ import br.ucsal.cade.lossreports.controller.report.dto.LossReportRequestDTO;
 import br.ucsal.cade.lossreports.controller.report.dto.LossReportResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Registros de perda", description = """
@@ -52,6 +54,17 @@ public interface LossReportApi {
                                                    @Parameter(description = "Foto do objeto (opcional).")
                                                    MultipartFile photo,
                                                    @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Listar os meus registros",
+            description = """
+                    Só para estudantes. Devolve os registros de perda de quem está logado, em qualquer situação, do \
+                    mais recente para o mais antigo (RF16). Cada um traz a situação explicada em linguagem simples \
+                    (`statusDescription`). Não traz nada de objeto achado (RN03). No registro Convocado, onde e até \
+                    quando retirar vêm de `GET /summons/mine`, pelo `lossReportId`.""")
+    @ApiResponse(responseCode = "200", description = "Os registros do estudante; lista vazia se não houver nenhum.",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = LossReportResponseDTO.class))))
+    List<LossReportResponseDTO> mine(@Parameter(hidden = true) Jwt token);
 
     @Operation(summary = "Baixar a foto de um registro", description = """
             Só o dono do registro. A foto não tem URL pública: o front pede com o token e mostra como blob (D09).""")

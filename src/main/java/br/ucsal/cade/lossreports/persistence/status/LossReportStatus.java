@@ -131,6 +131,25 @@ public sealed interface LossReportStatus {
         };
     }
 
+    /**
+     * A situação explicada ao estudante em linguagem simples, para a lista "meus registros" (RF16). Não fala de
+     * nenhum objeto achado (RN03): no Convocado, onde e até quando retirar vêm da convocação, no módulo de retirada.
+     */
+    default String description() {
+        return switch (this) {
+            case Open _ -> "Estamos de olho: quando chegar à sala um objeto parecido, o funcionário confere e você é "
+                    + "avisado.";
+            case AwaitingInfo _ -> "O funcionário precisa de mais detalhes sobre a sua perda. Responda para o registro "
+                    + "continuar.";
+            case Summoned _ -> "Encontramos um objeto que pode ser seu. Veja onde e até quando retirar.";
+            case Completed _ -> "Você retirou o objeto. Este registro está encerrado.";
+            case Expired _ -> "O registro passou de 30 dias sem renovação e foi encerrado. Se ainda procura, registre "
+                    + "de novo.";
+            case Cancelled _ -> "Você cancelou este registro.";
+            case Refused _ -> "A conferência no balcão não confirmou que o objeto era seu. O registro foi encerrado.";
+        };
+    }
+
     private InvalidStatusTransitionException refused(String action) {
         return new InvalidStatusTransitionException(action, "um registro de perda", label());
     }

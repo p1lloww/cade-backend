@@ -130,6 +130,14 @@ class LossReportStatusTest {
     }
 
     @Test
+    void everyStatusHasItsOwnPlainLanguageDescription() {
+        assertThat(LossReportStatus.ALL).allSatisfy(status -> assertThat(status.description()).isNotBlank()
+                .endsWith(".").doesNotContain(status.code()));
+        assertThat(LossReportStatus.ALL.stream().map(LossReportStatus::description).distinct())
+                .hasSameSizeAs(LossReportStatus.ALL);
+    }
+
+    @Test
     void theConverterStoresTheCodeAndReadsTheSameStatusBack() {
         LossReportStatusConverter converter = new LossReportStatusConverter();
 

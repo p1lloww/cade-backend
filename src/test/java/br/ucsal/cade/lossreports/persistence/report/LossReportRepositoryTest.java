@@ -89,8 +89,31 @@ class LossReportRepositoryTest {
         assertThat(reports.countByStudentIdAndStatusIn(student, LossReportStatus.ACTIVE)).isEqualTo(3);
     }
 
+    @Test
+    void listsOnlyTheReportsOfTheStudentFromTheMostRecentWithCategoryAndLocations() {
+        Category category = categories.saveAndFlush(new Category("Chave de teste", RiskLevel.LOW));
+        UUID student = UUID.randomUUID();
+        UUID older = reports.saveAndFlush(report(category, student, NOW.minusSeconds(3600),
+                List.of(LossLocation.of("Bloco A", "Sala 101")))).getId();
+        UUID newer = reports.saveAndFlush(report(category, student, NOW, List.of())).getId();
+        reports.saveAndFlush(report(category, UUID.randomUUID()));
+        entityManager.clear();
+
+        List<LossReport> mine = reports.findWithCategoryAndLocationsByStudentIdOrderByRegisteredAtDesc(student);
+        entityManager.clear();
+
+        assertThat(mine).extracting(LossReport::getId).containsExactly(newer, older);
+        assertThat(mine.getFirst().getCategory().getName()).isEqualTo("Chave de teste");
+        assertThat(mine.getLast().getLocations()).containsExactly(LossLocation.of("Bloco A", "Sala 101"));
+    }
+
     private static LossReport report(Category category, UUID student) {
-        return LossReport.register(new NewLossReport(category, "Garrafa azul", null, List.of(),
-                LostPeriod.of(TODAY, null, null, TODAY), null), student, NOW);
+        return report(category, student, NOW, List.of());
+    }
+
+    private static LossReport report(Category category, UUID student, Instant registeredAt,
+                                     List<LossLocation> locations) {
+        return LossReport.register(new NewLossReport(category, "Garrafa azul", null, locations,
+                LostPeriod.of(TODAY, null, null, TODAY), null), student, registeredAt);
     }
 }

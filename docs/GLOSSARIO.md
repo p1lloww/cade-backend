@@ -59,6 +59,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
 | Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
+| Meus registros (RF16) | `LossReportService.listOf`; rota `GET /loss-reports/mine` (estudante) |
+| Situação em linguagem simples | `LossReportStatus.description()`, devolvida em `statusDescription` |
 | Evento perda.registrada | `LossReportRegisteredEvent` (`lossreports.api.event`) |
 | Lock do limite de registros | `LossReporter` (tabela `loss_reporters`) |
 | Sugestão (par objeto × perda) | `MatchSuggestion` (tabela `match_suggestions`; um par tem no máximo uma) |
@@ -85,6 +87,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Convocar (a parte de cada módulo) | `FoundItemReservations.reserve` (`founditems.api`), `LossReportSummons.summon` (`lossreports.api`), `SuggestionSummons.pairOf` e `summon` (`matching.api`); `FoundItem.reserve`, `LossReport.summon`, `MatchSuggestion.summon` e `putOnHold` |
 | Local, horário, prazo e o que levar (RF26) | `PickupInstructions` (`pickup.api`); valores de `cade.pickup.*` (`PickupProperties`) e texto por risco em `VerificationRule.whatToBring` |
 | Prazo para retirar (RN15) | `Summons.expiresAt`, a partir de `cade.pickup.deadline` |
+| Minhas convocações (onde, até quando e o que levar) | `SummonsService.activeOf`, `StudentSummons`; rota `GET /summons/mine` (estudante) |
 | Evento convocacao.criada | `SummonsCreatedEvent` (`pickup.api.event`) |
 | Convocação no histórico | ações `SUMMONS_CREATED`, `FOUND_ITEM_RESERVED`, `LOSS_REPORT_SUMMONED`, `MATCH_SUMMONED` e `MATCH_ON_HOLD` |
 | Balcão (o que conferir, retirada e recusa) | `CounterService` (`pickup.service.counter`); rotas `GET /summons`, `GET /summons/{id}`, `POST /summons/{id}/pickup` e `POST /summons/{id}/refusal` (funcionário) |

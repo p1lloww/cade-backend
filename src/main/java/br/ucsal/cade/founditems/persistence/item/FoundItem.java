@@ -4,6 +4,7 @@ import br.ucsal.cade.founditems.persistence.status.FoundItemStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.RiskLevel;
 import br.ucsal.cade.shared.exception.BadRequestException;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,6 +36,10 @@ public class FoundItem {
 
     public static final int MAX_PLACE_LENGTH = 30;
     public static final int MAX_TEXT_LENGTH = 500;
+    public static final int MAX_BROUGHT_BY_LENGTH = 120;
+    public static final int MAX_NAME_LENGTH = 120;
+    public static final int MAX_EMAIL_LENGTH = 254;
+    public static final int MAX_DOCUMENT_LENGTH = 60;
 
     static final String FUTURE_DATE_MESSAGE = "A data em que o objeto foi achado não pode ser no futuro.";
 
@@ -73,6 +78,24 @@ public class FoundItem {
 
     @Column(length = MAX_TEXT_LENGTH)
     private String reservedDetails;
+
+    /** Quem trouxe o objeto à sala: nome e matrícula, ou "equipe de limpeza" (RF07). Só funcionários veem. */
+    @Column(length = MAX_BROUGHT_BY_LENGTH)
+    private String broughtBy;
+
+    /** O que foi encontrado no objeto que o identifica: nome, e-mail ou documento (RF08). Só funcionários veem. */
+    @Column(length = MAX_NAME_LENGTH)
+    private String identifiedName;
+
+    @Column(length = MAX_EMAIL_LENGTH)
+    private String identifiedEmail;
+
+    @Column(length = MAX_DOCUMENT_LENGTH)
+    private String identifiedDocument;
+
+    private Instant identifiedAt;
+
+    private UUID identifiedBy;
 
     @Column(nullable = false, updatable = false)
     private UUID registeredBy;
@@ -150,6 +173,72 @@ public class FoundItem {
     /** Reservado → Disponível: a verificação falhou no balcão ou a convocação venceu. */
     public void release() {
         status = status.release();
+    }
+
+    /** Quem trouxe o objeto (RF07). Em branco apaga. */
+    public void recordBroughtBy(String broughtBy) {
+        this.broughtBy = blankToNull(broughtBy);
+    }
+
+    /**
+     * Marca o objeto como identificado (RF08): nome, e-mail ou documento encontrado nele. Pelo menos um dos três. Vale
+     * enquanto o objeto não saiu da sala (Disponível, Reservado ou Não reclamado); marcar de novo troca o que estava.
+     *
+     * @throws InvalidStatusTransitionException se o objeto já foi devolvido ou destinado
+     * @throws BadRequestException              se não veio nenhum dos três
+     */
+    public void identify(String name, String email, String document, UUID staffId, Instant at) {
+        if (status.isFinal()) {
+            throw new InvalidStatusTransitionException("identificar", "um objeto", status.label());
+        }
+        String newName = blankToNull(name);
+        String newEmail = blankToNull(email);
+        String newDocument = blankToNull(document);
+        if (newName == null && newEmail == null && newDocument == null) {
+            throw new BadRequestException("Informe o nome, o e-mail ou o documento encontrado no objeto.");
+        }
+        this.identifiedName = newName;
+        this.identifiedEmail = newEmail == null ? null : newEmail.toLowerCase(java.util.Locale.ROOT);
+        this.identifiedDocument = newDocument;
+        this.identifiedAt = Objects.requireNonNull(at);
+        this.identifiedBy = Objects.requireNonNull(staffId);
+    }
+
+    /** Desfaz a marcação de identificado, por exemplo quando foi feita no objeto errado. */
+    public void clearIdentification() {
+        this.identifiedName = null;
+        this.identifiedEmail = null;
+        this.identifiedDocument = null;
+        this.identifiedAt = null;
+        this.identifiedBy = null;
+    }
+
+    public boolean isIdentified() {
+        return identifiedAt != null;
+    }
+
+    public String getBroughtBy() {
+        return broughtBy;
+    }
+
+    public String getIdentifiedName() {
+        return identifiedName;
+    }
+
+    public String getIdentifiedEmail() {
+        return identifiedEmail;
+    }
+
+    public String getIdentifiedDocument() {
+        return identifiedDocument;
+    }
+
+    public Instant getIdentifiedAt() {
+        return identifiedAt;
+    }
+
+    public UUID getIdentifiedBy() {
+        return identifiedBy;
     }
 
     private static String blankToNull(String value) {

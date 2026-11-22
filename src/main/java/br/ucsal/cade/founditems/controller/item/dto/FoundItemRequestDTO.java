@@ -59,5 +59,10 @@ public record FoundItemRequestDTO(
         @Schema(description = "Detalhes reservados, para conferir o dono no balcão. Só funcionários veem (RF06).",
                 example = "Adesivo de estrela no lado esquerdo", maxLength = 500)
         @Size(max = FoundItem.MAX_TEXT_LENGTH, message = "Os detalhes podem ter no máximo 500 caracteres.")
-        String reservedDetails) {
+        String reservedDetails,
+
+        @Schema(description = "Quem trouxe o objeto: nome e matrícula, ou \"equipe de limpeza\". Opcional (RF07).",
+                example = "Equipe de limpeza", maxLength = FoundItem.MAX_BROUGHT_BY_LENGTH)
+        @Size(max = FoundItem.MAX_BROUGHT_BY_LENGTH, message = "Quem trouxe pode ter no máximo 120 caracteres.")
+        String broughtBy) {
 }

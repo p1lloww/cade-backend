@@ -103,6 +103,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Nova tentativa de envio (RNF08) | `OutboxRelay.relayPending`, `Notification.markFailed`; `cade.notifications.*` (`OutboxProperties`) |
 | Lembrete de prazo (convocação vencendo, registro vencendo) | `DeadlineNoticeJob`; `SummonsDeadlines` (`pickup.api`), `LossReportDeadlines` (`lossreports.api`) |
 | E-mail de uma conta | `UserEmails.emailOf` (`access.api`) |
+| Estudante bloqueado (3 recusas no balcão, RN12) | `LossReporter.isBlocked()`; rota `GET /blocked-students` (administrador) |
+| Liberar o estudante bloqueado | `LossReporter.release()`, `StudentReleaseService`; rota `POST /blocked-students/{studentId}/release`; ação `STUDENT_RELEASED` no histórico |
 | Regra de conferência por risco (RN09) | `VerificationRule` (`LowRiskRule`, `MediumRiskRule`, `HighRiskRule`, `DocumentRule`), escolhida pelo `VerificationRules` |
 | O que conferir (checklist do funcionário, RF28) | `VerificationRule.checklist()` |
 | Verificação feita no balcão (descrição coerente, detalhe, desbloqueio, prova, foto do titular) | `VerificationMethod` (`DESCRIPTION_MATCHED`, `DETAIL_CONFIRMED`, `DEVICE_UNLOCKED`, `PROOF_OF_OWNERSHIP`, `HOLDER_PHOTO_MATCHED`) |

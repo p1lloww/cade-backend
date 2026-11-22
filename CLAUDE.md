@@ -18,7 +18,7 @@ Antes de modelar, codar ou criar tarefas, consulte:
 - `docs/tecnico/modulo-cruzamento.md`: guia de leitura do módulo `matching` (pastas, nota, sugestão e decisão do funcionário), com diagramas.
 - `docs/tecnico/cruzamento.md`: o cruzamento disparado pelos eventos de cadastro, depois do commit e numa Virtual Thread, com os casos de falha (D23).
 - `docs/tecnico/convocacao.md`: a convocação, que muda objeto, perda e sugestão na mesma transação, e o lock otimista que garante uma convocação ativa por objeto (RN18, D25).
-- `docs/tecnico/retirada.md`: o balcão, com as regras de conferência por risco (Strategy), a retirada, a recusa e o bloqueio após 3 recusas (RN09 a RN12, D26), e o atalho de balcão para quem veio sem registro de perda (RF32, D29).
+- `docs/tecnico/retirada.md`: o balcão, com as regras de conferência por risco (Strategy), a retirada, a recusa e o bloqueio após 3 recusas e a liberação pelo administrador (RN09 a RN12, D26), e o atalho de balcão para quem veio sem registro de perda (RF32, D29).
 - `docs/tecnico/meus-registros.md`: a tela "meus registros" do estudante, com uma rota no `lossreports` e outra no `pickup` para o prazo da convocação, sem quebrar a D10 (D28).
 - `docs/tecnico/avisos.md`: os e-mails ao estudante pelo Transactional Outbox (aviso gravado na transação da ação, enviado depois e reenviado em falha), com diagramas de classes, sequência e estados (D30).
 - `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).

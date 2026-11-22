@@ -91,6 +91,12 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Evento convocacao.criada | `SummonsCreatedEvent` (`pickup.api.event`) |
 | Convocação no histórico | ações `SUMMONS_CREATED`, `FOUND_ITEM_RESERVED`, `LOSS_REPORT_SUMMONED`, `MATCH_SUMMONED` e `MATCH_ON_HOLD` |
 | Balcão (o que conferir, retirada e recusa) | `CounterService` (`pickup.service.counter`); rotas `GET /summons`, `GET /summons/{id}`, `POST /summons/{id}/pickup` e `POST /summons/{id}/refusal` (funcionário) |
+| Atalho de balcão (retirada sem registro de perda, RF32) | `WalkInService` (`pickup.service.walkin`), `WalkInPickup` (tabela `walk_in_pickups`); rotas `GET /found-items/{id}/walk-in-check` e `POST /walk-in-pickups` (funcionário) |
+| Quem retira pelo atalho (estudante, pessoa sem conta) | `WalkInHolder` com `HolderType` (`STUDENT`, `VISITOR`) |
+| Entregar sem convocação (ação sobre o objeto) | `handOverWithoutSummons` (`FoundItemStatus`, `FoundItem`, `FoundItemWalkIns` em `founditems.api`) |
+| Encerrar as sugestões do objeto entregue (RF33) | `FoundItemSuggestions.closeOpenOf` (`matching.api`) |
+| Evento retirada.balcao.registrada | `WalkInPickupRegisteredEvent` (`pickup.api.event`) |
+| Atalho de balcão no histórico | ações `FOUND_ITEM_HANDED_OVER_AT_COUNTER`, `MATCH_CLOSED` e `WALK_IN_PICKUP_REGISTERED` |
 | Regra de conferência por risco (RN09) | `VerificationRule` (`LowRiskRule`, `MediumRiskRule`, `HighRiskRule`, `DocumentRule`), escolhida pelo `VerificationRules` |
 | O que conferir (checklist do funcionário, RF28) | `VerificationRule.checklist()` |
 | Verificação feita no balcão (descrição coerente, detalhe, desbloqueio, prova, foto do titular) | `VerificationMethod` (`DESCRIPTION_MATCHED`, `DETAIL_CONFIRMED`, `DEVICE_UNLOCKED`, `PROOF_OF_OWNERSHIP`, `HOLDER_PHOTO_MATCHED`) |

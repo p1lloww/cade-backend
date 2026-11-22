@@ -302,6 +302,24 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/meus-registros.md`](tecnico/meus-registros.md).
 - **Situação:** fechada.
 
+## D29 — Atalho de balcão: entidade própria, objeto Reservado de fora e o registro de perda intocado
+- **Origem:** o RET-04 pede a retirada de quem veio direto à sala, sem registro de perda, inclusive pessoas sem conta (RF32, RN20), com as outras sugestões do objeto encerradas. Os requisitos não definiam onde gravar essa retirada, o que fazer com um objeto Reservado, como identificar o estudante nem o que acontece com um registro de perda que ele tenha.
+- **Decisão (21/11/2026):**
+  - **Entidade própria:** a retirada pelo atalho é uma `WalkInPickup` (tabela `walk_in_pickups`), separada da `Pickup`. A `Pickup` exige convocação e estudante (`NOT NULL`); afrouxar isso quebraria os bancos locais (o `ddl-auto: update` não remove `NOT NULL`) e misturaria dois casos com regras diferentes. As duas usam o mesmo `CounterCheck`, com a matrícula opcional no atalho.
+  - **Quem retira:** `HolderType` é `STUDENT` ou `VISITOR` (sem conta), sempre com nome e documento com foto (RN10). Estudante também informa a matrícula; a de quem não tem conta é descartada. O estudante **não é ligado à conta**, porque o `pickup` não pode depender do `access` (D10); ficam o nome e a matrícula, como no formulário de papel.
+  - **Objeto Reservado não sai pelo atalho** (409): ele está prometido a um estudante convocado (RN18). A transição nova `FoundItemStatus.handOverWithoutSummons()` aceita só Disponível e Não reclamado.
+  - **Lock:** o objeto é gravado primeiro, com o `@Version` que já existe (D25). Atalho e convocação simultâneos do mesmo objeto disputam a mesma linha, e o segundo perde (409).
+  - **Verificação:** as mesmas regras por risco da retirada com convocação (D26), pelo risco do objeto. O funcionário vê o que conferir em `GET /found-items/{id}/walk-in-check`.
+  - **Sugestões:** as Novas e Em espera do objeto passam a Encerrada, com histórico (é o RF33 neste caso).
+  - **O registro de perda não muda:** se quem retirou tinha um registro para esse objeto, ele continua Aberto, porque o atalho não sabe qual registro é. A sugestão dele é encerrada com as outras. Ao ver uma sugestão para o objeto, o funcionário deve preferir o fluxo da convocação.
+- **Motivo:** o atalho reaproveita as regras do balcão e a trava do objeto sem acrescentar dependência entre módulos, e cada tipo de retirada guarda só o que tem.
+- **Consequências:**
+  - **Aviso aos estudantes das sugestões encerradas** (a parte do "avisar" do RF33) fica para o AVI-02. O `WalkInPickupRegisteredEvent` já leva as sugestões encerradas. A equipe sugeriu que o aviso seja por e-mail, e que o estudante cujo registro continua Aberto receba também o e-mail de quando o registro estiver perto de se encerrar (vencimento em 30 dias, RF35).
+  - Um registro de perda que continua Aberto depois do atalho ocupa uma das 5 vagas do estudante (RN05) até ele cancelar (PER-06) ou o registro vencer.
+  - Um banco local já existente ganha a tabela `walk_in_pickups` sozinho, sem `docker compose down -v`.
+- **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md), seção 9.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -321,3 +339,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D26 registrada:** regras de conferência por risco, retirada com documento e verificação, recusas no `LossReporter`, perda recusada encerrada (situação Recusado), outras sugestões da perda encerradas na retirada e na recusa e o que fica fora (desbloqueio pelo administrador no #75, RF33), na implementação do RET-03. Nota na D25: o `WhatToBring` foi absorvido pelas regras.
 - **21/11/2026 — D27 registrada:** busca de objetos com índice full-text sem acentos criado na subida (sem Flyway), filtros escolhidos de `search-options` e período por mês, na implementação do ACH-04.
 - **21/11/2026 — D28 registrada:** meus registros com duas rotas do estudante (`GET /loss-reports/mine` e `GET /summons/mine`), o prazo da convocação vindo só do `pickup` e a situação em linguagem simples, na implementação do PER-03.
+- **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.

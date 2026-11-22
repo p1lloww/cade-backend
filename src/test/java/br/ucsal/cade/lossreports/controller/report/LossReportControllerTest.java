@@ -318,7 +318,8 @@ class LossReportControllerTest {
         Map<String, Object> report = JsonPath.read(body, "$[0]");
         assertThat(report.keySet()).containsExactlyInAnyOrder("id", "categoryId", "categoryName", "description",
                 "secretDetail", "locations", "locationsLabel", "lostFrom", "lostUntil", "shift", "shiftLabel", "status",
-                "statusLabel", "statusDescription", "photoPath", "registeredAt", "expiresAt");
+                "statusLabel", "statusDescription", "photoPath", "registeredAt", "expiresAt", "proofPath",
+                "proofSerialNumber");
     }
 
     @Test

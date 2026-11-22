@@ -201,3 +201,21 @@ stateDiagram-v2
 - Opcional, na parte `photo` do multipart: JPEG, PNG ou WebP, até 5 MB (mesmas regras do cadastro de objetos).
 - Guardada na pasta pela `PhotoStorage` (D21), só **depois** de todas as regras conferidas; se a transação for desfeita, é apagada.
 - `GET /loss-reports/{id}/photo`: só o dono. Registro de outro estudante responde 404, igual a um inexistente (RF14).
+
+## 8. Prova do registro (PER-05)
+
+O estudante pode anexar uma prova de que o objeto é dele (RF15): uma **foto** (foto antiga com o objeto, nota fiscal) e/ou o **número de série**.
+
+| Rota | Quem | O que faz |
+|---|---|---|
+| `POST /loss-reports/{id}/proof` | estudante, dono | `multipart/form-data` com a parte `proof` (JSON `{"serialNumber": "..."}`) e/ou a parte `file` (JPEG, PNG ou WebP, até 5 MB). Pelo menos um dos dois; o que não vier continua como estava |
+| `GET /loss-reports/{id}/proof` | estudante, dono, ou funcionário/administrador | devolve a foto da prova, com `Cache-Control: no-store`. O funcionário lê a de qualquer registro, para conferir no balcão (RF23) |
+| `GET /suggestions/{id}` | funcionário | o lado do registro na comparação ganhou `proofSerialNumber` e `proofPath` |
+
+- **A foto passa pela `PhotoStorage`** (D21), como a foto do registro: guardada só depois das regras conferidas, apagada se a transação for desfeita e **nunca com URL pública** (RN03). Ao trocar a foto, a antiga é apagada depois do commit.
+- **PDF não é aceito:** a `PhotoStorage` só entende JPEG, PNG e WebP. Uma nota fiscal em PDF precisa virar foto; é uma limitação declarada (D34).
+- **Em que situações:** qualquer uma que não seja final (Aberto, Aguardando informações e Convocado). Concluído, Vencido, Cancelado e Recusado respondem 409. A prova não altera a descrição nem o detalhe, então a RN06 continua valendo.
+- **Registro de outro estudante responde 404**, igual a inexistente (RF14). Quem pede a foto de um registro sem foto de prova também recebe 404.
+- **O histórico diz que a prova foi anexada, não o conteúdo** (`LOSS_REPORT_PROOF_ATTACHED`): o número de série é um dado pessoal do estudante.
+
+Testes: `LossReportProofControllerTest` (foto e série, só uma, entradas inválidas, troca de foto, outro estudante, situações, leitura pelo dono e pelo funcionário, comparação do funcionário e perfis).

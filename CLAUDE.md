@@ -22,6 +22,7 @@ Antes de modelar, codar ou criar tarefas, consulte:
 - `docs/tecnico/meus-registros.md`: a tela "meus registros" do estudante, com uma rota no `lossreports` e outra no `pickup` para o prazo da convocação, sem quebrar a D10 (D28).
 - `docs/tecnico/avisos.md`: os e-mails ao estudante pelo Transactional Outbox (aviso gravado na transação da ação, enviado depois e reenviado em falha), com diagramas de classes, sequência e estados (D30).
 - `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).
+- `docs/REGRAS-DO-PROJETO.md`: as regras de escopo, arquitetura, privacidade, testes obrigatórios, definição de pronto e git, num lugar só.
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
 ## Comandos

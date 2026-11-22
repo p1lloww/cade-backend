@@ -7,3 +7,6 @@ cade:
   photos:
     # Pasta temporária, para os testes não deixarem fotos no projeto.
     directory: ${java.io.tmpdir}/cade-test-photos
+  notifications:
+    # O reenvio agendado não roda sozinho nos testes: eles chamam o OutboxRelay quando precisam.
+    relay-interval: 1h

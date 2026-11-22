@@ -76,6 +76,13 @@ cade:
     bands:
       high: 70
       medium: 40
+  notifications:
+    # Caixa de saída dos avisos (D30): tentativas, espera depois da 1ª falha (cresce a cada falha), de quanto em
+    # quanto tempo o reenvio roda e quantos avisos ele pega por rodada.
+    max-attempts: 5
+    retry-delay: 5m
+    relay-interval: 1m
+    batch-size: 50
   pickup:
     # Quanto tempo o objeto fica reservado depois da convocação (RN15) e o que o estudante recebe (RF26).
     deadline: 7d

@@ -8,6 +8,8 @@ public interface EmailSender {
 
     /**
      * Envia a mensagem. Nunca lança exceção se o envio falhar: a falha vai para o log e quem chamou segue (RNF08).
+     *
+     * @return se o servidor aceitou a mensagem; quem precisa tentar de novo usa este retorno
      */
-    void send(EmailMessage message);
+    boolean send(EmailMessage message);
 }

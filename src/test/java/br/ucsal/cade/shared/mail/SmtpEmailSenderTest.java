@@ -20,8 +20,9 @@ class SmtpEmailSenderTest {
 
     @Test
     void sendsFromTheConfiguredAddress() {
-        sender.send(new EmailMessage("aluno@ucsal.edu.br", "Assunto", "Corpo"));
+        boolean accepted = sender.send(new EmailMessage("aluno@ucsal.edu.br", "Assunto", "Corpo"));
 
+        assertThat(accepted).isTrue();
         ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(sent.capture());
         assertThat(sent.getValue().getFrom()).isEqualTo("cade@test.local");
@@ -31,11 +32,11 @@ class SmtpEmailSenderTest {
     }
 
     @Test
-    void doesNotThrowWhenTheServerFails() {
+    void doesNotThrowWhenTheServerFailsAndSaysItWasNotSent() {
         doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
 
-                assertThatNoException().isThrownBy(
-                        () -> sender.send(new EmailMessage("aluno@ucsal.edu.br", "Assunto", "Corpo")));
+        assertThatNoException().isThrownBy(
+                () -> assertThat(sender.send(new EmailMessage("aluno@ucsal.edu.br", "Assunto", "Corpo"))).isFalse());
     }
 
     @Test

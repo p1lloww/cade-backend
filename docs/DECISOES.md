@@ -320,6 +320,28 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md), seção 9.
 - **Situação:** fechada.
 
+## D30 — Avisos por e-mail com Transactional Outbox
+- **Origem:** o AVI-02 pede e-mails na convocação, 1 dia antes de a convocação vencer e na retirada (RF34), antes de o registro vencer e no pedido de informações (RF35), com nova tentativa em falha e sem bloquear a ação (RNF08). Gravar a convocação (PostgreSQL) e mandar o e-mail (SMTP) são dois sistemas sem transação comum. Enviar depois do commit, direto, perde o e-mail se o SMTP estiver fora ou se a aplicação cair entre o commit e o envio.
+- **Decisão (21/11/2026):**
+  - **Transactional Outbox:** todo aviso ao estudante é gravado na tabela `notifications` **na mesma transação da ação** (`Outbox.enqueue`, `MANDATORY`), por um ouvinte síncrono (`@EventListener`, como o histórico). O aviso existe se e somente se a ação foi gravada.
+  - **Relay em duas portas:** logo após o commit, `OutboxRelay.deliverSoon` tenta enviar numa Virtual Thread; a cada minuto, `relayPending` reenvia os Pendentes cuja espera passou. Cada tentativa é uma transação própria (`NotificationDelivery`).
+  - **Um aviso, um envio:** o par (tipo, referência) é único, gravado com `INSERT ... ON CONFLICT DO NOTHING`; a tentativa trava a linha com `SELECT ... FOR UPDATE SKIP LOCKED`, e quem chega depois desiste.
+  - **Nova tentativa:** até 5, com espera que cresce (5, 10, 15, 20 min); depois, o aviso fica Abandonado na tabela. Conta inexistente é abandonada na hora. Valores em `cade.notifications.*`.
+  - **A linha guarda o texto, não o endereço:** o texto é montado do evento, dentro da transação; o e-mail é buscado no `access` (`UserEmails`, interface nova na `api`) na hora do envio, para nada que dependa de outro módulo rodar na transação da ação. O texto nunca leva segredo.
+  - **O código de login continua direto** (`LoginCodeEmailListener`, `AFTER_COMMIT` + `@Async`): vale 10 minutos e não deve ficar gravado no banco.
+  - **Lembretes de prazo:** `DeadlineNoticeJob`, de hora em hora, põe na caixa a convocação que vence em menos de 1 dia. A unicidade da caixa garante um lembrete só, sem coluna "já avisado".
+  - **`EmailSender.send` passa a devolver `boolean`**, para o relay saber se precisa tentar de novo. Continua sem lançar exceção.
+  - **`@EnableScheduling`** fica em `shared.time.SchedulingConfiguration`, para os avisos e para os vencimentos (RET-02, PRA-01).
+- **Motivo:** é o jeito de ter "aviso gravado ⇔ ação gravada" sem transação distribuída nem fila externa (RabbitMQ, como previa a seção de stack, ficou opcional). A própria transação do PostgreSQL, que já garante a ação, garante o aviso.
+- **Consequências:**
+  - **Lembrete de registro perto de vencer (RF35):** pronto (`LossReportDeadlines`, `LossReportExpiringNotice`), mas desligado (`cade.notifications.deadlines.loss-report-notice-enabled: false`) até o PER-06, porque hoje o registro ainda não vence. Quando o PER-06 permitir **renovar**, a unicidade (tipo + registro) impediria um segundo lembrete do mesmo registro; o PER-06 precisa incluir o vencimento na referência ou apagar o aviso ao renovar.
+  - **Pedido de mais informações (RF35):** fica para o PER-06, que cria o pedido e o evento. **Convocação vencida:** fica para o RET-02.
+  - **Sem aviso das sugestões encerradas pelo atalho (D29):** o estudante nunca vê as sugestões, e o aviso revelaria que apareceu um objeto parecido com o dele (RN03). Decidido pela equipe; quem ainda procura é lembrado pelo aviso de registro perto de vencer, quando ligado.
+  - Um erro no `INSERT` do aviso desfaz a ação, como um erro no histórico. É o preço de "aviso gravado ⇔ ação gravada", e o `INSERT` não depende de rede.
+  - Um banco local já existente ganha a tabela `notifications` sozinho, sem `docker compose down -v`.
+- **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -340,3 +362,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D27 registrada:** busca de objetos com índice full-text sem acentos criado na subida (sem Flyway), filtros escolhidos de `search-options` e período por mês, na implementação do ACH-04.
 - **21/11/2026 — D28 registrada:** meus registros com duas rotas do estudante (`GET /loss-reports/mine` e `GET /summons/mine`), o prazo da convocação vindo só do `pickup` e a situação em linguagem simples, na implementação do PER-03.
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
+- **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.

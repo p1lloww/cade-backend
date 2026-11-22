@@ -24,6 +24,7 @@ Onde os conteúdos de Programação Orientada a Objetos Avançada aparecem no c�
 | Baixo acoplamento (módulos) | `ModuleBoundariesTest` (ArchUnit) | Módulos só se falam pela `api` e nas direções da D10 | Na `main` (GES-01) |
 | ★ Strategy + Composite | `CompatibilityCriterion`, `SameCategoryGate`, `SumOfCriteria` | A nota do cruzamento soma critérios configuráveis, e um critério novo (a IA do CRU-05) entra sem mudar os outros (RN07, RF21) | CRU-01 |
 | ★ Strategy por risco | `VerificationRule`, `LowRiskRule`, `MediumRiskRule`, `HighRiskRule`, `DocumentRule`, `VerificationRules` | O que conferir no balcão, o que basta para entregar e o que o estudante leva dependem do risco do objeto (RN09); um risco novo é uma classe nova | RET-03 |
+| ★ Transactional Outbox | `Outbox`, `OutboxRelay`, `NotificationDelivery`, `Notification` | O e-mail ao estudante nunca se perde (SMTP fora do ar, queda da aplicação) e nunca sai em dobro, sem transação entre banco e SMTP (RF34, RNF08) | AVI-02 |
 
 ---
 
@@ -214,6 +215,40 @@ O fluxo no balcão: o funcionário abre a convocação, e o `CounterService` bus
 - *Hoje as regras só devolvem dados. Por que não um `enum` com atributos?* Para os textos e as verificações de hoje, um `enum` também serviria. As classes ficam prontas para regras com comportamento próprio, como as perguntas de conferência por categoria (RF44, ADM-04), que entram no checklist de cada risco sem mexer nos outros, e o `VerificationRules` confere na subida que nenhum risco ficou sem regra.
 - *Por que as regras são beans do Spring e não um `Map` montado à mão?* Para que uma regra nova entre só com uma classe anotada. A verificação na subida garante que nenhum risco fica sem regra.
 - *Por que o risco vem da convocação, e não do objeto na hora da retirada?* Ele é congelado na convocação (D25), porque o estudante foi avisado do que levar com base nele.
+
+---
+
+## ★ Transactional Outbox: e-mails que não se perdem nem se repetem (AVI-02)
+
+**Problema.** Na convocação, duas coisas precisam acontecer: gravar a convocação no PostgreSQL e mandar o e-mail pelo SMTP. Não há transação que abranja os dois sistemas. Mandar o e-mail **dentro** da transação prende a requisição e pode avisar de uma convocação que acabou desfeita. Mandar **depois** do commit, direto, perde o e-mail se o SMTP estiver fora ou se a aplicação cair entre o commit e o envio (RNF08).
+
+**Como.** O aviso é gravado numa tabela do próprio banco, a caixa de saída (`notifications`), **na mesma transação da convocação**. Um *relay* lê a caixa e envia depois: logo após o commit e, de novo, a cada minuto, para o que falhou ou ficou para trás.
+
+```mermaid
+flowchart LR
+    subgraph T["uma transação"]
+        A[grava a convocação] --> B["Outbox.enqueue<br/>INSERT notifications"]
+    end
+    T -->|commit| C["OutboxRelay<br/>logo após o commit"]
+    D["OutboxRelay<br/>a cada 1 min"] --> E[NotificationDelivery]
+    C --> E
+    E --> F[SMTP]
+```
+
+- [`Outbox`](../../src/main/java/br/ucsal/cade/notifications/service/outbox/enqueue/Outbox.java) só funciona dentro de uma transação (`MANDATORY`): o aviso é gravado ou desfeito junto com a ação.
+- [`OutboxRelay`](../../src/main/java/br/ucsal/cade/notifications/service/outbox/relay/OutboxRelay.java) e [`NotificationDelivery`](../../src/main/java/br/ucsal/cade/notifications/service/outbox/relay/NotificationDelivery.java) tiram da caixa e enviam, cada tentativa numa transação própria, com espera crescente e no máximo 5 tentativas.
+- O par (tipo, referência) é único (`INSERT ... ON CONFLICT DO NOTHING`), e cada envio trava a linha com `SELECT ... FOR UPDATE SKIP LOCKED`: o mesmo aviso nunca é gravado nem enviado duas vezes.
+
+**Junto com outros conteúdos.** Observer: os ouvintes de evento é que escrevem na caixa, sem o `pickup` saber que existe e-mail. Virtual Threads: o envio logo após o commit roda numa delas. Concorrência: a trava com `SKIP LOCKED` é o mesmo cuidado do lock otimista, aplicado à saída. Inversão de dependência: o relay conhece só o `EmailSender` e o `UserEmails`.
+
+**Onde:** pacote [`notifications.service.outbox`](../../src/main/java/br/ucsal/cade/notifications/service/outbox/) (`enqueue`, `relay`, `config`) e [`notifications.persistence.outbox`](../../src/main/java/br/ucsal/cade/notifications/persistence/outbox/); documento com os diagramas UML em [`docs/tecnico/avisos.md`](../tecnico/avisos.md); testes em `OutboxTest` (a entrada) e `NotificationDeliveryTest` (a saída, inclusive duas entregas simultâneas).
+
+**Perguntas prováveis**
+- *Por que não mandar o e-mail depois do commit, como o código de login?* Porque aí uma queda entre o commit e o envio perde o e-mail sem rastro. Com a caixa no banco, o aviso sobrevive à queda e o relay o encontra quando a aplicação volta.
+- *Por que o código de login não usa a caixa?* Ele vale 10 minutos e é um segredo: não deve ficar gravado no banco. Se o envio falhar, o estudante pede outro.
+- *Por que não uma fila de mensagens, como RabbitMQ?* A fila também é outro sistema fora da transação, e o problema voltaria: gravar no banco e publicar na fila. A caixa de saída usa a transação que já existe. Para o tamanho do Cadê?, o próprio PostgreSQL basta.
+- *E se o relay mandar o e-mail e cair antes de marcar como enviado?* O e-mail sai de novo na próxima rodada. O Outbox garante "pelo menos uma vez"; o par único e a trava evitam a repetição em todos os outros casos. Um e-mail repetido numa queda rara é aceitável; um e-mail perdido, não.
+- *Por que a linha guarda o texto, e não o endereço?* O texto sai do evento, sem consultar nada. O endereço vem de outro módulo (`access`) e é buscado na hora do envio, para nada que possa falhar rodar dentro da transação da convocação.
 
 ---
 

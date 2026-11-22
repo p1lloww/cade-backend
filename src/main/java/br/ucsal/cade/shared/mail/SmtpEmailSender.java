@@ -27,7 +27,7 @@ public class SmtpEmailSender implements EmailSender {
     }
 
     @Override
-    public void send(EmailMessage message) {
+    public boolean send(EmailMessage message) {
         SimpleMailMessage mail = new SimpleMailMessage();
 
         mail.setFrom(properties.from());
@@ -39,8 +39,10 @@ public class SmtpEmailSender implements EmailSender {
             log.debug("Sending e-mail to {}: {}", message.to(), message.subject());
             mailSender.send(mail);
             log.debug("E-mail sent to {}: {}", message.to(), message.subject());
+            return true;
         } catch (MailException e) {
             log.warn("Could not send e-mail to {} ({}): {}", message.to(), message.subject(), e.getMessage());
+            return false;
         }
     }
 }

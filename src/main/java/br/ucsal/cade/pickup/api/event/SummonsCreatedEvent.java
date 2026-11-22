@@ -7,8 +7,8 @@ import java.util.UUID;
 
 /**
  * Um estudante foi convocado (o {@code convocacao.criada} da seção 7.2 dos requisitos). Publicado na transação da
- * convocação; o e-mail com local, horário, prazo e o que levar (AVI) ouve depois do commit, e uma falha nele não
- * desfaz a convocação (RNF08).
+ * convocação: o e-mail com local, horário, prazo e o que levar entra na caixa de saída nessa mesma transação e sai
+ * depois do commit, e uma falha no envio não desfaz a convocação (RNF08, D30).
  *
  * @param studentId    id do estudante convocado, dono do registro de perda
  * @param instructions o que vai no e-mail; nada reservado do objeto (RN03)

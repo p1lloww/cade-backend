@@ -97,6 +97,12 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Encerrar as sugestões do objeto entregue (RF33) | `FoundItemSuggestions.closeOpenOf` (`matching.api`) |
 | Evento retirada.balcao.registrada | `WalkInPickupRegisteredEvent` (`pickup.api.event`) |
 | Atalho de balcão no histórico | ações `FOUND_ITEM_HANDED_OVER_AT_COUNTER`, `MATCH_CLOSED` e `WALK_IN_PICKUP_REGISTERED` |
+| Aviso por e-mail ao estudante (RF34, RF35) | `Notification` (tabela `notifications`), com `NotificationKind` (`SUMMONS_CREATED`, `SUMMONS_EXPIRING`, `PICKUP_REGISTERED`, `LOSS_REPORT_EXPIRING`) |
+| Situação do aviso (Pendente, Enviado, Abandonado) | `NotificationStatus` (`PENDING`, `SENT`, `ABANDONED`) |
+| Caixa de saída (Transactional Outbox, D30) | `Outbox.enqueue` (entrada), `OutboxRelay` e `NotificationDelivery` (saída) |
+| Nova tentativa de envio (RNF08) | `OutboxRelay.relayPending`, `Notification.markFailed`; `cade.notifications.*` (`OutboxProperties`) |
+| Lembrete de prazo (convocação vencendo, registro vencendo) | `DeadlineNoticeJob`; `SummonsDeadlines` (`pickup.api`), `LossReportDeadlines` (`lossreports.api`) |
+| E-mail de uma conta | `UserEmails.emailOf` (`access.api`) |
 | Regra de conferência por risco (RN09) | `VerificationRule` (`LowRiskRule`, `MediumRiskRule`, `HighRiskRule`, `DocumentRule`), escolhida pelo `VerificationRules` |
 | O que conferir (checklist do funcionário, RF28) | `VerificationRule.checklist()` |
 | Verificação feita no balcão (descrição coerente, detalhe, desbloqueio, prova, foto do titular) | `VerificationMethod` (`DESCRIPTION_MATCHED`, `DETAIL_CONFIRMED`, `DEVICE_UNLOCKED`, `PROOF_OF_OWNERSHIP`, `HOLDER_PHOTO_MATCHED`) |

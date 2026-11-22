@@ -11,6 +11,9 @@ public enum NotificationKind {
     /** Falta menos de 1 dia para a convocação vencer; a referência é a convocação (RF34). */
     SUMMONS_EXPIRING,
 
+    /** Uma análise de objeto para o registro foi encerrada porque o objeto foi entregue; a referência é a sugestão (RF33). */
+    SUGGESTION_CLOSED,
+
     /** Retirada registrada; a referência é a retirada (RF34). */
     PICKUP_REGISTERED,
 

@@ -264,6 +264,7 @@ O lembrete de **registro de perda perto de vencer** (RF35) já está pronto (`Lo
 |---|---|---|---|
 | `SUMMONS_CREATED` | na convocação (RF34) | a convocação | onde, horário, até quando e o que levar |
 | `SUMMONS_EXPIRING` | menos de 1 dia para a convocação vencer (RF34) | a convocação | os mesmos dados, com o prazo em destaque |
+| `SUGGESTION_CLOSED` | com a retirada, uma análise de objeto para o registro foi encerrada (RF33, RET-06) | a sugestão encerrada | texto neutro: uma análise foi encerrada e o registro continua aberto; não cita o objeto (RN03) |
 | `PICKUP_REGISTERED` | na retirada (RF34) | a retirada | data e hora; "se não foi você, procure a sala" |
 | `LOSS_REPORT_EXPIRING` | 3 dias antes de o registro vencer (RF35), **desligado até o PER-06** | o registro | a descrição do próprio estudante e a data |
 

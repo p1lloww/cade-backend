@@ -38,6 +38,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Situação do objeto (Disponível, Reservado, Devolvido, Não reclamado, Destinado) | `FoundItemStatus`, sealed interface com os records `Available`, `Reserved`, `Returned`, `Unclaimed`, `Disposed` (gravados como `AVAILABLE`, `RESERVED`, `RETURNED`, `UNCLAIMED`, `DISPOSED`) |
 | Convocar, liberar, entregar, marcar como não reclamado, destinar (ações sobre o objeto) | `reserve`, `release`, `handOver`, `markUnclaimed`, `dispose` |
 | Transição proibida | `InvalidStatusTransitionException` (HTTP 409, `ConflictException`) |
+| Contagens genéricas da página pública (RF41) | `PublicCountsService` (`publicpage`), a partir de `AvailableItemCounts` (`founditems.api`); rota pública `GET /public/found-item-counts` |
+| Objetos disponíveis (para as contagens públicas: estão na sala e podem ser retirados) | situações Disponível e Não reclamado (`AvailableItemCountsService.IN_THE_ROOM`); Reservado fica de fora |
 | Caixa do mês (local de guarda) | `StorageBox` (`StorageBox.suggestedFor(data)` sugere "Caixa Novembro/2026", RF05) |
 | Categoria | `Category` (`shared.category`, D21); as iniciais são criadas pelo `DefaultCategoriesInitializer` |
 | Risco (baixo, médio, alto, documento) | `RiskLevel` (`LOW`, `MEDIUM`, `HIGH`, `DOCUMENT`); só aumenta: `canBeRaisedTo` (RN04) |

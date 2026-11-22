@@ -33,7 +33,7 @@ public class SecurityConfiguration {
      * precisa exigir token, a menos que alguém a libere aqui de propósito.
      */
     static final String[] PUBLIC_ROUTES = {
-            "/auth/login-code", "/auth/token", "/actuator/health", "/error",
+            "/auth/login-code", "/auth/token", "/public/found-item-counts", "/actuator/health", "/error",
             "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"};
 
     @Bean

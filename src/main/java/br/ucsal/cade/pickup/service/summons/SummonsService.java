@@ -9,6 +9,7 @@ import br.ucsal.cade.matching.api.SuggestionSummons;
 import br.ucsal.cade.matching.api.SummonedSuggestion;
 import br.ucsal.cade.pickup.api.PickupInstructions;
 import br.ucsal.cade.pickup.api.event.SummonsCreatedEvent;
+import br.ucsal.cade.pickup.persistence.status.SummonsStatus;
 import br.ucsal.cade.pickup.persistence.summons.NewSummons;
 import br.ucsal.cade.pickup.persistence.summons.Summons;
 import br.ucsal.cade.pickup.persistence.summons.SummonsRepository;
@@ -25,6 +26,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Clock;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -92,6 +94,20 @@ public class SummonsService {
                 summons.getLossReportId(), instructions));
         logOutcomeAfterCommit(summons, summoned);
         return new IssuedSummons(summons, instructions, summoned.onHold());
+    }
+
+    /**
+     * As convocações Ativas do estudante, com onde, até quando e o que levar (RF16, RF26), as que vencem primeiro no
+     * topo. Concluída, Recusada e Vencida saem da lista: aí a situação do registro de perda já conta o que houve.
+     */
+    @Transactional(readOnly = true)
+    public List<StudentSummons> activeOf(UUID studentId) {
+        List<StudentSummons> active = repository.findByStudentIdAndStatusOrderByExpiresAtAsc(studentId,
+                        SummonsStatus.ACTIVE).stream()
+                .map(summons -> new StudentSummons(summons, instructionsFor(summons)))
+                .toList();
+        log.debug("Listed {} active summons of student {}", active.size(), studentId);
+        return active;
     }
 
     private PickupInstructions instructionsFor(Summons summons) {

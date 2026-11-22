@@ -38,6 +38,19 @@ public class LossReporter {
         refusals++;
     }
 
+    /**
+     * O administrador libera o estudante bloqueado (RN12): as recusas voltam a zero, e as próximas contam de novo do
+     * começo.
+     *
+     * @throws StudentNotBlockedException se o estudante não está bloqueado
+     */
+    public void release() {
+        if (!isBlocked()) {
+            throw new StudentNotBlockedException();
+        }
+        refusals = 0;
+    }
+
     /** Com 3 recusas, o estudante não abre novos registros até o administrador liberar (RN12). */
     public boolean isBlocked() {
         return refusals >= MAX_REFUSALS;

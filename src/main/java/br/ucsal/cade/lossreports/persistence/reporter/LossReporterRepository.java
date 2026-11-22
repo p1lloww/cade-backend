@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,4 +19,7 @@ public interface LossReporterRepository extends JpaRepository<LossReporter, UUID
 
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     Optional<LossReporter> findLockedByStudentId(UUID studentId);
+
+    /** Os estudantes com ao menos {@code refusals} recusas, os com mais recusas primeiro. */
+    List<LossReporter> findByRefusalsGreaterThanEqualOrderByRefusalsDesc(int refusals);
 }

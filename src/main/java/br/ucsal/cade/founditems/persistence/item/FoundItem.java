@@ -142,6 +142,11 @@ public class FoundItem {
         status = status.handOver();
     }
 
+    /** Disponível ou Não reclamado → Devolvido pelo atalho de balcão, sem convocação (RF32). */
+    public void handOverWithoutSummons() {
+        status = status.handOverWithoutSummons();
+    }
+
     /** Reservado → Disponível: a verificação falhou no balcão ou a convocação venceu. */
     public void release() {
         status = status.release();

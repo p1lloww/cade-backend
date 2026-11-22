@@ -14,6 +14,10 @@ public interface LossReportRepository extends JpaRepository<LossReport, UUID> {
 
     Optional<LossReport> findByIdAndStudentId(UUID id, UUID studentId);
 
+    /** Com a categoria e os locais já carregados, para o registro poder ser editado e devolvido fora da transação. */
+    @EntityGraph(attributePaths = {"category", "locations"})
+    Optional<LossReport> findWithCategoryAndLocationsByIdAndStudentId(UUID id, UUID studentId);
+
     long countByStudentIdAndStatusIn(UUID studentId, Collection<LossReportStatus> statuses);
 
     @EntityGraph(attributePaths = "locations")
@@ -27,6 +31,13 @@ public interface LossReportRepository extends JpaRepository<LossReport, UUID> {
 
     @EntityGraph(attributePaths = {"category", "locations"})
     List<LossReport> findWithCategoryAndLocationsByStudentIdOrderByRegisteredAtDesc(UUID studentId);
+
+    /** Os registros cujo prazo de validade já passou (RN14), dos mais antigos para os mais novos. */
+    List<LossReport> findByStatusAndExpiresAtLessThanEqualOrderByExpiresAtAsc(LossReportStatus status, Instant now);
+
+    /** Os pedidos de informação feitos até {@code cutoff} e ainda sem resposta (RN13). */
+    List<LossReport> findByStatusAndInfoRequestedAtLessThanEqualOrderByInfoRequestedAtAsc(LossReportStatus status,
+                                                                                         Instant cutoff);
 
     List<LossReport> findByStatusInAndExpiresAtGreaterThanAndExpiresAtLessThanEqualOrderByExpiresAtAsc(
             Collection<LossReportStatus> statuses, Instant from, Instant to);

@@ -58,6 +58,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Local da perda (bloco e sala) | `LossLocation` |
 | Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
+| Cancelar, responder ao pedido de informações e renovar o registro (RF17, RF18, RN14) | `LossReportLifecycleService.cancel`, `respond`, `renew`; rotas `POST /loss-reports/{id}/cancel`, `/info-response` e `/renew` |
+| Pedir mais informações (RF24) | `SuggestionService.requestInfo`, rota `POST /suggestions/{id}/info-request`; `LossReportInfoRequests`; aviso `INFO_REQUESTED` |
+| Vencimento do registro de perda e do pedido sem resposta (RN14, RN13) | tarefa `LossReportExpiryJob`; eventos `LossReportClosedEvent` e `LossReportInfoOverdueEvent` |
 | Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
 | Meus registros (RF16) | `LossReportService.listOf`; rota `GET /loss-reports/mine` (estudante) |
 | Situação em linguagem simples | `LossReportStatus.description()`, devolvida em `statusDescription` |

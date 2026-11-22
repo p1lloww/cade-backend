@@ -201,3 +201,35 @@ stateDiagram-v2
 - Opcional, na parte `photo` do multipart: JPEG, PNG ou WebP, até 5 MB (mesmas regras do cadastro de objetos).
 - Guardada na pasta pela `PhotoStorage` (D21), só **depois** de todas as regras conferidas; se a transação for desfeita, é apagada.
 - `GET /loss-reports/{id}/photo`: só o dono. Registro de outro estudante responde 404, igual a um inexistente (RF14).
+
+## 7. Cancelar, pedir informações, renovar e vencer (PER-06)
+
+O resto da seção 6.2 dos requisitos, no [`LossReportLifecycleService`](../../src/main/java/br/ucsal/cade/lossreports/service/report/LossReportLifecycleService.java), com as rotas no `LossReportLifecycleController` (estudante) e no `SuggestionController` (funcionário).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Aberto
+    Aberto --> AguardandoInformacoes: funcionário pede (POST /suggestions/{id}/info-request)
+    AguardandoInformacoes --> Aberto: estudante responde (POST /loss-reports/{id}/info-response)
+    AguardandoInformacoes --> Aberto: 5 dias sem resposta (RN13), sugestão descartada
+    Aberto --> Cancelado: estudante cancela (POST /loss-reports/{id}/cancel)
+    AguardandoInformacoes --> Cancelado: estudante cancela
+    Aberto --> Vencido: 30 dias sem renovação (RN14)
+    Aberto --> Aberto: estudante renova (+30 dias)
+    AguardandoInformacoes --> AguardandoInformacoes: estudante renova (+30 dias)
+```
+
+| Ação | Quem | Regra |
+|---|---|---|
+| `POST /loss-reports/{id}/cancel` | estudante, dono | Aberto ou Aguardando informações; as sugestões Novas e Em espera do registro são **encerradas** na mesma transação (evento `LossReportClosedEvent`) |
+| `POST /suggestions/{id}/info-request` | funcionário | sugestão **Nova** e registro **Aberto**; o motivo vai para o histórico e para o e-mail ao estudante (`INFO_REQUESTED`); a sugestão continua Nova |
+| `POST /loss-reports/{id}/info-response` | estudante, dono | só Aguardando informações; a resposta fica no registro (`infoAnswer`) e **não** vai para o histórico, porque pode conter o detalhe secreto (RF14) |
+| `POST /loss-reports/{id}/renew` | estudante, dono | Aberto ou Aguardando informações; `expiresAt` passa a agora + 30 dias |
+| Tarefa `LossReportExpiryJob` | sistema | de hora em hora: vence os Abertos com `expiresAt` passado (RN14) e devolve a Aberto os pedidos com mais de 5 dias, descartando a sugestão que os originou (RN13) |
+
+- **Um registro por transação na tarefa**, como no vencimento da convocação: a falha de um é registrada no log e não afeta os outros; o estado é conferido de novo dentro da transação (o estudante pode ter renovado ou o funcionário convocado depois que a tarefa listou).
+- **Só o Aberto vence.** Um registro Aguardando informações não vence: se o pedido passar de 5 dias, ele volta a Aberto e a rodada seguinte o vence, se for o caso. Convocado não vence enquanto a convocação corre.
+- **A sugestão do pedido** fica ligada ao registro (`infoSuggestionId`) para o `matching` descartá-la no prazo; o `matching` ouve os eventos `LossReportClosedEvent` e `LossReportInfoOverdueEvent` (`LossReportEventsListener`), em nome do sistema.
+- **Lembrete de vencimento:** o e-mail de "perto de vencer" (RF35) está ligado desde este card, e o texto manda renovar em "Meus registros".
+
+Testes: `LossReportTest` (todas as transições e as proibidas), `LossReportLifecycleServiceTest` (ciclo completo e as duas tarefas com o `MutableClock`, incluindo o limite exato de 5 e 30 dias) e `LossReportLifecycleControllerTest` (rotas, perfis, 404 de outro estudante, validação).

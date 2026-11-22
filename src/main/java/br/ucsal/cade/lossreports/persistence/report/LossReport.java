@@ -3,7 +3,9 @@ package br.ucsal.cade.lossreports.persistence.report;
 import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
+import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -23,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /** O detalhe secreto e a foto nunca vão para outros estudantes (RF14). */
@@ -32,6 +35,7 @@ public class LossReport {
 
     public static final int MAX_TEXT_LENGTH = 500;
     public static final int MAX_LOCATIONS = 5;
+    public static final int MAX_ANSWER_LENGTH = 1000;
 
     public static final Duration VALIDITY = Duration.ofDays(30);
 
@@ -72,6 +76,19 @@ public class LossReport {
     @Column(nullable = false)
     private Instant expiresAt;
 
+    /** Por que o funcionário pediu mais informações (RF24); fica depois da resposta, para o estudante reler. */
+    @Column(length = AuditEvent.MAX_REASON_LENGTH)
+    private String infoRequestReason;
+
+    /** Quando o pedido foi feito; nulo fora de Aguardando informações. Daí contam os 5 dias da RN13. */
+    private Instant infoRequestedAt;
+
+    /** A sugestão que originou o pedido, para descartá-la se ninguém responder (RN13); nulo fora do pedido. */
+    private UUID infoSuggestionId;
+
+    @Column(length = MAX_ANSWER_LENGTH)
+    private String infoAnswer;
+
     @Version
     private long version;
 
@@ -95,6 +112,57 @@ public class LossReport {
     /** Locais repetidos contam uma vez. */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt) {
         return new LossReport(data, studentId, registeredAt);
+    }
+
+    /** Aberto ou Aguardando informações → Cancelado: o estudante já achou o objeto (RF17). */
+    public void cancel() {
+        status = status.cancel();
+    }
+
+    /** Aberto → Vencido: o registro completou 30 dias sem renovação (RN14). */
+    public void expire() {
+        status = status.expire();
+    }
+
+    /**
+     * Aberto → Aguardando informações: o funcionário pediu mais informações a partir de uma sugestão (RF24). O pedido
+     * guarda a sugestão, que é descartada se passarem 5 dias sem resposta (RN13).
+     */
+    public void requestInfo(UUID suggestionId, String reason, Instant at) {
+        status = status.requestInfo();
+        this.infoSuggestionId = Objects.requireNonNull(suggestionId);
+        this.infoRequestReason = Objects.requireNonNull(reason);
+        this.infoRequestedAt = Objects.requireNonNull(at);
+        this.infoAnswer = null;
+    }
+
+    /** Aguardando informações → Aberto: o estudante respondeu ao pedido (RF18). */
+    public void respond(String answer) {
+        status = status.resume();
+        this.infoAnswer = Objects.requireNonNull(answer).strip();
+        closeInfoRequest();
+    }
+
+    /** Aguardando informações → Aberto: passaram 5 dias sem resposta (RN13). */
+    public void resumeWithoutAnswer() {
+        status = status.resume();
+        closeInfoRequest();
+    }
+
+    /**
+     * Estende a validade por mais 30 dias a partir de {@code now} (RN14). Só enquanto o registro está Aberto ou
+     * Aguardando informações: um registro Convocado não vence enquanto a convocação corre, e os finais não voltam.
+     */
+    public void renew(Instant now) {
+        if (!status.isEditable()) {
+            throw new InvalidStatusTransitionException("renovar", "um registro de perda", status.label());
+        }
+        this.expiresAt = Objects.requireNonNull(now).plus(VALIDITY);
+    }
+
+    private void closeInfoRequest() {
+        this.infoRequestedAt = null;
+        this.infoSuggestionId = null;
     }
 
     /**
@@ -166,6 +234,22 @@ public class LossReport {
 
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public String getInfoRequestReason() {
+        return infoRequestReason;
+    }
+
+    public Instant getInfoRequestedAt() {
+        return infoRequestedAt;
+    }
+
+    public UUID getInfoSuggestionId() {
+        return infoSuggestionId;
+    }
+
+    public String getInfoAnswer() {
+        return infoAnswer;
     }
 
     public long getVersion() {

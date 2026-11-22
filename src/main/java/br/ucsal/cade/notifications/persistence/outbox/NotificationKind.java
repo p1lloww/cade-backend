@@ -14,6 +14,9 @@ public enum NotificationKind {
     /** Retirada registrada; a referência é a retirada (RF34). */
     PICKUP_REGISTERED,
 
+    /** O funcionário pediu mais informações sobre o registro; a referência é o pedido (RF35). */
+    INFO_REQUESTED,
+
     /** O registro de perda está perto de vencer; a referência é o registro (RF35). */
     LOSS_REPORT_EXPIRING
 }

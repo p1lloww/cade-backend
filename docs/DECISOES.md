@@ -342,6 +342,23 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
+## D33 — Ciclo de vida do registro de perda: pedido de informações pela sugestão, vencimento só do Aberto e lembrete ligado
+- **Origem:** o PER-06 pede cancelar, pedir e responder mais informações, vencer aos 30 dias e renovar (RF17 a RF19, RN13, RN14).
+- **Decisão (22/11/2026):**
+  - **O pedido nasce numa sugestão** (`POST /suggestions/{id}/info-request`), porque o RF24 o põe entre as decisões do funcionário diante de uma sugestão. O `matching` chama a porta `lossreports.api.LossReportInfoRequests`; o registro guarda a sugestão do pedido (`infoSuggestionId`), para descartá-la se o estudante não responder em 5 dias (RN13). Só uma sugestão Nova e um registro Aberto admitem o pedido; enquanto o registro aguarda, outro pedido responde 409.
+  - **Descarte e encerramento por evento, na mesma transação:** `LossReportInfoOverdueEvent` descarta a sugestão do pedido; `LossReportClosedEvent` (cancelado ou vencido) encerra as sugestões Novas e Em espera do registro. Os ouvintes são síncronos e `MANDATORY` (como o histórico), em nome do sistema. O `lossreports` continua sem depender do `matching`.
+  - **Só o registro Aberto vence** (a máquina de estados da seção 6.2 não tem Aguardando informações → Vencido). Se o pedido passa de 5 dias, o registro volta a Aberto e a rodada seguinte o vence, se for o caso. Um registro Convocado não vence enquanto a convocação corre.
+  - **Renovar** estende a validade para agora + 30 dias, a qualquer momento enquanto o registro está Aberto ou Aguardando informações (não só na janela do aviso).
+  - **A resposta do estudante fica no registro, não no histórico:** o texto pode conter o detalhe secreto (RF14) e o histórico é lido pelo administrador. O pedido (`reason`) vai ao histórico e ao e-mail, porque é texto do funcionário; a tela e a API orientam a não citar o objeto (RN03).
+  - **Uma tarefa, um registro por transação:** `LossReportExpiryJob` (`cade.loss-reports.expiry-interval`, 1h) vence e retoma cada registro na própria transação, conferindo o estado de novo (o estudante pode ter renovado). Prazo da resposta em `cade.loss-reports.info-response-deadline` (5d); a validade de 30 dias continua constante até o ADM-04.
+  - **O lembrete de registro perto de vencer (RF35) foi ligado** (`loss-report-notice-enabled: true`), e o e-mail do pedido (`INFO_REQUESTED`) usa o id de cada pedido como referência na caixa de saída (D30), para um registro poder ter mais de um pedido ao longo da vida.
+- **Motivo:** mantém a D10 (o `lossreports` não conhece o `matching`) e reaproveita o padrão de vencimento do RET-02, a caixa de saída (D30) e o `@Version` das demais decisões.
+- **Consequências:**
+  - A resposta do estudante só aparece para o funcionário pelo próprio registro; uma tela de comparação que a mostre é do front.
+  - O cancelamento apaga nada: sugestões encerradas continuam no banco, só saem das listas.
+- **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 7.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -364,3 +381,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **22/11/2026 — D33 registrada:** ciclo de vida do registro de perda (cancelar, pedir e responder informações pela sugestão, renovar, vencer só o Aberto, descarte e encerramento por evento) e lembrete de vencimento ligado, na implementação do PER-06.

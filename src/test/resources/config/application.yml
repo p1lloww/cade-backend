@@ -12,3 +12,6 @@ cade:
     relay-interval: 1h
     deadlines:
       interval: 1h
+  loss-reports:
+    # A tarefa dos prazos do registro não roda sozinha nos testes: eles chamam o LossReportExpiryJob quando precisam.
+    expiry-interval: 1h

@@ -35,7 +35,12 @@ public record LossReportResponseDTO(
                 example = "/loss-reports/{id}/photo")
         String photoPath,
         Instant registeredAt,
-        Instant expiresAt) {
+        Instant expiresAt,
+        @Schema(description = "O que o funcionário pediu para saber (RF24); nulo se nunca houve pedido.",
+                example = "Qual é a cor da capa?")
+        String infoRequestReason,
+        @Schema(description = "A última resposta do estudante ao pedido (RF18); nulo se não respondeu.")
+        String infoAnswer) {
 
     static final String UNKNOWN_LOCATION = "Local não informado";
     static final String UNKNOWN_SHIFT = "Turno não informado";
@@ -51,7 +56,7 @@ public record LossReportResponseDTO(
                 period.shift() == null ? UNKNOWN_SHIFT : period.shift().label(), report.getStatus().code(),
                 report.getStatus().label(), report.getStatus().description(),
                 report.hasPhoto() ? "/loss-reports/" + report.getId() + "/photo" : null,
-                report.getRegisteredAt(), report.getExpiresAt());
+                report.getRegisteredAt(), report.getExpiresAt(), report.getInfoRequestReason(), report.getInfoAnswer());
     }
 
     private static String locationsLabel(List<LossLocationResponseDTO> locations) {

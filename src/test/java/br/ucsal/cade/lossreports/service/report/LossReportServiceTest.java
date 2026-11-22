@@ -26,6 +26,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -198,6 +199,29 @@ class LossReportServiceTest {
             }
         }
         return failures;
+    }
+
+    @Test
+    void listsTheReportsOfTheStudentInEveryStatusFromTheMostRecent() {
+        UUID owner = student;
+        UUID first = register();
+        clock.advance(Duration.ofMinutes(1));
+        UUID second = register();
+        jdbc.update("UPDATE loss_reports SET status = 'CANCELLED' WHERE id = ?", first);
+        student = UUID.randomUUID();
+        UUID ofAnotherStudent = register();
+
+        List<LossReport> mine = service.listOf(owner);
+
+        assertThat(mine).extracting(LossReport::getId).containsExactly(second, first);
+        assertThat(mine).extracting(LossReport::getStatus)
+                .containsExactly(LossReportStatus.OPEN, LossReportStatus.CANCELLED);
+        assertThat(service.listOf(student)).extracting(LossReport::getId).containsExactly(ofAnotherStudent);
+    }
+
+    @Test
+    void aStudentWithoutReportsGetsAnEmptyList() {
+        assertThat(service.listOf(UUID.randomUUID())).isEmpty();
     }
 
     private UUID register() {

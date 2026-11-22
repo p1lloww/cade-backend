@@ -25,6 +25,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -82,6 +83,14 @@ public class LossReportService {
                 period.lostUntil()));
         logOutcomeAfterCommit(report.getId(), studentId, active + 1);
         return report;
+    }
+
+    /** Só os registros do próprio estudante, em qualquer situação, do mais recente para o mais antigo (RF16). */
+    @Transactional(readOnly = true)
+    public List<LossReport> listOf(UUID studentId) {
+        List<LossReport> mine = reports.findWithCategoryAndLocationsByStudentIdOrderByRegisteredAtDesc(studentId);
+        log.debug("Listed {} loss reports of student {}", mine.size(), studentId);
+        return mine;
     }
 
     /** Registro de outro estudante responde como inexistente (RF14). */

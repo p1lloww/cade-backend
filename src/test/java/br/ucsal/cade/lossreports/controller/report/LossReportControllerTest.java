@@ -3,6 +3,7 @@ package br.ucsal.cade.lossreports.controller.report;
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.administration.persistence.audit.AuditRecordRepository;
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
+import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.security.Role;
@@ -20,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -31,7 +33,9 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -71,6 +75,9 @@ class LossReportControllerTest {
 
     @Autowired
     private PhotoProperties photoProperties;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private UUID student;
 
@@ -265,6 +272,66 @@ class LossReportControllerTest {
         register(minimal())
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value(startsWith("Você já tem 5 registros em andamento.")));
+    }
+
+    @Test
+    void theStudentListsOnlyTheirOwnReportsFromTheMostRecentInPlainLanguage() throws Exception {
+        String first = idOf(register(minimal()));
+        clock.advance(Duration.ofMinutes(1));
+        String second = idOf(register("""
+                {"categoryId": "%s", "description": "Fone JBL preto", "secretDetail": "Adesivo de estrela",
+                 "lostFrom": "%s"}""".formatted(headphones(), yesterday())));
+        jdbc.update("UPDATE loss_reports SET status = 'CANCELLED' WHERE id = ?", UUID.fromString(first));
+        UUID owner = student;
+        student = UUID.randomUUID();
+        register(minimal());
+        student = owner;
+
+        mvc.perform(get("/loss-reports/mine").header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(second))
+                .andExpect(jsonPath("$[0].secretDetail").value("Adesivo de estrela"))
+                .andExpect(jsonPath("$[0].status").value("OPEN"))
+                .andExpect(jsonPath("$[0].statusLabel").value("Aberto"))
+                .andExpect(jsonPath("$[0].statusDescription").value(LossReportStatus.OPEN.description()))
+                .andExpect(jsonPath("$[1].id").value(first))
+                .andExpect(jsonPath("$[1].statusLabel").value("Cancelado"))
+                .andExpect(jsonPath("$[1].statusDescription").value(LossReportStatus.CANCELLED.description()));
+    }
+
+    @Test
+    void aStudentWithoutReportsGetsAnEmptyList() throws Exception {
+        mvc.perform(get("/loss-reports/mine").header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void theListBringsNothingAboutFoundItems() throws Exception {
+        register(minimal());
+
+        String body = mvc.perform(get("/loss-reports/mine").header("Authorization", "Bearer " + studentToken()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Map<String, Object> report = JsonPath.read(body, "$[0]");
+        assertThat(report.keySet()).containsExactlyInAnyOrder("id", "categoryId", "categoryName", "description",
+                "secretDetail", "locations", "locationsLabel", "lostFrom", "lostUntil", "shift", "shiftLabel", "status",
+                "statusLabel", "statusDescription", "photoPath", "registeredAt", "expiresAt");
+    }
+
+    @Test
+    void onlyStudentsListTheirReports() throws Exception {
+        for (Role role : new Role[]{Role.STAFF, Role.ADMIN}) {
+            mvc.perform(get("/loss-reports/mine").header("Authorization", bearer(role)))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(get("/loss-reports/mine")).andExpect(status().isUnauthorized());
+    }
+
+    private String idOf(ResultActions registered) throws Exception {
+        return JsonPath.read(registered.andReturn().getResponse().getContentAsString(), "$.id");
     }
 
     private ResultActions register(String json) throws Exception {

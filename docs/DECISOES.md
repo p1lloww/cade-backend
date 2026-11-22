@@ -287,6 +287,21 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** `FoundItemRepository` (consulta e expressão), `FoundItemTextIndex` (índice) e `FoundItemSearchServiceTest` (filtros, `EXPLAIN` provando o uso do índice e RNF02 com 1.000 objetos).
 - **Situação:** fechada.
 
+## D28 — Meus registros: o prazo da convocação vem do módulo de retirada, numa rota própria
+- **Origem:** o PER-03 pede que o estudante acompanhe os registros e a situação de cada um em linguagem simples (RF16). No registro Convocado, a informação útil é onde e até quando retirar, mas o prazo (`Summons.expiresAt`) e o que levar ficam na convocação, no `pickup`, e o `lossreports` não pode depender do `pickup` (D10).
+- **Decisão (21/11/2026):**
+  - **Duas rotas do estudante:** `GET /loss-reports/mine` (`lossreports`) lista todos os registros do estudante, do mais recente para o mais antigo, e `GET /summons/mine` (`pickup`) lista só as convocações Ativas dele, com `lossReportId`, local, horário, prazo e o que levar (o mesmo `PickupInstructions` da convocação). O front junta as duas pelo `lossReportId`.
+  - **Linguagem simples:** cada situação do registro ganha um texto para o estudante (`LossReportStatus.description()`), devolvido em `statusDescription`. O texto do Convocado remete à convocação, sem data.
+  - **Sem paginação:** cada estudante tem no máximo 5 registros em andamento (RN05), e os encerrados são poucos no semestre.
+  - **Nada do objeto achado** em nenhuma das duas respostas, nem o id do objeto na convocação (RN03).
+- **Motivo:** cada módulo responde pelo que é seu e o prazo existe num lugar só. Copiar o prazo no registro de perda obrigaria o vencimento (RET-02), a retirada e a recusa a manter a cópia em dia, e uma divergência viraria um prazo errado na tela sem erro nenhum.
+- **Consequências:**
+  - O front faz duas chamadas na tela "meus registros". Elas são independentes e podem ir em paralelo.
+  - Quando a convocação fecha (retirada, recusa ou vencimento), ela sai de `GET /summons/mine` sem nenhuma mudança extra, e a situação do registro já conta o que houve.
+  - Os e-mails da convocação (AVI-02) podem reaproveitar o mesmo `PickupInstructions`, e a tela e o e-mail mostram sempre os mesmos dados.
+- **Detalhes:** [`docs/tecnico/meus-registros.md`](tecnico/meus-registros.md).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -305,3 +320,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D25 registrada:** ordem das mudanças na convocação, sugestões em espera e o que o estudante recebe, na implementação do RET-01.
 - **21/11/2026 — D26 registrada:** regras de conferência por risco, retirada com documento e verificação, recusas no `LossReporter`, perda recusada encerrada (situação Recusado), outras sugestões da perda encerradas na retirada e na recusa e o que fica fora (desbloqueio pelo administrador no #75, RF33), na implementação do RET-03. Nota na D25: o `WhatToBring` foi absorvido pelas regras.
 - **21/11/2026 — D27 registrada:** busca de objetos com índice full-text sem acentos criado na subida (sem Flyway), filtros escolhidos de `search-options` e período por mês, na implementação do ACH-04.
+- **21/11/2026 — D28 registrada:** meus registros com duas rotas do estudante (`GET /loss-reports/mine` e `GET /summons/mine`), o prazo da convocação vindo só do `pickup` e a situação em linguagem simples, na implementação do PER-03.

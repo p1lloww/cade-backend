@@ -83,6 +83,14 @@ cade:
     retry-delay: 5m
     relay-interval: 1m
     batch-size: 50
+    deadlines:
+      # De quanto em quanto tempo a tarefa procura prazos e com quanta antecedência avisa (RF34: 1 dia antes de a
+      # convocação vencer; RF35: antes de o registro de perda vencer).
+      interval: 1h
+      summons-notice: 1d
+      loss-report-notice: 3d
+      # Desligado até o PER-06: hoje o registro de perda ainda não vence nem é renovado (D30).
+      loss-report-notice-enabled: false
   pickup:
     # Quanto tempo o objeto fica reservado depois da convocação (RN15) e o que o estudante recebe (RF26).
     deadline: 7d

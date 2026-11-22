@@ -10,3 +10,5 @@ cade:
   notifications:
     # O reenvio agendado não roda sozinho nos testes: eles chamam o OutboxRelay quando precisam.
     relay-interval: 1h
+    deadlines:
+      interval: 1h

@@ -7,7 +7,9 @@ import br.ucsal.cade.lossreports.api.SummonedLossReport;
 import br.ucsal.cade.matching.api.SuggestionPair;
 import br.ucsal.cade.matching.api.SuggestionSummons;
 import br.ucsal.cade.matching.api.SummonedSuggestion;
+import br.ucsal.cade.pickup.api.ExpiringSummons;
 import br.ucsal.cade.pickup.api.PickupInstructions;
+import br.ucsal.cade.pickup.api.SummonsDeadlines;
 import br.ucsal.cade.pickup.api.event.SummonsCreatedEvent;
 import br.ucsal.cade.pickup.persistence.status.SummonsStatus;
 import br.ucsal.cade.pickup.persistence.summons.NewSummons;
@@ -38,7 +40,7 @@ import java.util.UUID;
  * 409, sem mudar nada. Detalhes em {@code docs/tecnico/convocacao.md}.
  */
 @Service
-public class SummonsService {
+public class SummonsService implements SummonsDeadlines {
 
     static final String CREATED_ACTION = "SUMMONS_CREATED";
 
@@ -108,6 +110,15 @@ public class SummonsService {
                 .toList();
         log.debug("Listed {} active summons of student {}", active.size(), studentId);
         return active;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExpiringSummons> expiringBetween(Instant from, Instant to) {
+        return repository.findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqualOrderByExpiresAtAsc(
+                        SummonsStatus.ACTIVE, from, to).stream()
+                .map(summons -> new ExpiringSummons(summons.getId(), summons.getStudentId(), instructionsFor(summons)))
+                .toList();
     }
 
     private PickupInstructions instructionsFor(Summons summons) {

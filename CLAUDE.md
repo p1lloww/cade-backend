@@ -11,7 +11,7 @@ O front-end (Angular, publicado na Vercel) fica em `p1lloww/cade-frontend`. O ba
 Antes de modelar, codar ou criar tarefas, consulte:
 
 - `docs/requisitos.md`: RF, RN e RNF (v3), com prioridades P1/P2/P3, estados (seção 6) e plano de corte (seção 9). Os códigos são citados nas issues e no campo "Requisitos" do Project.
-- `docs/DECISOES.md`: decisões D01–D29 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
+- `docs/DECISOES.md`: decisões D01–D30 sobre stack, arquitetura e processo. Decisão nova entra lá com data; decisão antiga nunca é apagada, só marcada como substituída. Em conflito com os requisitos, vale a decisão.
 - `docs/tecnico/login-codigos.md`: como os códigos de login ficam no PostgreSQL e por que cada regra é um comando SQL só (D18).
 - `docs/tecnico/registro-perda.md`: o registro de perda em diagramas (classes, sequência com os eventos, situações).
 - `docs/tecnico/limite-registros-abertos.md`: o lock otimista que garante no máximo 5 registros de perda em andamento por estudante (RN05), com os fluxos em Mermaid.
@@ -20,6 +20,7 @@ Antes de modelar, codar ou criar tarefas, consulte:
 - `docs/tecnico/convocacao.md`: a convocação, que muda objeto, perda e sugestão na mesma transação, e o lock otimista que garante uma convocação ativa por objeto (RN18, D25).
 - `docs/tecnico/retirada.md`: o balcão, com as regras de conferência por risco (Strategy), a retirada, a recusa e o bloqueio após 3 recusas (RN09 a RN12, D26), e o atalho de balcão para quem veio sem registro de perda (RF32, D29).
 - `docs/tecnico/meus-registros.md`: a tela "meus registros" do estudante, com uma rota no `lossreports` e outra no `pickup` para o prazo da convocação, sem quebrar a D10 (D28).
+- `docs/tecnico/avisos.md`: os e-mails ao estudante pelo Transactional Outbox (aviso gravado na transação da ação, enviado depois e reenviado em falha), com diagramas de classes, sequência e estados (D30).
 - `docs/tecnico/autorizacao.md`: CORS, token e `@RequiresRole`, do navegador ao controller, e o checklist de rota nova (D20).
 - `docs/GLOSSARIO.md`: correspondência entre os termos dos requisitos (português) e os nomes do código (inglês, D11).
 
@@ -69,6 +70,7 @@ Monólito modular. Um pacote por módulo em `br.ucsal.cade`, cada um com as cama
 - **Entre módulos:** só pela `api`, só nas direções da tabela, referência por id (sem chave estrangeira cruzando módulos). Para avisar que algo aconteceu, publique um evento. O `ModuleBoundariesTest` (ArchUnit) quebra o build se essas regras forem violadas; mudar a tabela exige registrar na D10.
 - **Histórico (RF43):** publique o `AuditEvent` de `shared.audit` dentro da transação da ação; o `AuditRecorder` do `administration` grava de forma síncrona e exige transação (`MANDATORY`). Ação do sistema (`@Async`, tarefa agendada) abre a própria `@Transactional` e usa `AuditEvent.SYSTEM_ACTOR` (complemento da D10).
 - **Efeitos colaterais** (cruzamento, e-mails) rodam depois do commit: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Async`, em Virtual Threads (D05). Uma falha neles nunca desfaz nem bloqueia a ação principal.
+- **Avisos ao estudante (D30):** nunca chame o `EmailSender` direto. Num ouvinte síncrono (`@EventListener` + `MANDATORY`), chame `Outbox.enqueue` com um `NotificationKind` e a referência; o relay envia depois do commit e reenvia em falha. A exceção é o código de login, que não fica gravado.
 - **Login (D02, D03):** código de uso único enviado ao e-mail @ucsal.edu.br (`SecureRandom`, 10 min, uso único, só hash, 5 tentativas, 1 envio por minuto) trocado por um JWT no header `Authorization`. Sem senha e sem cookie (D09). Os códigos ficam na tabela `login_codes` do PostgreSQL, e 15 tentativas erradas seguidas bloqueiam o e-mail por 15 min (D18).
 - **Autorização (RF02):** todo controller fora das rotas públicas declara `@RequiresRole` (`shared.security.authorization`) na classe ou no método; por baixo é um `@PreAuthorize` gerado a partir do enum `Role`, e o administrador atende às rotas de funcionário (D20). O `RouteAuthorizationCoverageTest` quebra o build se faltar. Rota pública nova entra em `SecurityConfiguration.PUBLIC_ROUTES`.
 - **Categorias e fotos (D21):** a `Category` (com o risco padrão, `RiskLevel`) fica em `shared.category`, e as fotos ficam atrás da `PhotoStorage` (`shared.storage`), numa pasta (`PHOTOS_DIR`; no Docker, o volume `photos-data`). Foto nunca tem URL pública: a API serve só a quem o perfil permite.

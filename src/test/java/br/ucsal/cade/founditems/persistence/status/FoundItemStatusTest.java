@@ -24,11 +24,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /** As transições da seção 6.1 dos requisitos (RF12, RN01, RNF13): todas as permitidas e todas as proibidas. */
 class FoundItemStatusTest {
 
-    /** As cinco ações, com o nome que aparece no relatório dos testes. */
+    /** As seis ações, com o nome que aparece no relatório dos testes. */
     private static final Map<String, UnaryOperator<FoundItemStatus>> ACTIONS = Map.of(
             "convocar", FoundItemStatus::reserve,
             "liberar", FoundItemStatus::release,
             "entregar", FoundItemStatus::handOver,
+            "entregar sem convocação", FoundItemStatus::handOverWithoutSummons,
             "marcar como não reclamado", FoundItemStatus::markUnclaimed,
             "destinar", FoundItemStatus::dispose);
 
@@ -41,7 +42,9 @@ class FoundItemStatusTest {
             new Transition(AVAILABLE, "marcar como não reclamado", UNCLAIMED),
             new Transition(UNCLAIMED, "convocar", RESERVED),
             new Transition(UNCLAIMED, "entregar", RETURNED),
-            new Transition(UNCLAIMED, "destinar", DISPOSED));
+            new Transition(UNCLAIMED, "destinar", DISPOSED),
+            new Transition(AVAILABLE, "entregar sem convocação", RETURNED),
+            new Transition(UNCLAIMED, "entregar sem convocação", RETURNED));
 
     private record Transition(FoundItemStatus from, String action, FoundItemStatus to) {
     }
@@ -79,7 +82,14 @@ class FoundItemStatusTest {
         long combinations = (long) FoundItemStatus.ALL.size() * ACTIONS.size();
 
         assertThat(ALLOWED.size() + forbiddenTransitions().count()).isEqualTo(combinations);
-        assertThat(forbiddenTransitions().count()).isEqualTo(17);
+        assertThat(forbiddenTransitions().count()).isEqualTo(20);
+    }
+
+    @Test
+    void aReservedItemIsNotHandedOverWithoutItsSummons() {
+        assertThat(RESERVED.handOver()).isEqualTo(RETURNED);
+        assertThat(FoundItemStatus.ALL).filteredOn(FoundItemStatus::allowsHandOverWithoutSummons)
+                .containsExactly(AVAILABLE, UNCLAIMED);
     }
 
     @Test

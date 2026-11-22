@@ -1,6 +1,6 @@
-# Retirada e recusa no balcão (RET-03)
+# Retirada e recusa no balcão (RET-03) e atalho de balcão (RET-04)
 
-O estudante convocado (RET-01, [`convocacao.md`](convocacao.md)) vai à sala. O funcionário abre a convocação, vê **o que conferir conforme o risco do objeto** (RF28) e registra a **retirada** (RF29) ou, se a verificação falhar, a **recusa** (RF31). Tudo fica no `CounterService` (`pickup.service.counter`). As escolhas que os requisitos não definiam estão na D26.
+O estudante convocado (RET-01, [`convocacao.md`](convocacao.md)) vai à sala. O funcionário abre a convocação, vê **o que conferir conforme o risco do objeto** (RF28) e registra a **retirada** (RF29) ou, se a verificação falhar, a **recusa** (RF31). Tudo fica no `CounterService` (`pickup.service.counter`). As escolhas que os requisitos não definiam estão na D26. Quem vai direto à sala, sem registro de perda, é atendido pelo **atalho de balcão** (seção 9, D29).
 
 ## 1. De onde vem o risco
 
@@ -214,3 +214,121 @@ As respostas não trazem o id do estudante, o texto da perda nem os dados reserv
   - a retirada e a recusa simultâneas, em Virtual Threads, das quais só uma passa.
 - [`CounterControllerTest`](../../src/test/java/br/ucsal/cade/pickup/controller/counter/CounterControllerTest.java): rotas com 200, 201, 400, 401, 403, 404 e 409.
 - [`LossReportServiceTest`](../../src/test/java/br/ucsal/cade/lossreports/service/report/LossReportServiceTest.java): estudante com 3 recusas não registra perda; com 2, registra.
+
+## 9. Atalho de balcão (RET-04, RF32)
+
+Quem vai direto à sala, sem registro de perda e sem convocação, é atendido como hoje (seção 3.2 dos requisitos). Pode ser um estudante ou uma **pessoa sem conta**, identificada por nome e documento (RN20). Tudo fica no `WalkInService` (`pickup.service.walkin`). As escolhas que os requisitos não definiam estão na D29.
+
+### 9.1 Classes envolvidas
+
+```mermaid
+classDiagram
+    direction LR
+    class WalkInController {
+        GET /found-items/id/walk-in-check
+        POST /walk-in-pickups
+    }
+    class WalkInService {
+        +check(foundItemId) WalkInAtCounter
+        +register(foundItemId, holder, check, staffId) RegisteredWalkIn
+    }
+    class WalkInPickup {
+        foundItemId (único)
+        holder: WalkInHolder
+        check: CounterCheck (matrícula opcional)
+        handedOverBy, handedOverAt
+    }
+    class WalkInHolder {
+        <<embeddable>>
+        type: HolderType (STUDENT, VISITOR)
+        name
+    }
+    class FoundItemWalkIns {
+        <<interface, founditems.api>>
+        +find(foundItemId) WalkInFoundItem
+        +handOverWithoutSummons(foundItemId, staffId) WalkInFoundItem
+    }
+    class FoundItemSuggestions {
+        <<interface, matching.api>>
+        +closeOpenOf(foundItemId, staffId) List~UUID~
+    }
+    class VerificationRules {
+        +forRisk(risk) VerificationRule
+    }
+    WalkInController --> WalkInService
+    WalkInService --> FoundItemWalkIns
+    WalkInService --> FoundItemSuggestions
+    WalkInService --> VerificationRules
+    WalkInService --> WalkInPickup : grava
+    WalkInPickup *-- WalkInHolder
+```
+
+- As regras por risco são as mesmas da retirada com convocação (seção 2). O risco vem do objeto, porque não há convocação que o tenha congelado.
+- `handOverWithoutSummons` usa a transição nova `FoundItemStatus.handOverWithoutSummons()`, que aceita só Disponível e Não reclamado. O `handOver()` comum aceita também Reservado, porque é o da retirada com convocação.
+- `FoundItemSuggestions` e `handOverWithoutSummons` usam `Propagation.MANDATORY`, como as outras interfaces do balcão.
+
+### 9.2 Fluxo
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor F as Funcionário
+    participant W as WalkInService
+    participant I as FoundItemWalkIns
+    participant R as VerificationRules
+    participant S as FoundItemSuggestions
+    participant DB as PostgreSQL
+
+    F->>W: POST /walk-in-pickups (objeto, quem retira, documento, verificação)
+    W->>I: find(objeto) (404 se não existe)
+    W->>R: forRisk(risco do objeto).requireAccepted(verificação)
+    alt a verificação não basta, ou estudante sem matrícula
+        R-->>F: 400, nada gravado
+    end
+    W->>I: handOverWithoutSummons(objeto)
+    I->>DB: UPDATE found_items SET status = 'RETURNED' ... WHERE version = N (flush imediato)
+    alt objeto Reservado, Devolvido ou Destinado
+        I-->>F: 409, nada gravado
+    end
+    W->>S: closeOpenOf(objeto)
+    S->>DB: sugestões Novas ou Em espera do objeto → Encerrada
+    W->>DB: INSERT walk_in_pickups
+    W->>W: publica AuditEvent e WalkInPickupRegisteredEvent
+    Note over W,DB: commit
+    W-->>F: 201 com a retirada e as sugestões encerradas
+```
+
+### 9.3 Atalho e convocação ao mesmo tempo
+
+Um funcionário pode convocar um estudante para o objeto no mesmo instante em que outro entrega o objeto pelo atalho. Os dois gravam primeiro a linha do objeto, que tem `@Version` (D25): a reserva da convocação e a entrega do atalho disputam a mesma linha, e quem chega depois perde (409) sem mudar nada. Se a convocação passou primeiro, o objeto fica Reservado e o atalho é recusado. Se o atalho passou primeiro, o objeto está Devolvido e a convocação é recusada.
+
+### 9.4 Como cada entidade muda
+
+| Entidade | Atalho | Histórico |
+|---|---|---|
+| `FoundItem` | Disponível ou Não reclamado → Devolvido | `FOUND_ITEM_HANDED_OVER_AT_COUNTER` |
+| `MatchSuggestion` (Novas ou Em espera do objeto) | → Encerrada (RF33) | `MATCH_CLOSED`, uma por sugestão |
+| `WalkInPickup` (nova) | gravada | `WALK_IN_PICKUP_REGISTERED` |
+| `LossReport` | não muda (D29) | — |
+
+### 9.5 Rotas (funcionário e administrador)
+
+| Rota | O que faz | Respostas |
+|---|---|---|
+| `GET /found-items/{id}/walk-in-check` | se o objeto pode sair pelo atalho, o risco, o checklist e as verificações aceitas (RF28) | 200, 404 |
+| `POST /walk-in-pickups` | registra a retirada pelo atalho | 201, 400 (campo, matrícula ou verificação), 404, 409 |
+
+O `GET` não traz descrição interna, detalhes reservados nem foto: o funcionário já os vê na ficha do objeto.
+
+### 9.6 Onde está testado
+
+- [`FoundItemStatusTest`](../../src/test/java/br/ucsal/cade/founditems/persistence/status/FoundItemStatusTest.java): a ação "entregar sem convocação" entra na tabela de transições permitidas e proibidas.
+- [`FoundItemWalkInsServiceTest`](../../src/test/java/br/ucsal/cade/founditems/service/item/FoundItemWalkInsServiceTest.java): entrega de Disponível e Não reclamado com histórico, Reservado recusado e a exigência de transação.
+- [`FoundItemSuggestionsServiceTest`](../../src/test/java/br/ucsal/cade/matching/service/suggestion/FoundItemSuggestionsServiceTest.java): só as Novas e Em espera do objeto são encerradas.
+- [`WalkInServiceTest`](../../src/test/java/br/ucsal/cade/pickup/service/walkin/WalkInServiceTest.java):
+  - estudante e pessoa sem conta (sem matrícula);
+  - verificação insuficiente e estudante sem matrícula, sem gravar nada;
+  - objeto Reservado e objeto já entregue (409);
+  - o histórico com o funcionário como autor;
+  - atalho e convocação simultâneos, em Virtual Threads, dos quais só um passa.
+- [`WalkInControllerTest`](../../src/test/java/br/ucsal/cade/pickup/controller/walkin/WalkInControllerTest.java): rotas com 200, 201, 400, 401, 403, 404 e 409.

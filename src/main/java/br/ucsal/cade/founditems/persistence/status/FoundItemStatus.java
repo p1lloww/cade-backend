@@ -74,6 +74,24 @@ public sealed interface FoundItemStatus {
         throw refused("entregar");
     }
 
+    /**
+     * Entregar pelo atalho de balcão, a quem veio sem registro de perda (RF32). O Reservado é recusado, embora
+     * {@link #handOver()} o aceite: ele está prometido a um estudante convocado (RN18).
+     */
+    default FoundItemStatus handOverWithoutSummons() {
+        if (!allowsHandOverWithoutSummons()) {
+            throw refused("entregar sem convocação");
+        }
+        return handOver();
+    }
+
+    default boolean allowsHandOverWithoutSummons() {
+        return switch (this) {
+            case Available _, Unclaimed _ -> true;
+            case Reserved _, Returned _, Disposed _ -> false;
+        };
+    }
+
     /** Marcar o objeto que completou 90 dias desde a entrada. */
     default FoundItemStatus markUnclaimed() {
         throw refused("marcar como não reclamado");

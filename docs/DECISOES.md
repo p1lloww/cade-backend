@@ -269,6 +269,24 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md).
 - **Situação:** fechada.
 
+## D27 — Busca de objetos: índice full-text criado na subida e filtros escolhidos de uma lista
+- **Origem:** o ACH-04 pede busca por texto, categoria, período, local e situação, em até 2 s com 1.000 objetos (RF10, RNF02). O `ddl-auto` (D06) não cria índice GIN.
+- **Decisão (21/11/2026):**
+  - **Texto:** full-text do PostgreSQL num índice GIN sobre `to_tsvector('cade_pt', descrição interna + detalhes reservados)`. A `cade_pt` é uma cópia da configuração `portuguese` com a extensão `unaccent` antes do `portuguese_stem`: ignora acentos ("termica" acha "térmica") e reduz plural e variações ("chaves" acha "chave"). A consulta usa `websearch_to_tsquery` e repete a mesma expressão, senão o índice não é usado.
+  - **Criação na subida, sem Flyway:** a equipe decidiu não usar Flyway (D06), e o `ddl-auto` não cria extensão, configuração de busca nem índice GIN. Por isso o `FoundItemTextIndex` (um `ApplicationRunner`) cria os três a cada subida, depois das tabelas, só se ainda não existem (`IF NOT EXISTS` e um bloco `DO` para a configuração). É um contorno assumido: o esquema fica parte no Hibernate e parte nesse inicializador.
+  - **Filtros:** só o texto (`q`) é digitado. Categoria, mês, bloco, sala e situação vêm de `GET /found-items/search-options`, que lista só o que tem objeto, e o front manda o valor escolhido. Não há validação além do tipo: formato inválido responde 400, e um valor que não existe só devolve a lista vazia.
+  - **Período por mês** (`month=2026-11`), como a caixa de guarda, em vez de um intervalo de datas.
+  - **Consulta:** uma query nativa só, com os filtros opcionais, que devolve a página de ids. Depois os objetos vêm com a categoria, na mesma ordem: com texto, por relevância (`ts_rank`); sem texto, os mais recentes. Sem situação, valem todas. No máximo 100 por página.
+- **Motivo:** a equipe preferiu a implementação mais direta. Um índice full-text atende a busca combinada com filtros sem acrescentar Specification nem funções registradas no Hibernate. A criação na subida é a consequência de seguir sem Flyway, decisão discutida e mantida pela equipe.
+- **Consequências:**
+  - A extensão `unaccent` exige um usuário com permissão para criar extensões. O `cade` do `compose.yaml` e o do Testcontainers são superusuários; num banco gerenciado, a extensão precisa ser criada antes por quem administra o banco.
+  - A busca depende do inicializador ter rodado. Ele roda antes de a aplicação aceitar requisições, então isso só importa se alguém apagar a configuração ou o índice com a aplicação no ar.
+  - Se a equipe adotar Flyway depois, os três comandos do `FoundItemTextIndex` viram a primeira migração, e o inicializador sai.
+  - O texto não procura no nome da categoria; para isso existe o filtro de categoria.
+  - Com o índice criado na subida, um banco local já existente o ganha sozinho, sem `docker compose down -v`.
+- **Detalhes:** `FoundItemRepository` (consulta e expressão), `FoundItemTextIndex` (índice) e `FoundItemSearchServiceTest` (filtros, `EXPLAIN` provando o uso do índice e RNF02 com 1.000 objetos).
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -286,3 +304,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D24 registrada:** a mudança de perfil de funcionário vale no próximo login, na implementação do ADM-02.
 - **21/11/2026 — D25 registrada:** ordem das mudanças na convocação, sugestões em espera e o que o estudante recebe, na implementação do RET-01.
 - **21/11/2026 — D26 registrada:** regras de conferência por risco, retirada com documento e verificação, recusas no `LossReporter`, perda recusada encerrada (situação Recusado), outras sugestões da perda encerradas na retirada e na recusa e o que fica fora (desbloqueio pelo administrador no #75, RF33), na implementação do RET-03. Nota na D25: o `WhatToBring` foi absorvido pelas regras.
+- **21/11/2026 — D27 registrada:** busca de objetos com índice full-text sem acentos criado na subida (sem Flyway), filtros escolhidos de `search-options` e período por mês, na implementação do ACH-04.

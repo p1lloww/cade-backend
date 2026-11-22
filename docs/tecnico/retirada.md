@@ -149,7 +149,40 @@ O vencimento da convocação (RET-02) não muda: lá ninguém viu o objeto, ent�
 
 As recusas ficam na linha do estudante em `loss_reporters`, a mesma do limite de 5 registros (RN05, [`limite-registros-abertos.md`](limite-registros-abertos.md)). O registro de perda já lê essa linha com trava antes de contar, e agora também recusa o estudante bloqueado (409, `StudentBlockedException`). Uma recusa e um registro simultâneos do mesmo estudante disputam a mesma versão, então não passam os dois com a contagem antiga.
 
-O desbloqueio pelo administrador é o card [#75](https://github.com/p1lloww/cade-backend/issues/75) (ADM-07). Até ele entrar, o bloqueio só sai pelo banco (D26).
+### 4.1 Liberação pelo administrador (ADM-07)
+
+O bloqueio só sai pelas mãos do administrador (RN12), no `StudentReleaseService` (`lossreports.service.reporter`). Primeiro ele vê quem está bloqueado e, depois de conversar com o estudante, libera com um motivo:
+
+| Rota (só administrador) | O que faz | Respostas |
+|---|---|---|
+| `GET /blocked-students` | estudantes com 3 recusas ou mais, os com mais recusas primeiro | 200 |
+| `POST /blocked-students/{studentId}/release` com `{"reason": "..."}` | as recusas voltam a zero, e o estudante volta a registrar perdas | 200, 400 (sem motivo), 404, 409 |
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Administrador
+    participant S as StudentReleaseService
+    participant DB as PostgreSQL
+
+    A->>S: POST /blocked-students/{id}/release (motivo)
+    S->>DB: lê loss_reporters com trava (OPTIMISTIC_FORCE_INCREMENT)
+    alt estudante sem linha
+        S-->>A: 404
+    else menos de 3 recusas
+        S-->>A: 409 (LossReporter.release recusa)
+    end
+    S->>DB: refusals = 0, versão + 1
+    S->>S: publica AuditEvent STUDENT_RELEASED (administrador, recusas anteriores e motivo)
+    Note over S,DB: commit
+    S-->>A: 200, refusals = 0, blocked = false
+```
+
+- **A regra fica na entidade:** `LossReporter.release()` zera as recusas e recusa o estudante que não está bloqueado (`StudentNotBlockedException`, 409).
+- **A mesma trava:** a liberação lê a linha com a mesma trava do registro de perda e da recusa. Uma liberação e uma recusa simultâneas do mesmo estudante disputam a versão, e a segunda recebe 409, em vez de uma apagar a outra.
+- **Depois da liberação, as recusas contam do começo:** o estudante só volta a ser bloqueado com mais 3.
+- **A resposta traz o id da conta, não o e-mail:** o `lossreports` não pode depender do `access` (D10). O front encontra o e-mail na lista de usuários do administrador (`GET /users`).
+- Testado em [`StudentReleaseServiceTest`](../../src/test/java/br/ucsal/cade/lossreports/service/reporter/StudentReleaseServiceTest.java) (o liberado volta a registrar perda, histórico com motivo, recusas do zero, lista só dos bloqueados, 404 e 409 sem gravar nada) e [`BlockedStudentsControllerTest`](../../src/test/java/br/ucsal/cade/lossreports/controller/reporter/BlockedStudentsControllerTest.java) (200, 400, 404, 409, 401 e 403 para funcionário e estudante).
 
 ## 5. Como cada entidade muda
 
@@ -162,7 +195,7 @@ O desbloqueio pelo administrador é o card [#75](https://github.com/p1lloww/cade
 | `MatchSuggestion` (Novas ou Em espera da perda, com outros objetos) | → Encerrada | → Encerrada | `MATCH_CLOSED` / `MATCH_CLOSED` |
 | `LossReport` | Convocado → Concluído | Convocado → Recusado (final) | `LOSS_REPORT_COMPLETED` / `LOSS_REPORT_REFUSED` |
 | `Pickup` (nova) | gravada | — | `PICKUP_REGISTERED` |
-| `LossReporter` | — | recusas + 1 | `STUDENT_REFUSAL_RECORDED`; na 3ª, também `STUDENT_BLOCKED` |
+| `LossReporter` | — | recusas + 1 | `STUDENT_REFUSAL_RECORDED`; na 3ª, também `STUDENT_BLOCKED` (a liberação, seção 4.1, grava `STUDENT_RELEASED`) |
 
 Todos os registros têm o funcionário como autor. As interfaces dos outros módulos usam `Propagation.MANDATORY`: se qualquer passo falhar, nada fica gravado.
 

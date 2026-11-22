@@ -2,6 +2,7 @@ package br.ucsal.cade.lossreports.controller.report;
 
 import br.ucsal.cade.lossreports.controller.report.dto.LossReportRequestDTO;
 import br.ucsal.cade.lossreports.controller.report.dto.LossReportResponseDTO;
+import br.ucsal.cade.lossreports.controller.report.dto.LossReportUpdateRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -54,6 +55,34 @@ public interface LossReportApi {
                                                    @Parameter(description = "Foto do objeto (opcional).")
                                                    MultipartFile photo,
                                                    @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Corrigir um registro de perda",
+            description = """
+                    Só para estudantes, só no próprio registro. Envie os mesmos campos do registro (a foto não \
+                    muda) e a `version` que a última resposta trouxe. Só vale enquanto o registro está **Aberto** \
+                    ou **Aguardando informações**: depois da convocação, a descrição e o detalhe ficam travados \
+                    para ninguém ajustar o texto ao objeto (RN06). Se o registro mudou desde que o estudante o \
+                    recebeu (por exemplo, foi convocado no mesmo instante), a resposta é 409 e nada é gravado. \
+                    Registro de outro estudante responde 404, como um registro que não existe. A correção vai para \
+                    o histórico, que diz quais campos mudaram, mas não o conteúdo. Se nada mudou, nada é gravado.""")
+    @ApiResponse(responseCode = "200", description = "Registro corrigido, com a nova `version`.",
+            content = @Content(schema = @Schema(implementation = LossReportResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = """
+            Campo obrigatório ausente, categoria inexistente, data no futuro, período invertido ou maior que 30 \
+            dias, ou mais de 5 locais.""",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "O registro não existe ou é de outro estudante.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "409", description = """
+            O registro não está Aberto nem Aguardando informações, ou foi alterado depois da versão enviada \
+            (a `version` está desatualizada).""",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    LossReportResponseDTO update(@Parameter(description = "Id do registro.") UUID id,
+                                 LossReportUpdateRequestDTO report, @Parameter(hidden = true) Jwt token);
 
     @Operation(
             summary = "Listar os meus registros",

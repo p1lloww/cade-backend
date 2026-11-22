@@ -28,13 +28,16 @@ public record FoundItemResponseDTO(
         String reservedDetails,
         @Schema(description = "Caminho da foto na API; pedir com o token.", example = "/found-items/{id}/photo")
         String photoPath,
-        Instant registeredAt) {
+        Instant registeredAt,
+        @Schema(description = "Versão do objeto; envie-a na correção (`PUT /found-items/{id}`), para a API recusar "
+                + "uma correção feita sobre uma versão antiga.", example = "0")
+        long version) {
 
     public static FoundItemResponseDTO from(FoundItem item) {
         return new FoundItemResponseDTO(item.getId(), item.getCategory().getId(), item.getCategory().getName(),
                 item.getBlock(), item.getRoom(), item.getFoundOn(), item.getStorageBox(), item.getRisk(),
                 item.getRisk().label(), item.getStatus().code(), item.getStatus().label(),
                 item.getInternalDescription(), item.getReservedDetails(), "/found-items/" + item.getId() + "/photo",
-                item.getRegisteredAt());
+                item.getRegisteredAt(), item.getVersion());
     }
 }

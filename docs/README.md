@@ -10,6 +10,7 @@ eles.
 | [requisitos.md](requisitos.md) | RF, RN e RNF (v3), prioridades, estados e plano de corte |
 | [DECISOES.md](DECISOES.md) | decisões D01 em diante sobre stack, arquitetura e processo; em conflito com os requisitos, vale a decisão |
 | [GLOSSARIO.md](GLOSSARIO.md) | termos dos requisitos (português) e nomes do código (inglês, D11) |
+| [REGRAS-DO-PROJETO.md](REGRAS-DO-PROJETO.md) | regras para quem escreve código aqui: escopo, arquitetura, privacidade, testes obrigatórios, definição de pronto e git |
 
 ## `tecnico/`: como partes importantes funcionam por dentro
 

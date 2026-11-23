@@ -8,6 +8,7 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.RiskLevel;
 import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -93,6 +94,204 @@ class LossReportTest {
         report.summon();
 
         assertThatThrownBy(report::summon).isInstanceOf(InvalidStatusTransitionException.class);
+    }
+
+    @Test
+    void anOpenReportCanBeEditedAndReportsWhatChanged() {
+        LossReport report = register(rooms(1));
+        Category bag = new Category("Mochila", RiskLevel.MEDIUM);
+        LostPeriod other = LostPeriod.of(TODAY.minusDays(2), null, null, TODAY);
+
+        List<String> changed = report.edit(bag, "Mochila preta", "Chaveiro vermelho", rooms(2), other);
+
+        assertThat(changed).containsExactly("categoria", "descrição", "detalhe", "locais", "período");
+        assertThat(report.getCategory()).isSameAs(bag);
+        assertThat(report.getDescription()).isEqualTo("Mochila preta");
+        assertThat(report.getSecretDetail()).isEqualTo("Chaveiro vermelho");
+        assertThat(report.getLocations()).containsExactlyElementsOf(rooms(2));
+        assertThat(report.getPeriod()).isEqualTo(other);
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.OPEN);
+    }
+
+    @Test
+    void anEditThatChangesNothingReportsNothing() {
+        LossReport report = register(rooms(1));
+
+        List<String> changed = report.edit(HEADPHONES, " Fone JBL preto ", "  ", rooms(1), PERIOD);
+
+        assertThat(changed).isEmpty();
+    }
+
+    @Test
+    void anEditStripsTheTextsDropsABlankDetailAndCountsRepeatedLocationsOnce() {
+        LossReport report = register(rooms(1));
+        report.edit(HEADPHONES, " Fone azul ", "Arranhão", List.of(), PERIOD);
+
+        List<String> changed = report.edit(HEADPHONES, " Fone azul ", "   ",
+                List.of(LossLocation.of("Bloco B", null), LossLocation.of("Bloco B", null)), PERIOD);
+
+        assertThat(changed).containsExactly("detalhe", "locais");
+        assertThat(report.getDescription()).isEqualTo("Fone azul");
+        assertThat(report.getSecretDetail()).isNull();
+        assertThat(report.getLocations()).containsExactly(LossLocation.of("Bloco B", null));
+    }
+
+    @Test
+    void theExpiryDoesNotChangeWithAnEdit() {
+        LossReport report = register(rooms(1));
+        Instant expiresAt = report.getExpiresAt();
+
+        report.edit(HEADPHONES, "Outro texto", null, rooms(1), PERIOD);
+
+        assertThat(report.getExpiresAt()).isEqualTo(expiresAt);
+    }
+
+    @Test
+    void aReportThatIsNotOpenOrAwaitingInformationCannotBeEdited() {
+        for (LossReportStatus locked : List.of(LossReportStatus.SUMMONED, LossReportStatus.COMPLETED,
+                LossReportStatus.EXPIRED, LossReportStatus.CANCELLED, LossReportStatus.REFUSED)) {
+            LossReport report = register(rooms(1));
+            ReflectionTestUtils.setField(report, "status", locked);
+
+            assertThatThrownBy(() -> report.edit(HEADPHONES, "Texto ajustado ao objeto", null, rooms(1), PERIOD))
+                    .as("situação %s", locked.code())
+                    .isInstanceOf(InvalidStatusTransitionException.class)
+                    .hasMessageContaining("editar um registro de perda")
+                    .hasMessageContaining(locked.label());
+            assertThat(report.getDescription()).isEqualTo("Fone JBL preto");
+        }
+    }
+
+    @Test
+    void aReportAwaitingInformationCanBeEdited() {
+        LossReport report = register(rooms(1));
+        ReflectionTestUtils.setField(report, "status", LossReportStatus.AWAITING_INFO);
+
+        assertThat(report.edit(HEADPHONES, "Fone JBL preto, com estojo", null, rooms(1), PERIOD))
+                .containsExactly("descrição");
+    }
+
+    @Test
+    void aSummonedReportBecomesEditableAgainWhenTheSummonsExpires() {
+        LossReport report = register(rooms(1));
+        report.summon();
+        report.release();
+
+        assertThat(report.edit(HEADPHONES, "Fone JBL preto com estojo", null, rooms(1), PERIOD))
+                .containsExactly("descrição");
+    }
+
+    @Test
+    void anOpenOrAwaitingReportCanBeCancelledAndTheOthersCannot() {
+        for (LossReportStatus editable : List.of(LossReportStatus.OPEN, LossReportStatus.AWAITING_INFO)) {
+            LossReport report = register(rooms(1));
+            ReflectionTestUtils.setField(report, "status", editable);
+            report.cancel();
+            assertThat(report.getStatus()).isEqualTo(LossReportStatus.CANCELLED);
+        }
+        for (LossReportStatus other : List.of(LossReportStatus.SUMMONED, LossReportStatus.COMPLETED,
+                LossReportStatus.EXPIRED, LossReportStatus.CANCELLED, LossReportStatus.REFUSED)) {
+            LossReport report = register(rooms(1));
+            ReflectionTestUtils.setField(report, "status", other);
+            assertThatThrownBy(report::cancel).as(other.code()).isInstanceOf(InvalidStatusTransitionException.class);
+        }
+    }
+
+    @Test
+    void requestingInfoMovesAnOpenReportToAwaitingAndKeepsTheRequest() {
+        LossReport report = register(rooms(1));
+        UUID suggestion = UUID.randomUUID();
+
+        report.requestInfo(suggestion, "Qual é a cor da capa?", NOW);
+
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.AWAITING_INFO);
+        assertThat(report.getInfoRequestReason()).isEqualTo("Qual é a cor da capa?");
+        assertThat(report.getInfoRequestedAt()).isEqualTo(NOW);
+        assertThat(report.getInfoSuggestionId()).isEqualTo(suggestion);
+        assertThat(report.getStatus().isEditable()).isTrue();
+    }
+
+    @Test
+    void anInfoRequestOnlyWorksOnAnOpenReport() {
+        LossReport awaiting = register(rooms(1));
+        awaiting.requestInfo(UUID.randomUUID(), "Pergunta", NOW);
+        LossReport summoned = register(rooms(1));
+        summoned.summon();
+
+        assertThatThrownBy(() -> awaiting.requestInfo(UUID.randomUUID(), "Outra", NOW))
+                .isInstanceOf(InvalidStatusTransitionException.class);
+        assertThatThrownBy(() -> summoned.requestInfo(UUID.randomUUID(), "Pergunta", NOW))
+                .isInstanceOf(InvalidStatusTransitionException.class);
+    }
+
+    @Test
+    void answeringReturnsTheReportToOpenWithTheAnswerAndClosesTheRequest() {
+        LossReport report = register(rooms(1));
+        report.requestInfo(UUID.randomUUID(), "Qual é a cor da capa?", NOW);
+
+        report.respond("  Azul, com um risco  ");
+
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.OPEN);
+        assertThat(report.getInfoAnswer()).isEqualTo("Azul, com um risco");
+        assertThat(report.getInfoRequestReason()).isEqualTo("Qual é a cor da capa?");
+        assertThat(report.getInfoRequestedAt()).isNull();
+        assertThat(report.getInfoSuggestionId()).isNull();
+    }
+
+    @Test
+    void onlyAReportAwaitingInformationCanBeAnswered() {
+        assertThatThrownBy(() -> register(rooms(1)).respond("Resposta"))
+                .isInstanceOf(InvalidStatusTransitionException.class);
+    }
+
+    @Test
+    void resumingWithoutAnswerReturnsToOpenAndKeepsNoAnswer() {
+        LossReport report = register(rooms(1));
+        report.requestInfo(UUID.randomUUID(), "Pergunta", NOW);
+
+        report.resumeWithoutAnswer();
+
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.OPEN);
+        assertThat(report.getInfoAnswer()).isNull();
+        assertThat(report.getInfoRequestedAt()).isNull();
+    }
+
+    @Test
+    void anOpenReportExpiresAndNoOtherDoes() {
+        LossReport report = register(rooms(1));
+        report.expire();
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.EXPIRED);
+
+        LossReport awaiting = register(rooms(1));
+        awaiting.requestInfo(UUID.randomUUID(), "Pergunta", NOW);
+        LossReport summoned = register(rooms(1));
+        summoned.summon();
+        assertThatThrownBy(awaiting::expire).isInstanceOf(InvalidStatusTransitionException.class);
+        assertThatThrownBy(summoned::expire).isInstanceOf(InvalidStatusTransitionException.class);
+    }
+
+    @Test
+    void renewingStartsAnotherThirtyDaysFromNowWhileOpenOrAwaiting() {
+        LossReport report = register(rooms(1));
+        Instant later = NOW.plusSeconds(20 * 24 * 3600L);
+
+        report.renew(later, LossReport.VALIDITY);
+
+        assertThat(report.getExpiresAt()).isEqualTo(later.plus(LossReport.VALIDITY));
+    }
+
+    @Test
+    void aReportThatIsNotOpenOrAwaitingCannotBeRenewed() {
+        for (LossReportStatus locked : List.of(LossReportStatus.SUMMONED, LossReportStatus.COMPLETED,
+                LossReportStatus.EXPIRED, LossReportStatus.CANCELLED, LossReportStatus.REFUSED)) {
+            LossReport report = register(rooms(1));
+            ReflectionTestUtils.setField(report, "status", locked);
+            Instant expiresAt = report.getExpiresAt();
+
+            assertThatThrownBy(() -> report.renew(NOW, LossReport.VALIDITY)).as(locked.code())
+                    .isInstanceOf(InvalidStatusTransitionException.class);
+            assertThat(report.getExpiresAt()).isEqualTo(expiresAt);
+        }
     }
 
     private static List<LossLocation> rooms(int count) {

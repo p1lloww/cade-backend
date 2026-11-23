@@ -23,7 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Com a configuração padrão, o lembrete do registro de perda não sai: ele entra no PER-06 (D30). */
+/** Com a configuração padrão, o lembrete do registro de perda sai: o PER-06 faz o registro vencer e ser renovado (D30). */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, MutableClockConfiguration.class})
 class DeadlineNoticeJobDefaultsTest {
@@ -47,7 +47,7 @@ class DeadlineNoticeJobDefaultsTest {
     private MutableClock clock;
 
     @Test
-    void theLossReportReminderIsOffUntilTheReportCanExpire() {
+    void theLossReportReminderIsOnByDefault() {
         UUID category = categories.saveAndFlush(new Category("Teste " + UUID.randomUUID(), RiskLevel.LOW)).getId();
         UUID report = lossReports.register(new RegisterLossReport(category, "Garrafa azul", null, List.of(),
                 LocalDate.now(clock), null, null, null), UUID.randomUUID()).getId();
@@ -56,6 +56,6 @@ class DeadlineNoticeJobDefaultsTest {
 
         job.queueDeadlineNotices();
 
-        assertThat(notifications.findAll()).noneMatch(n -> n.getReferenceId().equals(report));
+        assertThat(notifications.findAll()).anyMatch(n -> n.getReferenceId().equals(report));
     }
 }

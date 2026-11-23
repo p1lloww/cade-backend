@@ -14,6 +14,10 @@ public interface LossReportRepository extends JpaRepository<LossReport, UUID> {
 
     Optional<LossReport> findByIdAndStudentId(UUID id, UUID studentId);
 
+    /** Com a categoria e os locais já carregados, para o registro poder ser editado e devolvido fora da transação. */
+    @EntityGraph(attributePaths = {"category", "locations"})
+    Optional<LossReport> findWithCategoryAndLocationsByIdAndStudentId(UUID id, UUID studentId);
+
     long countByStudentIdAndStatusIn(UUID studentId, Collection<LossReportStatus> statuses);
 
     @EntityGraph(attributePaths = "locations")

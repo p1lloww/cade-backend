@@ -79,7 +79,7 @@ Monólito modular (D10). Cada módulo dos requisitos é um pacote em `br.ucsal.c
 | `notifications` | M6 Avisos | access, lossreports, pickup |
 | `retention` | M7 Prazos e destino | founditems |
 | `publicpage` | M8 Página pública | founditems |
-| `administration` | M9 Administração | access |
+| `administration` | M9 Administração | access, founditems |
 | `demo` | M10 Modo demonstração | access, founditems, lossreports |
 | `shared` | Núcleo compartilhado (histórico, eventos, erros, e-mail, segurança, relógio, web) | nenhum módulo |
 

@@ -35,6 +35,7 @@ public class LossReport {
     public static final int MAX_LOCATIONS = 5;
     public static final int MAX_SERIAL_NUMBER_LENGTH = 60;
 
+    /** Validade inicial do registro (RN14); o administrador pode mudá-la (RF45). */
     public static final Duration VALIDITY = Duration.ofDays(30);
 
     @Id
@@ -86,7 +87,7 @@ public class LossReport {
     protected LossReport() {
     }
 
-    private LossReport(NewLossReport data, UUID studentId, Instant registeredAt) {
+    private LossReport(NewLossReport data, UUID studentId, Instant registeredAt, Duration validity) {
         this.studentId = studentId;
         this.category = data.category();
         this.description = data.description().strip();
@@ -97,12 +98,17 @@ public class LossReport {
         this.photoKey = data.photoKey();
         this.status = LossReportStatus.initial();
         this.registeredAt = registeredAt;
-        this.expiresAt = registeredAt.plus(VALIDITY);
+        this.expiresAt = registeredAt.plus(validity);
     }
 
     /** Locais repetidos contam uma vez. */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt) {
-        return new LossReport(data, studentId, registeredAt);
+        return register(data, studentId, registeredAt, VALIDITY);
+    }
+
+    /** Com a validade que o administrador configurou (RF45); {@link #VALIDITY} é o valor inicial. */
+    public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt, Duration validity) {
+        return new LossReport(data, studentId, registeredAt, validity);
     }
 
     /**

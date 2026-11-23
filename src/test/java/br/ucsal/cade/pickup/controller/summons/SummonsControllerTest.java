@@ -13,6 +13,9 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.RiskLevel;
 import br.ucsal.cade.shared.security.Role;
+import br.ucsal.cade.shared.settings.DeadlineSettings;
+import br.ucsal.cade.shared.settings.DeadlineSettingsRepository;
+import br.ucsal.cade.shared.settings.DeadlineValues;
 import br.ucsal.cade.shared.security.TestTokens;
 import br.ucsal.cade.shared.storage.TestPhotos;
 import br.ucsal.cade.shared.time.MutableClock;
@@ -69,6 +72,9 @@ class SummonsControllerTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private DeadlineSettingsRepository settings;
+
     private UUID itemCategory;
     private UUID reportCategory;
 
@@ -102,6 +108,19 @@ class SummonsControllerTest {
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_records WHERE actor_id = ? AND action = ?",
                 Long.class, UUID.fromString(TestTokens.SUBJECT), "SUMMONS_CREATED")).isPositive();
+    }
+
+    @Test
+    void theSummonsDeadlineFollowsTheValueTheAdministratorConfigured() throws Exception {
+        jdbc.update("DELETE FROM deadline_settings");
+        settings.saveAndFlush(new DeadlineSettings(new DeadlineValues(90, 3, 30), clock.instant(), UUID.randomUUID()));
+        try {
+            summon(suggest(find(), lose(), 80).getId(), Role.STAFF)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.expiresAt").value(clock.instant().plus(Duration.ofDays(3)).toString()));
+        } finally {
+            jdbc.update("DELETE FROM deadline_settings");
+        }
     }
 
     @Test

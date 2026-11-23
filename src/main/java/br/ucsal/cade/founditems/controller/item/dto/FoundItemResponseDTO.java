@@ -36,7 +36,10 @@ public record FoundItemResponseDTO(
         @Schema(description = "Nome encontrado no objeto; nulo se não há.") String identifiedName,
         @Schema(description = "E-mail encontrado no objeto; nulo se não há.") String identifiedEmail,
         @Schema(description = "Documento encontrado no objeto; nulo se não há.") String identifiedDocument,
-        Instant identifiedAt) {
+        Instant identifiedAt,
+        @Schema(description = "Versão do objeto; envie-a na correção (`PUT /found-items/{id}`), para a API recusar "
+                + "uma correção feita sobre uma versão antiga.", example = "0")
+        long version) {
 
     public static FoundItemResponseDTO from(FoundItem item) {
         return new FoundItemResponseDTO(item.getId(), item.getCategory().getId(), item.getCategory().getName(),
@@ -44,6 +47,6 @@ public record FoundItemResponseDTO(
                 item.getRisk().label(), item.getStatus().code(), item.getStatus().label(),
                 item.getInternalDescription(), item.getReservedDetails(), "/found-items/" + item.getId() + "/photo",
                 item.getRegisteredAt(), item.getBroughtBy(), item.isIdentified(), item.getIdentifiedName(),
-                item.getIdentifiedEmail(), item.getIdentifiedDocument(), item.getIdentifiedAt());
+                item.getIdentifiedEmail(), item.getIdentifiedDocument(), item.getIdentifiedAt(), item.getVersion());
     }
 }

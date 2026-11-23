@@ -1,6 +1,7 @@
 package br.ucsal.cade.founditems.service.item;
 
 import br.ucsal.cade.founditems.api.event.FoundItemRegisteredEvent;
+import br.ucsal.cade.founditems.api.event.FoundItemUpdatedEvent;
 import br.ucsal.cade.founditems.persistence.item.FoundItem;
 import br.ucsal.cade.founditems.persistence.item.FoundItemRepository;
 import br.ucsal.cade.founditems.persistence.item.NewFoundItem;
@@ -9,9 +10,11 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.exception.BadRequestException;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import br.ucsal.cade.shared.exception.NotFoundException;
 import br.ucsal.cade.shared.storage.PhotoStorage;
 import br.ucsal.cade.shared.storage.StoredPhoto;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -33,6 +36,7 @@ public class FoundItemService {
     static final String BROUGHT_BY_REASON = "Quem trouxe o objeto foi registrado pelo funcionário.";
     static final String IDENTIFIED_ACTION = "FOUND_ITEM_IDENTIFIED";
     static final String IDENTIFICATION_CLEARED_ACTION = "FOUND_ITEM_IDENTIFICATION_CLEARED";
+    static final String UPDATED_ACTION = "FOUND_ITEM_UPDATED";
     static final String UNKNOWN_CATEGORY_MESSAGE = "Categoria não encontrada.";
     static final String NOT_FOUND_MESSAGE = "Objeto não encontrado.";
 
@@ -133,6 +137,43 @@ public class FoundItemService {
         events.publish(new AuditEvent(staffId, IDENTIFICATION_CLEARED_ACTION, FoundItem.class.getSimpleName(), id,
                 "A marcação de objeto identificado foi desfeita."));
         return item;
+    }
+
+    /**
+     * Corrige os dados do objeto (ACH-07), com o motivo e o que mudou no histórico (RF43). Só Disponível e Não
+     * reclamado: Reservado, Devolvido e Destinado respondem 409. A {@code version} que o funcionário viu precisa ser a
+     * atual, senão 409, e a gravação é feita já aqui dentro: se uma convocação reservar o objeto ao mesmo tempo, quem
+     * grava por último perde no {@code @Version} e nada é gravado. Se nada mudou, nada é gravado nem publicado.
+     *
+     * @param staffId id da conta do funcionário (claim {@code sub} do token)
+     */
+    @Transactional
+    public FoundItem update(UUID id, UpdateFoundItem request, UUID staffId) {
+        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        if (item.getVersion() != request.version()) {
+            throw new ObjectOptimisticLockingFailureException(FoundItem.class, id);
+        }
+        Category category = categories.findById(request.categoryId())
+                .orElseThrow(() -> new BadRequestException(UNKNOWN_CATEGORY_MESSAGE));
+
+        List<String> changes = item.update(category, request.block(), request.room(), request.foundOn(),
+                request.storageBox(), request.risk(), request.internalDescription(), request.reservedDetails(),
+                LocalDate.now(clock));
+        if (changes.isEmpty()) {
+            return item;
+        }
+        items.saveAndFlush(item);
+        events.publish(new AuditEvent(staffId, UPDATED_ACTION, FoundItem.class.getSimpleName(), id,
+                reasonOf(request.reason(), changes)));
+        events.publish(new FoundItemUpdatedEvent(id, category.getId(), item.getFoundOn()));
+        return item;
+    }
+
+    /** O motivo do funcionário e as mudanças, cabendo no limite do histórico. */
+    private static String reasonOf(String reason, List<String> changes) {
+        String text = reason.strip() + " Alterado: " + String.join("; ", changes) + ".";
+        return text.length() <= AuditEvent.MAX_REASON_LENGTH
+                ? text : text.substring(0, AuditEvent.MAX_REASON_LENGTH - 1) + "…";
     }
 
     /** O objeto com todos os dados, para o funcionário. */

@@ -342,17 +342,6 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
-## D37 — Quem trouxe e objeto identificado: dados só de funcionários, fora do histórico
-- **Origem:** o ACH-06 (RF07, RF08) pede registrar quem trouxe o objeto e marcar o objeto como identificado com o nome, o e-mail ou o documento encontrado nele.
-- **Decisão (22/11/2026):**
-  - **Campos no próprio `FoundItem`**, todos nulos: `broughtBy` (até 120 caracteres: nome e matrícula, ou "equipe de limpeza") e `identifiedName`, `identifiedEmail`, `identifiedDocument`, `identifiedAt`, `identifiedBy`. Aparecem só no `FoundItemResponseDTO`, que só as rotas de funcionário devolvem (RN03): nada vai para estudantes, visitantes, busca pública nem contagens.
-  - **Rotas:** `broughtBy` opcional no formulário de cadastro e `PUT /found-items/{id}/brought-by` (em branco apaga); `PUT /found-items/{id}/identification` (pelo menos um dos três; e-mail validado e guardado em minúsculas) e `DELETE /found-items/{id}/identification` para desfazer uma marcação errada. Marcar de novo **troca** o que estava.
-  - **Situações:** quem trouxe vale em qualquer situação; identificar vale enquanto o objeto não saiu da sala (Disponível, Reservado ou Não reclamado); Devolvido e Destinado respondem 409.
-  - **Os dados pessoais não vão para o histórico:** o `AuditEvent` diz só "registrado" e quais campos vieram ("nome, e-mail"), nunca o conteúdo; o histórico é imutável (RF43) e lido pelo administrador, então um dado errado ali não poderia ser apagado depois.
-  - **O aviso ao titular (RF09, ACH-09) não faz parte deste card:** o `identifiedEmail` fica guardado para ele.
-- **Motivo:** rastreabilidade pedida pelo administrador (A1) sem espalhar dados pessoais de terceiros.
-- **Situação:** fechada.
-
 ## D32 — Correção do registro de perda: versão no pedido, histórico sem conteúdo e o que não muda
 - **Origem:** o PER-07 pede que o estudante corrija o registro enquanto ele está Aberto ou Aguardando informações, e que a edição simultânea à convocação resolva pelo `@Version` (RN06).
 - **Decisão (22/11/2026):**
@@ -394,6 +383,43 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** menor mudança que atende o critério de aceite e reaproveita o armazenamento e o padrão de privacidade que já existem.
 - **Consequências:** quem trocar a foto perde a anterior (apagada depois do commit). Dois funcionários veem a mesma prova.
 - **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 8.
+- **Situação:** fechada.
+
+## D35 — Retirada: confirmação do estudante como registro à parte e aviso neutro das sugestões encerradas
+- **Origem:** o RET-06 pede que o estudante confirme a retirada no celular (RF30) e que, ao entregar o objeto, as outras sugestões dele sejam encerradas e os estudantes avisados (RF33).
+- **Decisão (22/11/2026):**
+  - **A confirmação é uma entidade à parte** (`PickupConfirmation`, só se grava, uma por retirada pela coluna única), e não um campo da `Pickup`: a retirada continua imutável (RN19) e a confirmação é um ato do estudante, não do funcionário. Rotas do estudante: `GET /pickups/mine` e `POST /pickups/{id}/confirmation`; a lista não traz nada do objeto (RN03). Confirmar duas vezes responde 409, inclusive em corrida.
+  - **O encerramento das outras sugestões entra no mesmo commit da retirada**, pelo `FoundItemSuggestions.closeOthersOf`, que devolve também o registro de perda de cada uma (`ClosedSuggestion`).
+  - **O aviso aos estudantes (RF33) é neutro e desligável.** A D29 decidiu **não** avisar no atalho de balcão, porque dizer "uma sugestão foi encerrada" revelaria que apareceu na sala um objeto parecido com o do estudante (RN03). Para cumprir o critério de aceite do RET-06 sem abrir mão da RN03, o aviso desta retirada diz só que "uma análise foi encerrada porque o objeto foi entregue e o registro continua aberto", sem objeto, local nem descrição, e vai no máximo uma vez por estudante e por retirada. O que ele ainda revela (que havia um candidato) está registrado como risco aceito; `cade.notifications.closed-suggestion-notice-enabled=false` o desliga. **A D29 não muda:** o atalho continua sem aviso.
+  - **Nova porta `lossreports.api.LossReportOwners`** (registro → estudante), para o `notifications` saber a quem avisar sem conhecer o conteúdo do registro.
+- **Motivo:** cumpre RF30 e RF33 sem tocar na imutabilidade da retirada e sem expor mais do que o mínimo ao estudante.
+- **Consequências:**
+  - A equipe pode desligar o aviso por configuração se achar que o risco da RN03 não compensa.
+  - A retirada por atalho (D29) não tem estudante com conta, então não tem confirmação.
+- **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md), seção 10.
+- **Situação:** fechada.
+
+## D36 — Correção de dados do objeto: só Disponível e Não reclamado, versão e motivo no pedido
+- **Origem:** o ACH-07 (RF11) pede que o funcionário corrija os dados de um objeto, com cada alteração no histórico. A D21 (complemento) já dizia que o risco pode subir e descer, nunca abaixo do da categoria, e que a mudança é proibida com o objeto Reservado.
+- **Decisão (22/11/2026):**
+  - **Situações:** só **Disponível** e **Não reclamado** (`FoundItemStatus.isEditable`). Reservado fica de fora porque há uma convocação em andamento e o risco e o local definem a conferência do balcão (D21); Devolvido e Destinado já saíram da sala. Nesses casos, 409.
+  - **`PUT /found-items/{id}` (JSON, funcionário):** os mesmos campos do cadastro, menos a foto, mais o **motivo** (obrigatório) e a **`version`** (obrigatória), como no PER-07 (D32). Versão velha ou perda da corrida contra a reserva: 409, nada gravado.
+  - **Histórico com o que mudou:** a ação `FOUND_ITEM_UPDATED` grava o motivo e as mudanças campo a campo ("bloco: A → B") no `reason` (até 1000 caracteres, cortado se passar), porque o `AuditRecord` não tem colunas de antes e depois. **Descrição interna e detalhes reservados aparecem só pelo nome**, nunca o conteúdo: o histórico é lido pelo administrador, e os detalhes reservados conferem o dono no balcão.
+  - **Risco:** segue a RN04 (nunca abaixo do da categoria); sem risco informado, vale o padrão da categoria, então corrigir sem mandar o risco pode **baixá-lo** ao padrão. Mudar de categoria revalida o risco.
+  - **Sem mudança, nada é gravado:** 200 com a mesma versão, sem histórico e sem evento. O `FoundItemUpdatedEvent` não leva foto, descrição nem detalhes (RN03). O cruzamento não é refeito.
+- **Motivo:** repete o desenho do PER-07, para o front tratar as duas correções do mesmo jeito.
+- **Situação:** fechada.
+
+## D37 — Quem trouxe e objeto identificado: dados só de funcionários, fora do histórico
+- **Origem:** o ACH-06 (RF07, RF08) pede registrar quem trouxe o objeto e marcar o objeto como identificado com o nome, o e-mail ou o documento encontrado nele.
+- **Decisão (22/11/2026):**
+  - **Campos no próprio `FoundItem`**, todos nulos: `broughtBy` (até 120 caracteres: nome e matrícula, ou "equipe de limpeza") e `identifiedName`, `identifiedEmail`, `identifiedDocument`, `identifiedAt`, `identifiedBy`. Aparecem só no `FoundItemResponseDTO`, que só as rotas de funcionário devolvem (RN03): nada vai para estudantes, visitantes, busca pública nem contagens.
+  - **Rotas:** `broughtBy` opcional no formulário de cadastro e `PUT /found-items/{id}/brought-by` (em branco apaga); `PUT /found-items/{id}/identification` (pelo menos um dos três; e-mail validado e guardado em minúsculas) e `DELETE /found-items/{id}/identification` para desfazer uma marcação errada. Marcar de novo **troca** o que estava.
+  - **Situações:** quem trouxe vale em qualquer situação; identificar vale enquanto o objeto não saiu da sala (Disponível, Reservado ou Não reclamado); Devolvido e Destinado respondem 409.
+  - **Os dados pessoais não vão para o histórico:** o `AuditEvent` diz só "registrado" e quais campos vieram ("nome, e-mail"), nunca o conteúdo; o histórico é imutável (RF43) e lido pelo administrador, então um dado errado ali não poderia ser apagado depois.
+  - **O aviso ao titular (RF09, ACH-09) não faz parte deste card:** o `identifiedEmail` fica guardado para ele.
+- **Motivo:** rastreabilidade pedida pelo administrador (A1) sem espalhar dados pessoais de terceiros.
+- **Situação:** fechada.
 
 ## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
 - **Origem:** o DEM-01 (RF47) pede contas fictícias, login direto sem código e dados de exemplo, ativos só no modo de demonstração, para a mostra funcionar sem internet e sem cadastro na hora.
@@ -456,6 +482,8 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **22/11/2026 — D35 registrada:** confirmação da retirada pelo estudante como registro à parte, encerramento das outras sugestões do objeto e aviso neutro e desligável aos estudantes, na implementação do RET-06.
+- **22/11/2026 — D36 registrada:** correção dos dados do objeto achado (só Disponível e Não reclamado, versão e motivo no pedido, histórico com campos alterados e sem os textos reservados), na implementação do ACH-07.
 - **22/11/2026 — D37 registrada:** quem trouxe o objeto e objeto identificado (campos só de funcionários, fora do histórico), na implementação do ACH-06.
 - **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.

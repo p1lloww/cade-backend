@@ -4,12 +4,14 @@ import br.ucsal.cade.founditems.controller.item.dto.FoundItemBroughtByRequestDTO
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemIdentificationRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemResponseDTO;
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemUpdateRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.StorageBoxSuggestionResponseDTO;
 import br.ucsal.cade.founditems.persistence.item.FoundItem;
 import br.ucsal.cade.founditems.persistence.item.StorageBox;
 import br.ucsal.cade.founditems.service.item.FoundItemService;
 import br.ucsal.cade.founditems.service.item.IdentifyFoundItem;
 import br.ucsal.cade.founditems.service.item.RegisterFoundItem;
+import br.ucsal.cade.founditems.service.item.UpdateFoundItem;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
 import br.ucsal.cade.shared.storage.StoredPhoto;
@@ -57,6 +59,16 @@ class FoundItemController implements FoundItemApi {
                 form.reservedDetails());
         FoundItem item = service.register(request, form.broughtBy(), UUID.fromString(token.getSubject()));
         return ResponseEntity.created(URI.create("/found-items/" + item.getId())).body(FoundItemResponseDTO.from(item));
+    }
+
+    @Override
+    @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public FoundItemResponseDTO update(@PathVariable UUID id, @Valid @RequestBody FoundItemUpdateRequestDTO request,
+                                       @AuthenticationPrincipal Jwt token) {
+        UpdateFoundItem command = new UpdateFoundItem(request.categoryId(), request.block(), request.room(),
+                request.foundOn(), request.storageBox(), request.risk(), request.internalDescription(),
+                request.reservedDetails(), request.reason(), request.version());
+        return FoundItemResponseDTO.from(service.update(id, command, UUID.fromString(token.getSubject())));
     }
 
     @Override

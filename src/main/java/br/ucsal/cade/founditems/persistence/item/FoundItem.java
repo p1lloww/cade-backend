@@ -20,6 +20,8 @@ import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -240,6 +242,72 @@ public class FoundItem {
 
     public UUID getIdentifiedBy() {
         return identifiedBy;
+    }
+
+    /**
+     * O funcionário corrige os dados do objeto (ACH-07). A foto não muda. Só Disponível e Não reclamado admitem a
+     * correção ({@link FoundItemStatus#isEditable()}). O risco segue a RN04: nunca abaixo do da categoria; sem risco
+     * informado, vale o padrão da categoria. A caixa em branco volta à sugerida pela data (RF05).
+     *
+     * @param today a data de hoje, para recusar uma data no futuro
+     * @return as mudanças, uma por campo, no formato {@code "campo: antes → depois"}; vazio se nada mudou. Os dois
+     * textos livres (descrição interna e detalhes reservados) aparecem só pelo nome, sem o conteúdo
+     * @throws InvalidStatusTransitionException se o objeto não está numa situação editável
+     * @throws BadRequestException              se a data é futura ou o risco é menor que o da categoria
+     */
+    public List<String> update(Category category, String block, String room, LocalDate foundOn, String storageBox,
+                               RiskLevel risk, String internalDescription, String reservedDetails, LocalDate today) {
+        if (!status.isEditable()) {
+            throw new InvalidStatusTransitionException("corrigir", "um objeto", status.label());
+        }
+        if (Objects.requireNonNull(foundOn).isAfter(today)) {
+            throw new BadRequestException(FUTURE_DATE_MESSAGE);
+        }
+        String newBlock = Objects.requireNonNull(block).strip();
+        String newRoom = Objects.requireNonNull(room).strip();
+        String newBox = blankToNull(storageBox) == null ? StorageBox.suggestedFor(foundOn) : storageBox.strip();
+        RiskLevel newRisk = riskFor(Objects.requireNonNull(category), risk);
+        String newDescription = blankToNull(internalDescription);
+        String newDetails = blankToNull(reservedDetails);
+
+        List<String> changes = new ArrayList<>();
+        if (!isSameCategory(category)) {
+            changes.add("categoria: " + this.category.getName() + " → " + category.getName());
+            this.category = category;
+        }
+        if (!this.block.equals(newBlock)) {
+            changes.add("bloco: " + this.block + " → " + newBlock);
+            this.block = newBlock;
+        }
+        if (!this.room.equals(newRoom)) {
+            changes.add("sala: " + this.room + " → " + newRoom);
+            this.room = newRoom;
+        }
+        if (!this.foundOn.equals(foundOn)) {
+            changes.add("data: " + this.foundOn + " → " + foundOn);
+            this.foundOn = foundOn;
+        }
+        if (!this.storageBox.equals(newBox)) {
+            changes.add("caixa: " + this.storageBox + " → " + newBox);
+            this.storageBox = newBox;
+        }
+        if (this.risk != newRisk) {
+            changes.add("risco: " + this.risk.label() + " → " + newRisk.label());
+            this.risk = newRisk;
+        }
+        if (!Objects.equals(this.internalDescription, newDescription)) {
+            changes.add("descrição interna alterada");
+            this.internalDescription = newDescription;
+        }
+        if (!Objects.equals(this.reservedDetails, newDetails)) {
+            changes.add("detalhes reservados alterados");
+            this.reservedDetails = newDetails;
+        }
+        return changes;
+    }
+
+    private boolean isSameCategory(Category other) {
+        return category == other || (category.getId() != null && category.getId().equals(other.getId()));
     }
 
     private static String blankToNull(String value) {

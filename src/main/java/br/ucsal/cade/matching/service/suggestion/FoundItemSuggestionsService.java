@@ -1,5 +1,6 @@
 package br.ucsal.cade.matching.service.suggestion;
 
+import br.ucsal.cade.matching.api.ClosedSuggestion;
 import br.ucsal.cade.matching.api.FoundItemSuggestions;
 import br.ucsal.cade.matching.persistence.status.SuggestionStatus;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
@@ -20,6 +21,7 @@ class FoundItemSuggestionsService implements FoundItemSuggestions {
 
     static final String CLOSED_ACTION = SuggestionSummonsService.CLOSED_ACTION;
     static final String CLOSED_REASON = "O objeto foi retirado no balcão sem convocação.";
+    static final String CLOSED_BY_PICKUP_REASON = "O objeto foi retirado no balcão pela convocação de outra sugestão.";
 
     private static final List<SuggestionStatus> OPEN = List.of(SuggestionStatus.NEW, SuggestionStatus.ON_HOLD);
 
@@ -36,14 +38,25 @@ class FoundItemSuggestionsService implements FoundItemSuggestions {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public List<UUID> closeOpenOf(UUID foundItemId, UUID staffId) {
+        return close(foundItemId, staffId, CLOSED_REASON).stream().map(MatchSuggestion::getId).toList();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<ClosedSuggestion> closeOthersOf(UUID foundItemId, UUID staffId) {
+        return close(foundItemId, staffId, CLOSED_BY_PICKUP_REASON).stream()
+                .map(suggestion -> new ClosedSuggestion(suggestion.getId(), suggestion.getLossReportId())).toList();
+    }
+
+    private List<MatchSuggestion> close(UUID foundItemId, UUID staffId, String reason) {
         List<MatchSuggestion> open = suggestions.findByFoundItemIdAndStatusInOrderByScoreDescCreatedAtAsc(
                 foundItemId, OPEN);
         open.forEach(suggestion -> {
             suggestion.close();
             events.publish(new AuditEvent(staffId, CLOSED_ACTION, MatchSuggestion.class.getSimpleName(),
-                    suggestion.getId(), CLOSED_REASON));
+                    suggestion.getId(), reason));
         });
         log.debug("{} open suggestion(s) of found item {} closed by {}", open.size(), foundItemId, staffId);
-        return open.stream().map(MatchSuggestion::getId).toList();
+        return open;
     }
 }

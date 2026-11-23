@@ -342,6 +342,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
+## D38 — Não reclamados: tarefa por objeto, porta em achados e destino em tabela própria
+- **Origem:** o PRA-01 (RF37, RF38, RF39) pede a tarefa dos 90 dias, o destino do objeto e a lista por caixa.
+- **Decisão (23/11/2026):**
+  - **O prazo conta da entrada na sala** (`registeredAt`, RN16), não da data em que o objeto foi achado. Fica em `cade.retention.storage-period` (90 dias), e a tarefa roda de hora em hora (`cade.retention.interval`), pelo mesmo motivo das outras: uma rodada perdida é coberta pela seguinte.
+  - **Só o Disponível vence.** Reservado fica como está (RN18): a convocação decide; se ela vencer, o objeto volta a Disponível e a próxima rodada o vê.
+  - **Uma transação por objeto**, na porta `UnclaimedFoundItems` (`founditems.api`): uma falha não desfaz as outras. A mudança é gravada na hora, com o `@Version`, para perder a corrida contra uma convocação. O histórico leva `SYSTEM_ACTOR`.
+  - **O destino é uma entidade do `retention`** (`Disposal`: objeto, destino, observação, data e administrador), sem chave estrangeira para o objeto (D10). Sem destino no corpo, vale o bazar; "outro" exige dizer qual. A mudança do objeto para Destinado e a gravação do destino acontecem na mesma transação; um objeto só é destinado uma vez.
+  - **Rotas:** `GET /unclaimed-items` (funcionário; agrupado pela `storageBox`, a caixa do mês) e `POST /unclaimed-items/{id}/disposal` (administrador).
+- **Motivo:** o `retention` só pode depender de `founditems` (D10), e uma porta pequena mantém a regra de situação onde ela já mora.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -364,3 +375,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **23/11/2026 — D38 registrada:** tarefa de não reclamados por objeto, porta `UnclaimedFoundItems` e destino em tabela própria, na implementação do PRA-01.

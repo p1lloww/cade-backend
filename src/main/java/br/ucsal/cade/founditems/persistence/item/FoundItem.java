@@ -147,6 +147,16 @@ public class FoundItem {
         status = status.handOverWithoutSummons();
     }
 
+    /** Disponível → Não reclamado: o objeto completou o prazo de guarda sem dono (RN16). */
+    public void markUnclaimed() {
+        status = status.markUnclaimed();
+    }
+
+    /** Não reclamado → Destinado: o administrador deu um destino ao objeto (RF38). */
+    public void dispose() {
+        status = status.dispose();
+    }
+
     /** Reservado → Disponível: a verificação falhou no balcão ou a convocação venceu. */
     public void release() {
         status = status.release();

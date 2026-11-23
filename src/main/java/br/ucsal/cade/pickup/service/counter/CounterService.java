@@ -4,8 +4,11 @@ import br.ucsal.cade.founditems.api.FoundItemReservations;
 import br.ucsal.cade.lossreports.api.LossReportSummons;
 import br.ucsal.cade.lossreports.api.RecordedRefusal;
 import br.ucsal.cade.lossreports.api.StudentRefusals;
+import br.ucsal.cade.matching.api.ClosedSuggestion;
+import br.ucsal.cade.matching.api.FoundItemSuggestions;
 import br.ucsal.cade.matching.api.RefusedSuggestion;
 import br.ucsal.cade.matching.api.SuggestionSummons;
+import br.ucsal.cade.pickup.api.event.OtherSuggestionsClosedEvent;
 import br.ucsal.cade.pickup.api.event.PickupRegisteredEvent;
 import br.ucsal.cade.pickup.exception.SummonsNotFoundException;
 import br.ucsal.cade.pickup.persistence.pickup.CounterCheck;
@@ -57,19 +60,22 @@ public class CounterService {
     private final FoundItemReservations foundItems;
     private final LossReportSummons lossReports;
     private final SuggestionSummons suggestions;
+    private final FoundItemSuggestions itemSuggestions;
     private final StudentRefusals refusals;
     private final EventPublisher events;
     private final Clock clock;
 
     CounterService(SummonsRepository summonses, PickupRepository pickups, VerificationRules rules,
                    FoundItemReservations foundItems, LossReportSummons lossReports, SuggestionSummons suggestions,
-                   StudentRefusals refusals, EventPublisher events, Clock clock) {
+                   FoundItemSuggestions itemSuggestions, StudentRefusals refusals, EventPublisher events,
+                   Clock clock) {
         this.summonses = summonses;
         this.pickups = pickups;
         this.rules = rules;
         this.foundItems = foundItems;
         this.lossReports = lossReports;
         this.suggestions = suggestions;
+        this.itemSuggestions = itemSuggestions;
         this.refusals = refusals;
         this.events = events;
         this.clock = clock;
@@ -103,13 +109,19 @@ public class CounterService {
         foundItems.handOver(summons.getFoundItemId(), staffId);
         suggestions.complete(summons.getSuggestionId(), staffId);
         lossReports.complete(summons.getLossReportId(), staffId);
+        List<ClosedSuggestion> closed = itemSuggestions.closeOthersOf(summons.getFoundItemId(), staffId);
         Pickup pickup = pickups.save(Pickup.of(summons, check, staffId, now));
 
         audit(staffId, COMPLETED_ACTION, Summons.class, summons.getId(), COMPLETED_REASON);
         audit(staffId, PICKUP_ACTION, Pickup.class, pickup.getId(), PICKUP_REASON);
         events.publish(new PickupRegisteredEvent(pickup.getId(), summons.getId(), summons.getStudentId(),
                 summons.getFoundItemId(), summons.getLossReportId()));
-        logOutcomeAfterCommit(summons, "Pickup " + pickup.getId() + " registered");
+        if (!closed.isEmpty()) {
+            events.publish(new OtherSuggestionsClosedEvent(summons.getFoundItemId(), closed.stream()
+                    .map(c -> new OtherSuggestionsClosedEvent.Closed(c.suggestionId(), c.lossReportId())).toList()));
+        }
+        logOutcomeAfterCommit(summons, "Pickup " + pickup.getId() + " registered (other suggestions closed="
+                + closed.size() + ")");
         return pickup;
     }
 

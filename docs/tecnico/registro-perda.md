@@ -201,3 +201,46 @@ stateDiagram-v2
 - Opcional, na parte `photo` do multipart: JPEG, PNG ou WebP, até 5 MB (mesmas regras do cadastro de objetos).
 - Guardada na pasta pela `PhotoStorage` (D21), só **depois** de todas as regras conferidas; se a transação for desfeita, é apagada.
 - `GET /loss-reports/{id}/photo`: só o dono. Registro de outro estudante responde 404, igual a um inexistente (RF14).
+
+## 6. Correção do registro (PER-07)
+
+`PUT /loss-reports/{id}`, só para o dono (estudante). Leva os mesmos campos do registro, menos a foto, mais a `version` que a última resposta trouxe.
+
+```mermaid
+sequenceDiagram
+    actor E as Estudante
+    participant C as LossReportController
+    participant S as LossReportService
+    participant R as LossReport
+    participant H as AuditEvent / LossReportUpdatedEvent
+
+    E->>C: PUT /loss-reports/{id} (campos + version)
+    C->>S: update(id, UpdateLossReport, estudante)
+    S->>S: busca por id e estudante (outro estudante: 404, RF14)
+    S->>S: version enviada = version atual? (senão 409)
+    S->>R: edit(...) só se isEditable() (senão 409)
+    R-->>S: campos que mudaram
+    alt algo mudou
+        S->>S: saveAndFlush (o @Version decide a corrida)
+        S->>H: histórico (quais campos, nunca o conteúdo) + evento sem o detalhe secreto
+    else nada mudou
+        S-->>C: devolve como está, sem gravar nem publicar
+    end
+    C-->>E: 200 com o registro e a nova version
+```
+
+| Situação | Resposta |
+|---|---|
+| Registro Aberto ou Aguardando informações | 200 e `version` + 1 |
+| Convocado, Concluído, Vencido, Cancelado ou Recusado | 409 "Não é possível editar um registro de perda na situação …" (RN06) |
+| `version` diferente da atual (por exemplo, foi convocado depois que o estudante abriu a tela) | 409; nada é gravado |
+| Registro de outro estudante ou inexistente | 404, igual nos dois casos |
+| Nada mudou | 200 sem gravar, sem histórico e sem evento |
+
+- **Quem convoca e quem edita disputam a mesma linha** pelo `@Version`: a convocação muda a perda para Convocado e incrementa a versão, então uma edição feita sobre a versão antiga recebe 409, e uma edição simultânea que perde no `UPDATE` também.
+- **O histórico não guarda o conteúdo.** A ação `LOSS_REPORT_UPDATED` diz só os campos que mudaram ("descrição, detalhe"), porque o detalhe é secreto (RF14) e o histórico é lido pelo administrador. O `LossReportUpdatedEvent`, como o de registro, não leva descrição nem detalhe.
+- **O prazo de validade não muda** com a edição; só a renovação o muda (RN14, PER-06).
+- **Registro devolvido a Aberto** porque a convocação venceu (RET-02) volta a ser editável, porque segue `isEditable()` (D32).
+- **O cruzamento não é refeito** na edição: as sugestões já criadas mantêm a nota. Ouvir o `LossReportUpdatedEvent` para recalcular é um passo futuro (D32).
+
+Testes: `LossReportTest` (campos que mudam, texto normalizado, situações editáveis e travadas) e `LossReportControllerTest` (dono, outro estudante, versão antiga, situações travadas, validação, perfis, histórico e evento).

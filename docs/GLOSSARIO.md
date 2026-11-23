@@ -58,6 +58,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Local da perda (bloco e sala) | `LossLocation` |
 | Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
+| Corrigir o registro de perda (PER-07) | `LossReport.edit`, `LossReportService.update`, rota `PUT /loss-reports/{id}` (estudante); evento `LossReportUpdatedEvent` |
 | Categorias gerenciáveis: nome, risco padrão e perguntas de conferência (RF44) | `Category.change`, `Category.verificationQuestions`, `CategoryAdminService`; rotas `POST /categories` e `PUT /categories/{id}` (administrador) |
 | Prazos configuráveis: guarda, retirada e validade do registro (RF45) | `DeadlineSettings` (uma linha), `DeadlineValues`, `Deadlines` (leitura, `shared.settings`), `DeadlineSettingsService`; rotas `GET` e `PUT /settings/deadlines` (administrador) |
 | Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |

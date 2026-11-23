@@ -4,6 +4,7 @@ import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
+import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -23,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /** O detalhe secreto e a foto nunca vão para outros estudantes (RF14). */
@@ -101,6 +103,54 @@ public class LossReport {
     /** Com a validade que o administrador configurou (RF45); {@link #VALIDITY} é o valor inicial. */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt, Duration validity) {
         return new LossReport(data, studentId, registeredAt, validity);
+    }
+
+    /**
+     * O estudante corrige ou completa o registro enquanto ele está Aberto ou Aguardando informações (PER-07). Depois
+     * da convocação a descrição e o detalhe secreto ficam travados (RN06), para ninguém ajustar o texto ao objeto.
+     *
+     * <p>Os dados seguem as mesmas regras do registro: texto sem as pontas em branco, detalhe em branco vira nulo e
+     * locais repetidos contam uma vez. A foto não muda. O prazo de validade também não: só a renovação o muda (RN14).
+     *
+     * @return os nomes dos campos que mudaram, em português, para o histórico; vazio se nada mudou
+     * @throws InvalidStatusTransitionException se o registro não está numa situação editável
+     */
+    public List<String> edit(Category category, String description, String secretDetail,
+                             List<LossLocation> locations, LostPeriod period) {
+        if (!status.isEditable()) {
+            throw new InvalidStatusTransitionException("editar", "um registro de perda", status.label());
+        }
+        String newDescription = Objects.requireNonNull(description).strip();
+        String newSecretDetail = secretDetail == null || secretDetail.isBlank() ? null : secretDetail.strip();
+        List<LossLocation> newLocations = locations.stream().distinct().toList();
+
+        List<String> changed = new ArrayList<>();
+        if (!isSameCategory(Objects.requireNonNull(category))) {
+            this.category = category;
+            changed.add("categoria");
+        }
+        if (!this.description.equals(newDescription)) {
+            this.description = newDescription;
+            changed.add("descrição");
+        }
+        if (!Objects.equals(this.secretDetail, newSecretDetail)) {
+            this.secretDetail = newSecretDetail;
+            changed.add("detalhe");
+        }
+        if (!this.locations.equals(newLocations)) {
+            this.locations.clear();
+            this.locations.addAll(newLocations);
+            changed.add("locais");
+        }
+        if (!this.period.equals(Objects.requireNonNull(period))) {
+            this.period = period;
+            changed.add("período");
+        }
+        return changed;
+    }
+
+    private boolean isSameCategory(Category other) {
+        return category == other || (category.getId() != null && category.getId().equals(other.getId()));
     }
 
     /**

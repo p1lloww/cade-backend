@@ -365,6 +365,20 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 6.
 - **Situação:** fechada.
 
+## D34 — Prova do registro de perda: foto pela PhotoStorage, sem PDF, e lida também pelo funcionário
+- **Origem:** o PER-05 (RF15) pede que o estudante anexe foto antiga, nota fiscal ou número de série, e que o funcionário use a prova na conferência (RF23).
+- **Decisão (22/11/2026):**
+  - **Campos no próprio `LossReport`** (`proofKey` e `proofSerialNumber`, ambos nulos): a prova é no máximo uma foto e um número de série por registro, então uma entidade à parte não se justifica. A foto passa pela `PhotoStorage` (D21), com as mesmas regras e a mesma limpeza da foto do registro.
+  - **PDF não é aceito.** A `PhotoStorage` valida JPEG, PNG e WebP pelos primeiros bytes; aceitar PDF pediria novo tipo, visualização e varredura de conteúdo. A nota fiscal em PDF precisa virar foto. Fica como limitação declarada.
+  - **Uma rota de leitura para dois perfis:** `GET /loss-reports/{id}/proof` aceita estudante e funcionário (`@RequiresRole({STUDENT, STAFF})`); o dono lê a própria, o funcionário (e o administrador) lê qualquer uma. A resposta nunca é guardada em cache e não há URL pública (RN03).
+  - **A prova na comparação:** o lado da perda em `GET /suggestions/{id}` traz `proofSerialNumber` e `proofPath`, sem trazer a foto.
+  - **Situações:** vale em qualquer situação não final, inclusive Convocado: a prova não muda a descrição nem o detalhe (RN06), e o funcionário a usa justamente no balcão. Nas situações finais, 409.
+  - **Histórico sem conteúdo:** só registra que a prova foi anexada.
+- **Motivo:** menor mudança que atende o critério de aceite e reaproveita o armazenamento e o padrão de privacidade que já existem.
+- **Consequências:** quem trocar a foto perde a anterior (apagada depois do commit). Dois funcionários veem a mesma prova.
+- **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 8.
+- **Situação:** fechada.
+
 ## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
 - **Origem:** o DEM-01 (RF47) pede contas fictícias, login direto sem código e dados de exemplo, ativos só no modo de demonstração, para a mostra funcionar sem internet e sem cadastro na hora.
 - **Decisão (22/11/2026):**
@@ -428,6 +442,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
 - **22/11/2026 — D37 registrada:** quem trouxe o objeto e objeto identificado (campos só de funcionários, fora do histórico), na implementação do ACH-06.
 - **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
+- **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
 - **22/11/2026 — D31 registrada:** modo demonstração com o profile `demo`, login direto por porta (`DirectSignIn`) só nesse profile, dados de exemplo pelas portas de cadastro de achados e perdas e e-mails no Mailpit, na implementação do DEM-01.
 - **23/11/2026 — D39 registrada:** categorias gerenciáveis pelo administrador e prazos configuráveis lidos na hora, na implementação do ADM-04.
 - **23/11/2026 — D41 registrada:** o `administration` passa a depender de `founditems` pela `api`, para o painel do ADM-06 (complemento à D10).

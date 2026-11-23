@@ -61,6 +61,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Quem trouxe o objeto (RF07) | `FoundItem.broughtBy`; campo `broughtBy` do cadastro e rota `PUT /found-items/{id}/brought-by` |
 | Objeto identificado: nome, e-mail ou documento encontrado nele (RF08) | `FoundItem.identify`, `identifiedName`, `identifiedEmail`, `identifiedDocument`; rotas `PUT` e `DELETE /found-items/{id}/identification` |
 | Corrigir o registro de perda (PER-07) | `LossReport.edit`, `LossReportService.update`, rota `PUT /loss-reports/{id}` (estudante); evento `LossReportUpdatedEvent` |
+| Prova do registro de perda: foto antiga, nota fiscal, número de série (RF15) | `LossReport.attachProof`, `LossReportService.attachProof` e `proofOf`; rotas `POST` e `GET /loss-reports/{id}/proof` |
 | Categorias gerenciáveis: nome, risco padrão e perguntas de conferência (RF44) | `Category.change`, `Category.verificationQuestions`, `CategoryAdminService`; rotas `POST /categories` e `PUT /categories/{id}` (administrador) |
 | Prazos configuráveis: guarda, retirada e validade do registro (RF45) | `DeadlineSettings` (uma linha), `DeadlineValues`, `Deadlines` (leitura, `shared.settings`), `DeadlineSettingsService`; rotas `GET` e `PUT /settings/deadlines` (administrador) |
 | Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |

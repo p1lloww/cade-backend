@@ -18,8 +18,7 @@ import java.util.List;
 
 /**
  * De hora em hora, põe na caixa de saída os lembretes de prazo: a convocação que vence em menos de 1 dia (RF34) e o
- * registro de perda perto de vencer (RF35). O lembrete do registro fica desligado até o PER-06: hoje o registro ainda
- * não chega a vencer, e o e-mail avisaria de algo que não acontece.
+ * registro de perda perto de vencer (RF35), que o estudante pode renovar (PER-06).
  *
  * <p>A tarefa pode achar o mesmo prazo em várias rodadas seguidas; quem garante um lembrete só por convocação e por
  * registro é a caixa de saída, que ignora o mesmo tipo para a mesma referência (D30). Assim a tarefa não precisa

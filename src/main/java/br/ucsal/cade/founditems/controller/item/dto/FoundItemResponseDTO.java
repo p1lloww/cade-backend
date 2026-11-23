@@ -29,6 +29,14 @@ public record FoundItemResponseDTO(
         @Schema(description = "Caminho da foto na API; pedir com o token.", example = "/found-items/{id}/photo")
         String photoPath,
         Instant registeredAt,
+        @Schema(description = "Quem trouxe o objeto (RF07); nulo se não foi registrado.", example = "Equipe de limpeza")
+        String broughtBy,
+        @Schema(description = "Se o objeto foi marcado como identificado (RF08).", example = "false")
+        boolean identified,
+        @Schema(description = "Nome encontrado no objeto; nulo se não há.") String identifiedName,
+        @Schema(description = "E-mail encontrado no objeto; nulo se não há.") String identifiedEmail,
+        @Schema(description = "Documento encontrado no objeto; nulo se não há.") String identifiedDocument,
+        Instant identifiedAt,
         @Schema(description = "Versão do objeto; envie-a na correção (`PUT /found-items/{id}`), para a API recusar "
                 + "uma correção feita sobre uma versão antiga.", example = "0")
         long version) {
@@ -38,6 +46,7 @@ public record FoundItemResponseDTO(
                 item.getBlock(), item.getRoom(), item.getFoundOn(), item.getStorageBox(), item.getRisk(),
                 item.getRisk().label(), item.getStatus().code(), item.getStatus().label(),
                 item.getInternalDescription(), item.getReservedDetails(), "/found-items/" + item.getId() + "/photo",
-                item.getRegisteredAt(), item.getVersion());
+                item.getRegisteredAt(), item.getBroughtBy(), item.isIdentified(), item.getIdentifiedName(),
+                item.getIdentifiedEmail(), item.getIdentifiedDocument(), item.getIdentifiedAt(), item.getVersion());
     }
 }

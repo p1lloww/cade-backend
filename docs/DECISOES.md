@@ -410,6 +410,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** repete o desenho do PER-07, para o front tratar as duas correções do mesmo jeito.
 - **Situação:** fechada.
 
+## D37 — Quem trouxe e objeto identificado: dados só de funcionários, fora do histórico
+- **Origem:** o ACH-06 (RF07, RF08) pede registrar quem trouxe o objeto e marcar o objeto como identificado com o nome, o e-mail ou o documento encontrado nele.
+- **Decisão (22/11/2026):**
+  - **Campos no próprio `FoundItem`**, todos nulos: `broughtBy` (até 120 caracteres: nome e matrícula, ou "equipe de limpeza") e `identifiedName`, `identifiedEmail`, `identifiedDocument`, `identifiedAt`, `identifiedBy`. Aparecem só no `FoundItemResponseDTO`, que só as rotas de funcionário devolvem (RN03): nada vai para estudantes, visitantes, busca pública nem contagens.
+  - **Rotas:** `broughtBy` opcional no formulário de cadastro e `PUT /found-items/{id}/brought-by` (em branco apaga); `PUT /found-items/{id}/identification` (pelo menos um dos três; e-mail validado e guardado em minúsculas) e `DELETE /found-items/{id}/identification` para desfazer uma marcação errada. Marcar de novo **troca** o que estava.
+  - **Situações:** quem trouxe vale em qualquer situação; identificar vale enquanto o objeto não saiu da sala (Disponível, Reservado ou Não reclamado); Devolvido e Destinado respondem 409.
+  - **Os dados pessoais não vão para o histórico:** o `AuditEvent` diz só "registrado" e quais campos vieram ("nome, e-mail"), nunca o conteúdo; o histórico é imutável (RF43) e lido pelo administrador, então um dado errado ali não poderia ser apagado depois.
+  - **O aviso ao titular (RF09, ACH-09) não faz parte deste card:** o `identifiedEmail` fica guardado para ele.
+- **Motivo:** rastreabilidade pedida pelo administrador (A1) sem espalhar dados pessoais de terceiros.
+- **Situação:** fechada.
+
 ## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
 - **Origem:** o DEM-01 (RF47) pede contas fictícias, login direto sem código e dados de exemplo, ativos só no modo de demonstração, para a mostra funcionar sem internet e sem cadastro na hora.
 - **Decisão (22/11/2026):**
@@ -473,6 +484,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
 - **22/11/2026 — D35 registrada:** confirmação da retirada pelo estudante como registro à parte, encerramento das outras sugestões do objeto e aviso neutro e desligável aos estudantes, na implementação do RET-06.
 - **22/11/2026 — D36 registrada:** correção dos dados do objeto achado (só Disponível e Não reclamado, versão e motivo no pedido, histórico com campos alterados e sem os textos reservados), na implementação do ACH-07.
+- **22/11/2026 — D37 registrada:** quem trouxe o objeto e objeto identificado (campos só de funcionários, fora do histórico), na implementação do ACH-06.
 - **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
 - **22/11/2026 — D33 registrada:** ciclo de vida do registro de perda (cancelar, pedir e responder informações pela sugestão, renovar, vencer só o Aberto, descarte e encerramento por evento) e lembrete de vencimento ligado, na implementação do PER-06.

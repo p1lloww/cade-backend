@@ -1,5 +1,7 @@
 package br.ucsal.cade.founditems.controller.item;
 
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemBroughtByRequestDTO;
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemIdentificationRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemResponseDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemUpdateRequestDTO;
@@ -69,6 +71,56 @@ public interface FoundItemApi {
                     schema = @Schema(implementation = ProblemDetail.class)))
     FoundItemResponseDTO update(@Parameter(description = "Id do objeto.") UUID id, FoundItemUpdateRequestDTO request,
                                 @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Registrar quem trouxe o objeto",
+            description = """
+                    Só para funcionários (RF07). Nome e matrícula de quem trouxe, ou "equipe de limpeza". Vazio apaga. \
+                    Também pode ser informado no cadastro, no campo `broughtBy`. Só funcionários veem esse dado; o \
+                    histórico diz que foi registrado, não quem trouxe.""")
+    @ApiResponse(responseCode = "200", description = "Registrado.",
+            content = @Content(schema = @Schema(implementation = FoundItemResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Texto longo demais.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Objeto não encontrado.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    FoundItemResponseDTO recordBroughtBy(@Parameter(description = "Id do objeto.") UUID id,
+                                         FoundItemBroughtByRequestDTO request, @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Marcar o objeto como identificado",
+            description = """
+                    Só para funcionários (RF08). O funcionário achou no objeto um nome, um e-mail ou um documento: \
+                    informe pelo menos um. Vale enquanto o objeto não saiu da sala (Disponível, Reservado ou Não \
+                    reclamado); marcar de novo troca o que estava. Só funcionários veem esses dados, e o histórico \
+                    diz quais campos vieram, nunca o conteúdo.""")
+    @ApiResponse(responseCode = "200", description = "Objeto identificado.",
+            content = @Content(schema = @Schema(implementation = FoundItemResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Nenhum dos três dados, e-mail inválido ou texto longo demais.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Objeto não encontrado.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "409", description = "O objeto já foi devolvido ou destinado.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    FoundItemResponseDTO identify(@Parameter(description = "Id do objeto.") UUID id,
+                                  FoundItemIdentificationRequestDTO request, @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Desfazer a marcação de identificado",
+            description = "Só para funcionários. Apaga os dados de identificação, por exemplo se foram marcados no "
+                    + "objeto errado. Sem marcação, não faz nada. Fica no histórico.")
+    @ApiResponse(responseCode = "200", description = "Marcação desfeita.",
+            content = @Content(schema = @Schema(implementation = FoundItemResponseDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Objeto não encontrado.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    FoundItemResponseDTO clearIdentification(@Parameter(description = "Id do objeto.") UUID id,
+                                             @Parameter(hidden = true) Jwt token);
 
     @Operation(summary = "Ver um objeto", description = "Todos os dados do objeto, inclusive os reservados.")
     @ApiResponse(responseCode = "200", description = "O objeto.")

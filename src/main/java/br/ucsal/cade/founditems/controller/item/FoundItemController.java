@@ -1,5 +1,7 @@
 package br.ucsal.cade.founditems.controller.item;
 
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemBroughtByRequestDTO;
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemIdentificationRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemResponseDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemUpdateRequestDTO;
@@ -7,6 +9,7 @@ import br.ucsal.cade.founditems.controller.item.dto.StorageBoxSuggestionResponse
 import br.ucsal.cade.founditems.persistence.item.FoundItem;
 import br.ucsal.cade.founditems.persistence.item.StorageBox;
 import br.ucsal.cade.founditems.service.item.FoundItemService;
+import br.ucsal.cade.founditems.service.item.IdentifyFoundItem;
 import br.ucsal.cade.founditems.service.item.RegisterFoundItem;
 import br.ucsal.cade.founditems.service.item.UpdateFoundItem;
 import br.ucsal.cade.shared.security.Role;
@@ -19,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,7 +57,7 @@ class FoundItemController implements FoundItemApi {
         RegisterFoundItem request = new RegisterFoundItem(bytesOf(form), form.categoryId(), form.block(),
                 form.room(), form.foundOn(), form.storageBox(), form.risk(), form.internalDescription(),
                 form.reservedDetails());
-        FoundItem item = service.register(request, UUID.fromString(token.getSubject()));
+        FoundItem item = service.register(request, form.broughtBy(), UUID.fromString(token.getSubject()));
         return ResponseEntity.created(URI.create("/found-items/" + item.getId())).body(FoundItemResponseDTO.from(item));
     }
 
@@ -65,6 +69,31 @@ class FoundItemController implements FoundItemApi {
                 request.foundOn(), request.storageBox(), request.risk(), request.internalDescription(),
                 request.reservedDetails(), request.reason(), request.version());
         return FoundItemResponseDTO.from(service.update(id, command, UUID.fromString(token.getSubject())));
+    }
+
+    @Override
+    @PutMapping(path = "/{id}/brought-by", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public FoundItemResponseDTO recordBroughtBy(@PathVariable UUID id,
+                                                @Valid @RequestBody FoundItemBroughtByRequestDTO request,
+                                                @AuthenticationPrincipal Jwt token) {
+        return FoundItemResponseDTO.from(service.recordBroughtBy(id, request.broughtBy(),
+                UUID.fromString(token.getSubject())));
+    }
+
+    @Override
+    @PutMapping(path = "/{id}/identification", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public FoundItemResponseDTO identify(@PathVariable UUID id,
+                                         @Valid @RequestBody FoundItemIdentificationRequestDTO request,
+                                         @AuthenticationPrincipal Jwt token) {
+        return FoundItemResponseDTO.from(service.identify(id,
+                new IdentifyFoundItem(request.name(), request.email(), request.document()),
+                UUID.fromString(token.getSubject())));
+    }
+
+    @Override
+    @DeleteMapping("/{id}/identification")
+    public FoundItemResponseDTO clearIdentification(@PathVariable UUID id, @AuthenticationPrincipal Jwt token) {
+        return FoundItemResponseDTO.from(service.clearIdentification(id, UUID.fromString(token.getSubject())));
     }
 
     @Override

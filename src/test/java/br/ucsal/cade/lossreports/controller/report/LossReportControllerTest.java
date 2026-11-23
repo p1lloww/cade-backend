@@ -322,7 +322,7 @@ class LossReportControllerTest {
         assertThat(report.keySet()).containsExactlyInAnyOrder("id", "categoryId", "categoryName", "description",
                 "secretDetail", "locations", "locationsLabel", "lostFrom", "lostUntil", "shift", "shiftLabel", "status",
                 "statusLabel", "statusDescription", "photoPath", "registeredAt", "expiresAt", "proofPath",
-                "proofSerialNumber", "version");
+                "proofSerialNumber", "version", "infoRequestReason", "infoAnswer");
     }
 
     @Test

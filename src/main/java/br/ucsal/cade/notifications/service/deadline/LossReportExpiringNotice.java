@@ -26,7 +26,7 @@ final class LossReportExpiringNotice {
 
                 O seu registro de perda "%s" vence em %s.
 
-                Se você ainda procura o objeto, entre no Cadê? e acompanhe o registro. Se já achou, pode ignorar este \
+                Se você ainda procura o objeto, entre no Cadê? e renove o registro em "Meus registros". Se já achou, pode ignorar este \
                 e-mail.
 
                 Cadê? — Achados e Perdidos da UCSal

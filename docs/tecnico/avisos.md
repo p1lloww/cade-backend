@@ -256,7 +256,7 @@ sequenceDiagram
 
 Uma convocação fica até 24 h dentro da janela, então aparece em várias rodadas. **A tarefa não guarda o que já avisou.** Quem garante um lembrete só é a unicidade da caixa: da segunda rodada em diante, o `INSERT` não grava nada. Se a aplicação ficar fora do ar numa rodada, a seguinte cobre.
 
-O lembrete de **registro de perda perto de vencer** (RF35) já está pronto (`LossReportDeadlines`, `LossReportExpiringNotice`), mas fica **desligado** (`cade.notifications.deadlines.loss-report-notice-enabled: false`) até o PER-06. Hoje o registro ainda não vence nem é renovado, e o e-mail avisaria de algo que não acontece (D30).
+O lembrete de **registro de perda perto de vencer** (RF35, `LossReportDeadlines` e `LossReportExpiringNotice`) está **ligado** desde o PER-06 (`cade.notifications.deadlines.loss-report-notice-enabled: true`): o registro agora vence aos 30 dias e o estudante pode renová-lo em "Meus registros" (D30, D33).
 
 ## 9. Quais e-mails existem
 
@@ -266,11 +266,13 @@ O lembrete de **registro de perda perto de vencer** (RF35) já está pronto (`Lo
 | `SUMMONS_EXPIRING` | menos de 1 dia para a convocação vencer (RF34) | a convocação | os mesmos dados, com o prazo em destaque |
 | `SUMMONS_EXPIRED` | a convocação venceu sem retirada (RF27, RET-02) | a convocação | o prazo terminou, o objeto deixou de ficar reservado e o registro continua aberto; não cita o objeto |
 | `PICKUP_REGISTERED` | na retirada (RF34) | a retirada | data e hora; "se não foi você, procure a sala" |
-| `LOSS_REPORT_EXPIRING` | 3 dias antes de o registro vencer (RF35), **desligado até o PER-06** | o registro | a descrição do próprio estudante e a data |
+| `INFO_REQUESTED` | o funcionário pede mais informações (RF35, PER-06) | o pedido (um por pedido, não por registro) | a pergunta do funcionário e o prazo de 5 dias; o funcionário é orientado a não citar o objeto (RN03) |
+| `LOSS_REPORT_EXPIRING` | 3 dias antes de o registro vencer (RF35) | o registro | a descrição do próprio estudante e a data |
 
 Nenhum e-mail fala do objeto achado: nem foto, nem descrição interna, nem detalhes reservados, nem local (RN03). Os testes conferem que esses dados não aparecem no texto.
 
 **Fora deste card:**
+- **E-mail da convocação vencida:** o vencimento é o RET-02.
 - **E-mail do pedido de mais informações (RF35):** o pedido ainda não existe; entra no PER-06.
 - **Aviso das sugestões encerradas pelo atalho de balcão (D29):** não existe de propósito. O estudante nunca vê as sugestões, e avisar que uma foi encerrada revelaria que apareceu na sala um objeto parecido com o dele (RN03). Quem ainda procura é lembrado pelo aviso de registro perto de vencer.
 

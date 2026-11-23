@@ -9,6 +9,9 @@ import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.RiskLevel;
+import br.ucsal.cade.shared.settings.DeadlineSettings;
+import br.ucsal.cade.shared.settings.DeadlineSettingsRepository;
+import br.ucsal.cade.shared.settings.DeadlineValues;
 import br.ucsal.cade.shared.storage.TestPhotos;
 import br.ucsal.cade.shared.time.MutableClock;
 import br.ucsal.cade.shared.time.MutableClockConfiguration;
@@ -50,6 +53,9 @@ class UnclaimedMarkingTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private DeadlineSettingsRepository settings;
+
     private UUID category;
 
     @BeforeEach
@@ -80,6 +86,21 @@ class UnclaimedMarkingTest {
         clock.advance(Duration.ofMinutes(1));
         marking.markDueItems();
         assertThat(statusOf(item)).isEqualTo(FoundItemStatus.UNCLAIMED);
+    }
+
+    @Test
+    void theStoragePeriodIsTheOneTheAdministratorConfigured() {
+        UUID item = register();
+        jdbc.update("DELETE FROM deadline_settings");
+        settings.saveAndFlush(new DeadlineSettings(new DeadlineValues(30, 7, 30), clock.instant(), UUID.randomUUID()));
+        try {
+            clock.advance(Duration.ofDays(30).plusMinutes(1));
+            marking.markDueItems();
+
+            assertThat(statusOf(item)).isEqualTo(FoundItemStatus.UNCLAIMED);
+        } finally {
+            jdbc.update("DELETE FROM deadline_settings");
+        }
     }
 
     @Test

@@ -345,7 +345,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 ## D38 — Não reclamados: tarefa por objeto, porta em achados e destino em tabela própria
 - **Origem:** o PRA-01 (RF37, RF38, RF39) pede a tarefa dos 90 dias, o destino do objeto e a lista por caixa.
 - **Decisão (23/11/2026):**
-  - **O prazo conta da entrada na sala** (`registeredAt`, RN16), não da data em que o objeto foi achado. Fica em `cade.retention.storage-period` (90 dias), e a tarefa roda de hora em hora (`cade.retention.interval`), pelo mesmo motivo das outras: uma rodada perdida é coberta pela seguinte.
+  - **O prazo conta da entrada na sala** (`registeredAt`, RN16), não da data em que o objeto foi achado. O prazo é o que o administrador configurou (`Deadlines.storagePeriod()`, 90 dias de início, D39), e a tarefa roda de hora em hora (`cade.retention.interval`), pelo mesmo motivo das outras: uma rodada perdida é coberta pela seguinte.
   - **Só o Disponível vence.** Reservado fica como está (RN18): a convocação decide; se ela vencer, o objeto volta a Disponível e a próxima rodada o vê.
   - **Uma transação por objeto**, na porta `UnclaimedFoundItems` (`founditems.api`): uma falha não desfaz as outras. A mudança é gravada na hora, com o `@Version`, para perder a corrida contra uma convocação. O histórico leva `SYSTEM_ACTOR`.
   - **O destino é uma entidade do `retention`** (`Disposal`: objeto, destino, observação, data e administrador), sem chave estrangeira para o objeto (D10). Sem destino no corpo, vale o bazar; "outro" exige dizer qual. A mudança do objeto para Destinado e a gravação do destino acontecem na mesma transação; um objeto só é destinado uma vez.

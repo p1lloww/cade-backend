@@ -3,6 +3,7 @@ package br.ucsal.cade.lossreports.controller.report;
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.administration.persistence.audit.AuditRecordRepository;
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
+import br.ucsal.cade.lossreports.api.event.LossReportUpdatedEvent;
 import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
@@ -28,6 +29,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 
 import java.nio.charset.StandardCharsets;
@@ -44,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -318,8 +321,8 @@ class LossReportControllerTest {
         Map<String, Object> report = JsonPath.read(body, "$[0]");
         assertThat(report.keySet()).containsExactlyInAnyOrder("id", "categoryId", "categoryName", "description",
                 "secretDetail", "locations", "locationsLabel", "lostFrom", "lostUntil", "shift", "shiftLabel", "status",
-                "statusLabel", "statusDescription", "photoPath", "registeredAt", "expiresAt", "infoRequestReason",
-                "infoAnswer");
+                "statusLabel", "statusDescription", "photoPath", "registeredAt", "expiresAt", "proofPath",
+                "proofSerialNumber", "version", "infoRequestReason", "infoAnswer");
     }
 
     @Test
@@ -329,6 +332,141 @@ class LossReportControllerTest {
                     .andExpect(status().isForbidden());
         }
         mvc.perform(get("/loss-reports/mine")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void theOwnerEditsAnOpenReportAndGetsTheNewVersion() throws Exception {
+        String created = register(minimal()).andExpect(status().isCreated()).andReturn().getResponse()
+                .getContentAsString();
+        UUID id = UUID.fromString(JsonPath.read(created, "$.id"));
+        long version = ((Number) JsonPath.read(created, "$.version")).longValue();
+
+        mvc.perform(update(id, edit(version, " Garrafa verde ", "Tampa amassada"), studentToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value("Garrafa verde"))
+                .andExpect(jsonPath("$.secretDetail").value("Tampa amassada"))
+                .andExpect(jsonPath("$.status").value("OPEN"))
+                .andExpect(jsonPath("$.version").value(version + 1));
+
+        assertThat(events.stream(LossReportUpdatedEvent.class)).containsExactly(
+                new LossReportUpdatedEvent(id, headphones(), yesterday(), yesterday()));
+        assertThat(auditRecords.findAll()).filteredOn(record -> record.getEntityId().equals(id)
+                && record.getAction().equals("LOSS_REPORT_UPDATED")).singleElement().satisfies(record -> {
+            assertThat(record.getActorId()).isEqualTo(student);
+            assertThat(record.getReason()).contains("descrição, detalhe").doesNotContain("Tampa");
+        });
+    }
+
+    @Test
+    void anEditThatChangesNothingKeepsTheVersionAndWritesNothing() throws Exception {
+        String created = register(minimal()).andExpect(status().isCreated()).andReturn().getResponse()
+                .getContentAsString();
+        UUID id = UUID.fromString(JsonPath.read(created, "$.id"));
+        long version = ((Number) JsonPath.read(created, "$.version")).longValue();
+
+        mvc.perform(update(id, edit(version, "Garrafa azul", null), studentToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(version));
+
+        assertThat(events.stream(LossReportUpdatedEvent.class)).isEmpty();
+        assertThat(auditRecords.findAll()).noneMatch(record -> record.getEntityId().equals(id)
+                && record.getAction().equals("LOSS_REPORT_UPDATED"));
+    }
+
+    @Test
+    void anotherStudentGetsTheSameNotFoundAsAMissingReportAndNothingChanges() throws Exception {
+        UUID id = UUID.fromString(idOf(register(minimal())));
+        String other = TestTokens.token(encoder, clock.instant(), claims -> claims.subject(UUID.randomUUID()
+                .toString()).claim(TokenClaims.ROLE, Role.STUDENT.name()));
+
+        mvc.perform(update(id, edit(0, "Garrafa roubada", "Ajustei o texto"), other)).andExpect(status().isNotFound());
+        mvc.perform(update(UUID.randomUUID(), edit(0, "Garrafa azul", null), studentToken()))
+                .andExpect(status().isNotFound());
+
+        assertThat(jdbc.queryForObject("SELECT description FROM loss_reports WHERE id = ?", String.class, id))
+                .isEqualTo("Garrafa azul");
+    }
+
+    @Test
+    void afterTheSummonsTheDescriptionAndTheDetailAreLocked() throws Exception {
+        for (String locked : new String[]{"SUMMONED", "COMPLETED", "EXPIRED", "CANCELLED", "REFUSED"}) {
+            UUID id = UUID.fromString(idOf(register(minimal())));
+            jdbc.update("UPDATE loss_reports SET status = ? WHERE id = ?", locked, id);
+
+            mvc.perform(update(id, edit(0, "Texto ajustado ao objeto", "Detalhe novo"), studentToken()))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith(
+                            "Não é possível editar um registro de perda na situação")));
+
+            assertThat(jdbc.queryForObject("SELECT description FROM loss_reports WHERE id = ?", String.class, id))
+                    .as("situação %s", locked).isEqualTo("Garrafa azul");
+        }
+    }
+
+    @Test
+    void aReportAwaitingInformationCanBeEdited() throws Exception {
+        UUID id = UUID.fromString(idOf(register(minimal())));
+        jdbc.update("UPDATE loss_reports SET status = 'AWAITING_INFO' WHERE id = ?", id);
+
+        mvc.perform(update(id, edit(0, "Garrafa azul com tampa preta", null), studentToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("AWAITING_INFO"));
+    }
+
+    @Test
+    void anEditOverAnOldVersionIsRefusedWithConflict() throws Exception {
+        String created = register(minimal()).andExpect(status().isCreated()).andReturn().getResponse()
+                .getContentAsString();
+        UUID id = UUID.fromString(JsonPath.read(created, "$.id"));
+        long seen = ((Number) JsonPath.read(created, "$.version")).longValue();
+        // Outra alteração (por exemplo, a convocação) foi gravada depois de o estudante abrir a tela.
+        jdbc.update("UPDATE loss_reports SET version = version + 1 WHERE id = ?", id);
+
+        mvc.perform(update(id, edit(seen, "Garrafa verde", null), studentToken()))
+                .andExpect(status().isConflict());
+
+        assertThat(jdbc.queryForObject("SELECT description FROM loss_reports WHERE id = ?", String.class, id))
+                .isEqualTo("Garrafa azul");
+    }
+
+    @Test
+    void theEditIsValidatedLikeTheRegistration() throws Exception {
+        UUID id = UUID.fromString(idOf(register(minimal())));
+
+        mvc.perform(update(id, edit(0, "   ", null), studentToken())).andExpect(status().isBadRequest());
+        mvc.perform(update(id, """
+                {"categoryId": "%s", "description": "Garrafa", "lostFrom": "%s"}""".formatted(headphones(),
+                yesterday()), studentToken())).andExpect(status().isBadRequest());
+        mvc.perform(update(id, """
+                {"categoryId": "%s", "description": "Garrafa", "lostFrom": "%s", "version": 0}"""
+                .formatted(headphones(), LocalDate.now(clock).plusDays(1)), studentToken()))
+                .andExpect(status().isBadRequest());
+        mvc.perform(update(id, """
+                {"categoryId": "%s", "description": "Garrafa", "lostFrom": "%s", "version": 0}"""
+                .formatted(UUID.randomUUID(), yesterday()), studentToken())).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void onlyStudentsEditReports() throws Exception {
+        UUID id = UUID.fromString(idOf(register(minimal())));
+        for (Role role : new Role[]{Role.STAFF, Role.ADMIN}) {
+            mvc.perform(update(id, edit(0, "Garrafa verde", null), bearer(role).substring("Bearer ".length())))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(put("/loss-reports/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                .content(edit(0, "Garrafa verde", null))).andExpect(status().isUnauthorized());
+    }
+
+    private String edit(long version, String description, String secretDetail) {
+        return """
+                {"categoryId": "%s", "description": "%s", "secretDetail": %s, "lostFrom": "%s", "version": %d}"""
+                .formatted(headphones(), description, secretDetail == null ? "null" : "\"" + secretDetail + "\"",
+                        yesterday(), version);
+    }
+
+    private MockHttpServletRequestBuilder update(UUID id, String json, String token) {
+        return put("/loss-reports/{id}", id).header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content(json);
     }
 
     private String idOf(ResultActions registered) throws Exception {

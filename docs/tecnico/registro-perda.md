@@ -202,6 +202,49 @@ stateDiagram-v2
 - Guardada na pasta pela `PhotoStorage` (D21), só **depois** de todas as regras conferidas; se a transação for desfeita, é apagada.
 - `GET /loss-reports/{id}/photo`: só o dono. Registro de outro estudante responde 404, igual a um inexistente (RF14).
 
+## 6. Correção do registro (PER-07)
+
+`PUT /loss-reports/{id}`, só para o dono (estudante). Leva os mesmos campos do registro, menos a foto, mais a `version` que a última resposta trouxe.
+
+```mermaid
+sequenceDiagram
+    actor E as Estudante
+    participant C as LossReportController
+    participant S as LossReportService
+    participant R as LossReport
+    participant H as AuditEvent / LossReportUpdatedEvent
+
+    E->>C: PUT /loss-reports/{id} (campos + version)
+    C->>S: update(id, UpdateLossReport, estudante)
+    S->>S: busca por id e estudante (outro estudante: 404, RF14)
+    S->>S: version enviada = version atual? (senão 409)
+    S->>R: edit(...) só se isEditable() (senão 409)
+    R-->>S: campos que mudaram
+    alt algo mudou
+        S->>S: saveAndFlush (o @Version decide a corrida)
+        S->>H: histórico (quais campos, nunca o conteúdo) + evento sem o detalhe secreto
+    else nada mudou
+        S-->>C: devolve como está, sem gravar nem publicar
+    end
+    C-->>E: 200 com o registro e a nova version
+```
+
+| Situação | Resposta |
+|---|---|
+| Registro Aberto ou Aguardando informações | 200 e `version` + 1 |
+| Convocado, Concluído, Vencido, Cancelado ou Recusado | 409 "Não é possível editar um registro de perda na situação …" (RN06) |
+| `version` diferente da atual (por exemplo, foi convocado depois que o estudante abriu a tela) | 409; nada é gravado |
+| Registro de outro estudante ou inexistente | 404, igual nos dois casos |
+| Nada mudou | 200 sem gravar, sem histórico e sem evento |
+
+- **Quem convoca e quem edita disputam a mesma linha** pelo `@Version`: a convocação muda a perda para Convocado e incrementa a versão, então uma edição feita sobre a versão antiga recebe 409, e uma edição simultânea que perde no `UPDATE` também.
+- **O histórico não guarda o conteúdo.** A ação `LOSS_REPORT_UPDATED` diz só os campos que mudaram ("descrição, detalhe"), porque o detalhe é secreto (RF14) e o histórico é lido pelo administrador. O `LossReportUpdatedEvent`, como o de registro, não leva descrição nem detalhe.
+- **O prazo de validade não muda** com a edição; só a renovação o muda (RN14, PER-06).
+- **Registro devolvido a Aberto** porque a convocação venceu (RET-02) volta a ser editável, porque segue `isEditable()` (D32).
+- **O cruzamento não é refeito** na edição: as sugestões já criadas mantêm a nota. Ouvir o `LossReportUpdatedEvent` para recalcular é um passo futuro (D32).
+
+Testes: `LossReportTest` (campos que mudam, texto normalizado, situações editáveis e travadas) e `LossReportControllerTest` (dono, outro estudante, versão antiga, situações travadas, validação, perfis, histórico e evento).
+
 ## 7. Cancelar, pedir informações, renovar e vencer (PER-06)
 
 O resto da seção 6.2 dos requisitos, no [`LossReportLifecycleService`](../../src/main/java/br/ucsal/cade/lossreports/service/report/LossReportLifecycleService.java), com as rotas no `LossReportLifecycleController` (estudante) e no `SuggestionController` (funcionário).
@@ -215,8 +258,8 @@ stateDiagram-v2
     Aberto --> Cancelado: estudante cancela (POST /loss-reports/{id}/cancel)
     AguardandoInformacoes --> Cancelado: estudante cancela
     Aberto --> Vencido: 30 dias sem renovação (RN14)
-    Aberto --> Aberto: estudante renova (+30 dias)
-    AguardandoInformacoes --> AguardandoInformacoes: estudante renova (+30 dias)
+    Aberto --> Aberto: estudante renova (+ validade em vigor)
+    AguardandoInformacoes --> AguardandoInformacoes: estudante renova (+ validade em vigor)
 ```
 
 | Ação | Quem | Regra |
@@ -224,7 +267,7 @@ stateDiagram-v2
 | `POST /loss-reports/{id}/cancel` | estudante, dono | Aberto ou Aguardando informações; as sugestões Novas e Em espera do registro são **encerradas** na mesma transação (evento `LossReportClosedEvent`) |
 | `POST /suggestions/{id}/info-request` | funcionário | sugestão **Nova** e registro **Aberto**; o motivo vai para o histórico e para o e-mail ao estudante (`INFO_REQUESTED`); a sugestão continua Nova |
 | `POST /loss-reports/{id}/info-response` | estudante, dono | só Aguardando informações; a resposta fica no registro (`infoAnswer`) e **não** vai para o histórico, porque pode conter o detalhe secreto (RF14) |
-| `POST /loss-reports/{id}/renew` | estudante, dono | Aberto ou Aguardando informações; `expiresAt` passa a agora + 30 dias |
+| `POST /loss-reports/{id}/renew` | estudante, dono | Aberto ou Aguardando informações; `expiresAt` passa a agora + a validade em vigor (`Deadlines.reportValidity()`, 30 dias de início, configurável pelo administrador, RF45) |
 | Tarefa `LossReportExpiryJob` | sistema | de hora em hora: vence os Abertos com `expiresAt` passado (RN14) e devolve a Aberto os pedidos com mais de 5 dias, descartando a sugestão que os originou (RN13) |
 
 - **Um registro por transação na tarefa**, como no vencimento da convocação: a falha de um é registrada no log e não afeta os outros; o estado é conferido de novo dentro da transação (o estudante pode ter renovado ou o funcionário convocado depois que a tarefa listou).
@@ -233,3 +276,21 @@ stateDiagram-v2
 - **Lembrete de vencimento:** o e-mail de "perto de vencer" (RF35) está ligado desde este card, e o texto manda renovar em "Meus registros".
 
 Testes: `LossReportTest` (todas as transições e as proibidas), `LossReportLifecycleServiceTest` (ciclo completo e as duas tarefas com o `MutableClock`, incluindo o limite exato de 5 e 30 dias) e `LossReportLifecycleControllerTest` (rotas, perfis, 404 de outro estudante, validação).
+
+## 8. Prova do registro (PER-05)
+
+O estudante pode anexar uma prova de que o objeto é dele (RF15): uma **foto** (foto antiga com o objeto, nota fiscal) e/ou o **número de série**.
+
+| Rota | Quem | O que faz |
+|---|---|---|
+| `POST /loss-reports/{id}/proof` | estudante, dono | `multipart/form-data` com a parte `proof` (JSON `{"serialNumber": "..."}`) e/ou a parte `file` (JPEG, PNG ou WebP, até 5 MB). Pelo menos um dos dois; o que não vier continua como estava |
+| `GET /loss-reports/{id}/proof` | estudante, dono, ou funcionário/administrador | devolve a foto da prova, com `Cache-Control: no-store`. O funcionário lê a de qualquer registro, para conferir no balcão (RF23) |
+| `GET /suggestions/{id}` | funcionário | o lado do registro na comparação ganhou `proofSerialNumber` e `proofPath` |
+
+- **A foto passa pela `PhotoStorage`** (D21), como a foto do registro: guardada só depois das regras conferidas, apagada se a transação for desfeita e **nunca com URL pública** (RN03). Ao trocar a foto, a antiga é apagada depois do commit.
+- **PDF não é aceito:** a `PhotoStorage` só entende JPEG, PNG e WebP. Uma nota fiscal em PDF precisa virar foto; é uma limitação declarada (D34).
+- **Em que situações:** qualquer uma que não seja final (Aberto, Aguardando informações e Convocado). Concluído, Vencido, Cancelado e Recusado respondem 409. A prova não altera a descrição nem o detalhe, então a RN06 continua valendo.
+- **Registro de outro estudante responde 404**, igual a inexistente (RF14). Quem pede a foto de um registro sem foto de prova também recebe 404.
+- **O histórico diz que a prova foi anexada, não o conteúdo** (`LOSS_REPORT_PROOF_ATTACHED`): o número de série é um dado pessoal do estudante.
+
+Testes: `LossReportProofControllerTest` (foto e série, só uma, entradas inválidas, troca de foto, outro estudante, situações, leitura pelo dono e pelo funcionário, comparação do funcionário e perfis).

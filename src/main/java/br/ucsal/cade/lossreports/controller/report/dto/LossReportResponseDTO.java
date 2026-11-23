@@ -36,6 +36,14 @@ public record LossReportResponseDTO(
         String photoPath,
         Instant registeredAt,
         Instant expiresAt,
+        @Schema(description = "Caminho da foto da prova na API, pedir com o token; nulo quando não há (RF15).",
+                example = "/loss-reports/{id}/proof")
+        String proofPath,
+        @Schema(description = "Número de série da prova; nulo quando não há (RF15).", example = "SN-123456")
+        String proofSerialNumber,
+        @Schema(description = "Versão do registro; envie-a na correção (`PUT /loss-reports/{id}`), para a API recusar "
+                + "uma correção feita sobre uma versão antiga.", example = "0")
+        long version,
         @Schema(description = "O que o funcionário pediu para saber (RF24); nulo se nunca houve pedido.",
                 example = "Qual é a cor da capa?")
         String infoRequestReason,
@@ -56,7 +64,10 @@ public record LossReportResponseDTO(
                 period.shift() == null ? UNKNOWN_SHIFT : period.shift().label(), report.getStatus().code(),
                 report.getStatus().label(), report.getStatus().description(),
                 report.hasPhoto() ? "/loss-reports/" + report.getId() + "/photo" : null,
-                report.getRegisteredAt(), report.getExpiresAt(), report.getInfoRequestReason(), report.getInfoAnswer());
+                report.getRegisteredAt(), report.getExpiresAt(),
+                report.hasProofPhoto() ? "/loss-reports/" + report.getId() + "/proof" : null,
+                report.getProofSerialNumber(), report.getVersion(), report.getInfoRequestReason(),
+                report.getInfoAnswer());
     }
 
     private static String locationsLabel(List<LossLocationResponseDTO> locations) {

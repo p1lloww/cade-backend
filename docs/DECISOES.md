@@ -342,15 +342,27 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
+## D32 — Correção do registro de perda: versão no pedido, histórico sem conteúdo e o que não muda
+- **Origem:** o PER-07 pede que o estudante corrija o registro enquanto ele está Aberto ou Aguardando informações, e que a edição simultânea à convocação resolva pelo `@Version` (RN06).
+- **Decisão (22/11/2026):**
+  - **A versão vai no corpo do `PUT`:** o cliente envia a `version` que recebeu, e o `LossReportResponseDTO` passou a trazê-la. Se ela difere da atual, a resposta é 409 sem gravar nada. Uma edição que perde a corrida depois dessa conferência também dá 409, pelo `UPDATE` com `@Version`.
+  - **Registro devolvido a Aberto pelo vencimento da convocação (RET-02) volta a ser editável:** a regra é `LossReportStatus.isEditable()`, que não distingue um Aberto nunca convocado de um que voltou. A RN06 trava a descrição **enquanto** está Convocado (o risco de ajustar o texto ao objeto); depois do vencimento a convocação deixa de existir.
+  - **Histórico sem conteúdo:** a ação `LOSS_REPORT_UPDATED` registra só os campos alterados; o detalhe é secreto (RF14) e o histórico é lido pelo administrador. O `LossReportUpdatedEvent` não leva descrição nem detalhe.
+  - **Edição sem mudança não grava:** devolve 200 com a mesma versão, sem histórico e sem evento.
+  - **O cruzamento não é refeito** na edição, e o prazo de validade não muda (só a renovação o muda, PER-06). Recalcular as sugestões a partir do `LossReportUpdatedEvent` fica para um card futuro.
+- **Motivo:** reaproveita o `@Version` que já protege a convocação e o limite de registros (D25), sem lock novo, e mantém o histórico imutável sem vazar o detalhe.
+- **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 6.
+- **Situação:** fechada.
+
 ## D33 — Ciclo de vida do registro de perda: pedido de informações pela sugestão, vencimento só do Aberto e lembrete ligado
 - **Origem:** o PER-06 pede cancelar, pedir e responder mais informações, vencer aos 30 dias e renovar (RF17 a RF19, RN13, RN14).
 - **Decisão (22/11/2026):**
   - **O pedido nasce numa sugestão** (`POST /suggestions/{id}/info-request`), porque o RF24 o põe entre as decisões do funcionário diante de uma sugestão. O `matching` chama a porta `lossreports.api.LossReportInfoRequests`; o registro guarda a sugestão do pedido (`infoSuggestionId`), para descartá-la se o estudante não responder em 5 dias (RN13). Só uma sugestão Nova e um registro Aberto admitem o pedido; enquanto o registro aguarda, outro pedido responde 409.
   - **Descarte e encerramento por evento, na mesma transação:** `LossReportInfoOverdueEvent` descarta a sugestão do pedido; `LossReportClosedEvent` (cancelado ou vencido) encerra as sugestões Novas e Em espera do registro. Os ouvintes são síncronos e `MANDATORY` (como o histórico), em nome do sistema. O `lossreports` continua sem depender do `matching`.
   - **Só o registro Aberto vence** (a máquina de estados da seção 6.2 não tem Aguardando informações → Vencido). Se o pedido passa de 5 dias, o registro volta a Aberto e a rodada seguinte o vence, se for o caso. Um registro Convocado não vence enquanto a convocação corre.
-  - **Renovar** estende a validade para agora + 30 dias, a qualquer momento enquanto o registro está Aberto ou Aguardando informações (não só na janela do aviso).
+  - **Renovar** estende a validade para agora + a validade em vigor (`Deadlines.reportValidity()`, 30 dias de início, RF45), a qualquer momento enquanto o registro está Aberto ou Aguardando informações (não só na janela do aviso).
   - **A resposta do estudante fica no registro, não no histórico:** o texto pode conter o detalhe secreto (RF14) e o histórico é lido pelo administrador. O pedido (`reason`) vai ao histórico e ao e-mail, porque é texto do funcionário; a tela e a API orientam a não citar o objeto (RN03).
-  - **Uma tarefa, um registro por transação:** `LossReportExpiryJob` (`cade.loss-reports.expiry-interval`, 1h) vence e retoma cada registro na própria transação, conferindo o estado de novo (o estudante pode ter renovado). Prazo da resposta em `cade.loss-reports.info-response-deadline` (5d); a validade de 30 dias continua constante até o ADM-04.
+  - **Uma tarefa, um registro por transação:** `LossReportExpiryJob` (`cade.loss-reports.expiry-interval`, 1h) vence e retoma cada registro na própria transação, conferindo o estado de novo (o estudante pode ter renovado). Prazo da resposta em `cade.loss-reports.info-response-deadline` (5d). A renovação lê a validade que o administrador configurou (ADM-04, D39), não os 30 dias fixos.
   - **O lembrete de registro perto de vencer (RF35) foi ligado** (`loss-report-notice-enabled: true`), e o e-mail do pedido (`INFO_REQUESTED`) usa o id de cada pedido como referência na caixa de saída (D30), para um registro poder ter mais de um pedido ao longo da vida.
 - **Motivo:** mantém a D10 (o `lossreports` não conhece o `matching`) e reaproveita o padrão de vencimento do RET-02, a caixa de saída (D30) e o `@Version` das demais decisões.
 - **Consequências:**
@@ -358,6 +370,19 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - O cancelamento apaga nada: sugestões encerradas continuam no banco, só saem das listas.
 - **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 7.
 - **Situação:** fechada.
+
+## D34 — Prova do registro de perda: foto pela PhotoStorage, sem PDF, e lida também pelo funcionário
+- **Origem:** o PER-05 (RF15) pede que o estudante anexe foto antiga, nota fiscal ou número de série, e que o funcionário use a prova na conferência (RF23).
+- **Decisão (22/11/2026):**
+  - **Campos no próprio `LossReport`** (`proofKey` e `proofSerialNumber`, ambos nulos): a prova é no máximo uma foto e um número de série por registro, então uma entidade à parte não se justifica. A foto passa pela `PhotoStorage` (D21), com as mesmas regras e a mesma limpeza da foto do registro.
+  - **PDF não é aceito.** A `PhotoStorage` valida JPEG, PNG e WebP pelos primeiros bytes; aceitar PDF pediria novo tipo, visualização e varredura de conteúdo. A nota fiscal em PDF precisa virar foto. Fica como limitação declarada.
+  - **Uma rota de leitura para dois perfis:** `GET /loss-reports/{id}/proof` aceita estudante e funcionário (`@RequiresRole({STUDENT, STAFF})`); o dono lê a própria, o funcionário (e o administrador) lê qualquer uma. A resposta nunca é guardada em cache e não há URL pública (RN03).
+  - **A prova na comparação:** o lado da perda em `GET /suggestions/{id}` traz `proofSerialNumber` e `proofPath`, sem trazer a foto.
+  - **Situações:** vale em qualquer situação não final, inclusive Convocado: a prova não muda a descrição nem o detalhe (RN06), e o funcionário a usa justamente no balcão. Nas situações finais, 409.
+  - **Histórico sem conteúdo:** só registra que a prova foi anexada.
+- **Motivo:** menor mudança que atende o critério de aceite e reaproveita o armazenamento e o padrão de privacidade que já existem.
+- **Consequências:** quem trocar a foto perde a anterior (apagada depois do commit). Dois funcionários veem a mesma prova.
+- **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 8.
 
 ## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
 - **Origem:** o DEM-01 (RF47) pede contas fictícias, login direto sem código e dados de exemplo, ativos só no modo de demonstração, para a mostra funcionar sem internet e sem cadastro na hora.
@@ -420,6 +445,8 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
+- **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
 - **22/11/2026 — D33 registrada:** ciclo de vida do registro de perda (cancelar, pedir e responder informações pela sugestão, renovar, vencer só o Aberto, descarte e encerramento por evento) e lembrete de vencimento ligado, na implementação do PER-06.
 - **22/11/2026 — D31 registrada:** modo demonstração com o profile `demo`, login direto por porta (`DirectSignIn`) só nesse profile, dados de exemplo pelas portas de cadastro de achados e perdas e e-mails no Mailpit, na implementação do DEM-01.
 - **23/11/2026 — D39 registrada:** categorias gerenciáveis pelo administrador e prazos configuráveis lidos na hora, na implementação do ADM-04.

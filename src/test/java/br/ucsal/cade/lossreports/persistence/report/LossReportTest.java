@@ -209,6 +209,91 @@ class LossReportTest {
         }
     }
 
+    @Test
+    void anOpenReportCanBeEditedAndReportsWhatChanged() {
+        LossReport report = register(rooms(1));
+        Category bag = new Category("Mochila", RiskLevel.MEDIUM);
+        LostPeriod other = LostPeriod.of(TODAY.minusDays(2), null, null, TODAY);
+
+        List<String> changed = report.edit(bag, "Mochila preta", "Chaveiro vermelho", rooms(2), other);
+
+        assertThat(changed).containsExactly("categoria", "descrição", "detalhe", "locais", "período");
+        assertThat(report.getCategory()).isSameAs(bag);
+        assertThat(report.getDescription()).isEqualTo("Mochila preta");
+        assertThat(report.getSecretDetail()).isEqualTo("Chaveiro vermelho");
+        assertThat(report.getLocations()).containsExactlyElementsOf(rooms(2));
+        assertThat(report.getPeriod()).isEqualTo(other);
+        assertThat(report.getStatus()).isEqualTo(LossReportStatus.OPEN);
+    }
+
+    @Test
+    void anEditThatChangesNothingReportsNothing() {
+        LossReport report = register(rooms(1));
+
+        List<String> changed = report.edit(HEADPHONES, " Fone JBL preto ", "  ", rooms(1), PERIOD);
+
+        assertThat(changed).isEmpty();
+    }
+
+    @Test
+    void anEditStripsTheTextsDropsABlankDetailAndCountsRepeatedLocationsOnce() {
+        LossReport report = register(rooms(1));
+        report.edit(HEADPHONES, " Fone azul ", "Arranhão", List.of(), PERIOD);
+
+        List<String> changed = report.edit(HEADPHONES, " Fone azul ", "   ",
+                List.of(LossLocation.of("Bloco B", null), LossLocation.of("Bloco B", null)), PERIOD);
+
+        assertThat(changed).containsExactly("detalhe", "locais");
+        assertThat(report.getDescription()).isEqualTo("Fone azul");
+        assertThat(report.getSecretDetail()).isNull();
+        assertThat(report.getLocations()).containsExactly(LossLocation.of("Bloco B", null));
+    }
+
+    @Test
+    void theExpiryDoesNotChangeWithAnEdit() {
+        LossReport report = register(rooms(1));
+        Instant expiresAt = report.getExpiresAt();
+
+        report.edit(HEADPHONES, "Outro texto", null, rooms(1), PERIOD);
+
+        assertThat(report.getExpiresAt()).isEqualTo(expiresAt);
+    }
+
+    @Test
+    void aReportThatIsNotOpenOrAwaitingInformationCannotBeEdited() {
+        for (LossReportStatus locked : List.of(LossReportStatus.SUMMONED, LossReportStatus.COMPLETED,
+                LossReportStatus.EXPIRED, LossReportStatus.CANCELLED, LossReportStatus.REFUSED)) {
+            LossReport report = register(rooms(1));
+            ReflectionTestUtils.setField(report, "status", locked);
+
+            assertThatThrownBy(() -> report.edit(HEADPHONES, "Texto ajustado ao objeto", null, rooms(1), PERIOD))
+                    .as("situação %s", locked.code())
+                    .isInstanceOf(InvalidStatusTransitionException.class)
+                    .hasMessageContaining("editar um registro de perda")
+                    .hasMessageContaining(locked.label());
+            assertThat(report.getDescription()).isEqualTo("Fone JBL preto");
+        }
+    }
+
+    @Test
+    void aReportAwaitingInformationCanBeEdited() {
+        LossReport report = register(rooms(1));
+        ReflectionTestUtils.setField(report, "status", LossReportStatus.AWAITING_INFO);
+
+        assertThat(report.edit(HEADPHONES, "Fone JBL preto, com estojo", null, rooms(1), PERIOD))
+                .containsExactly("descrição");
+    }
+
+    @Test
+    void aSummonedReportBecomesEditableAgainWhenTheSummonsExpires() {
+        LossReport report = register(rooms(1));
+        report.summon();
+        report.release();
+
+        assertThat(report.edit(HEADPHONES, "Fone JBL preto com estojo", null, rooms(1), PERIOD))
+                .containsExactly("descrição");
+    }
+
     private static List<LossLocation> rooms(int count) {
         return IntStream.rangeClosed(1, count).mapToObj(n -> LossLocation.of("Bloco 400", "Sala 40" + n)).toList();
     }

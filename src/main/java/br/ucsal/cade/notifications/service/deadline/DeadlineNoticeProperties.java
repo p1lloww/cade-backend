@@ -11,8 +11,8 @@ import java.time.Duration;
  *
  * @param summonsNotice           antes de a convocação vencer (RF34: 1 dia)
  * @param lossReportNotice        antes de o registro de perda vencer (RF35)
- * @param lossReportNoticeEnabled se o lembrete do registro sai; desligado até o PER-06, que é quem faz o registro
- *                                vencer e ser renovado (D30)
+ * @param lossReportNoticeEnabled se o lembrete do registro sai; ligado desde o PER-06, que faz o registro vencer e
+ *                                ser renovado (D30)
  */
 @Validated
 @ConfigurationProperties("cade.notifications.deadlines")

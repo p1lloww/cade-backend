@@ -112,6 +112,15 @@ public class Summons {
         refusalReason = reason;
     }
 
+    /**
+     * Ativa → Vencida: o prazo da RN15 passou sem retirada (RF27). Quem fecha é o sistema, então {@code closedBy}
+     * continua nulo.
+     */
+    public void expire(Instant at) {
+        status = status.expire();
+        closedAt = Objects.requireNonNull(at);
+    }
+
     private void close(UUID staffId, Instant at) {
         closedBy = Objects.requireNonNull(staffId);
         closedAt = Objects.requireNonNull(at);

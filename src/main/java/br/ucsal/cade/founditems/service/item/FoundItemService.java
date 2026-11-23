@@ -9,7 +9,6 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.exception.BadRequestException;
-import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import br.ucsal.cade.shared.exception.NotFoundException;
 import br.ucsal.cade.shared.storage.PhotoStorage;
 import br.ucsal.cade.shared.storage.StoredPhoto;
@@ -20,6 +19,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -104,13 +104,9 @@ public class FoundItemService {
     @Transactional
     public FoundItem identify(UUID id, IdentifyFoundItem request, UUID staffId) {
         FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
-        try {
-            item.identify(request.name(), request.email(), request.document(), staffId, clock.instant());
-        } catch (InvalidStatusTransitionException e) {
-            throw e;
-        }
+        item.identify(request.name(), request.email(), request.document(), staffId, clock.instant());
         items.saveAndFlush(item);
-        List<String> fields = new java.util.ArrayList<>();
+        List<String> fields = new ArrayList<>();
         if (item.getIdentifiedName() != null) {
             fields.add("nome");
         }

@@ -20,6 +20,7 @@ import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -198,7 +199,7 @@ public class FoundItem {
             throw new BadRequestException("Informe o nome, o e-mail ou o documento encontrado no objeto.");
         }
         this.identifiedName = newName;
-        this.identifiedEmail = newEmail == null ? null : newEmail.toLowerCase(java.util.Locale.ROOT);
+        this.identifiedEmail = newEmail == null ? null : newEmail.toLowerCase(Locale.ROOT);
         this.identifiedDocument = newDocument;
         this.identifiedAt = Objects.requireNonNull(at);
         this.identifiedBy = Objects.requireNonNull(staffId);

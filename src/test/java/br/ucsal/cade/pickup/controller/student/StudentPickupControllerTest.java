@@ -85,13 +85,17 @@ class StudentPickupControllerTest {
     private EmailSender emailSender;
 
     private UUID student;
-    private UUID category;
+    private UUID itemCategory;
+    private UUID reportCategory;
 
     @BeforeEach
     void setUp() {
         when(emailSender.send(any())).thenReturn(true);
         student = UUID.randomUUID();
-        category = categories.saveAndFlush(new Category("Teste " + UUID.randomUUID(), RiskLevel.MEDIUM)).getId();
+        // Categorias diferentes para o objeto e a perda: o cruzamento automático, que roda depois do commit, dá nota
+        // zero e não grava a sugestão que o teste grava (o par é único).
+        itemCategory = newCategory();
+        reportCategory = newCategory();
     }
 
     @Test
@@ -129,9 +133,9 @@ class StudentPickupControllerTest {
     }
 
     private Pickup pickupOf(UUID owner) {
-        UUID item = foundItemService.register(new RegisterFoundItem(TestPhotos.jpeg(), category, "Bloco 400",
+        UUID item = foundItemService.register(new RegisterFoundItem(TestPhotos.jpeg(), itemCategory, "Bloco 400",
                 "Sala 421", LocalDate.now(clock), null, null, "Fone preto", null), UUID.randomUUID()).getId();
-        UUID report = lossReportService.register(new RegisterLossReport(category, "Fone JBL preto", "Adesivo",
+        UUID report = lossReportService.register(new RegisterLossReport(reportCategory, "Fone JBL preto", "Adesivo",
                 List.of(LossLocation.of("Bloco 400", "Sala 421")), LocalDate.now(clock), null, null, null),
                 owner).getId();
         MatchSuggestion suggestion = suggestions.saveAndFlush(MatchSuggestion.suggest(item, report, 80,
@@ -139,6 +143,10 @@ class StudentPickupControllerTest {
         UUID summons = summonsService.summon(suggestion.getId(), UUID.randomUUID()).summons().getId();
         return counter.registerPickup(summons, new CounterCheck(IdDocumentType.STUDENT_CARD, "000000", "000000000",
                 VerificationMethod.DETAIL_CONFIRMED, null), UUID.randomUUID());
+    }
+
+    private UUID newCategory() {
+        return categories.saveAndFlush(new Category("Teste " + UUID.randomUUID(), RiskLevel.MEDIUM)).getId();
     }
 
     private String studentBearer(UUID id) {

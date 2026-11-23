@@ -342,6 +342,18 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
+## D32 — Correção do registro de perda: versão no pedido, histórico sem conteúdo e o que não muda
+- **Origem:** o PER-07 pede que o estudante corrija o registro enquanto ele está Aberto ou Aguardando informações, e que a edição simultânea à convocação resolva pelo `@Version` (RN06).
+- **Decisão (22/11/2026):**
+  - **A versão vai no corpo do `PUT`:** o cliente envia a `version` que recebeu, e o `LossReportResponseDTO` passou a trazê-la. Se ela difere da atual, a resposta é 409 sem gravar nada. Uma edição que perde a corrida depois dessa conferência também dá 409, pelo `UPDATE` com `@Version`.
+  - **Registro devolvido a Aberto pelo vencimento da convocação (RET-02) volta a ser editável:** a regra é `LossReportStatus.isEditable()`, que não distingue um Aberto nunca convocado de um que voltou. A RN06 trava a descrição **enquanto** está Convocado (o risco de ajustar o texto ao objeto); depois do vencimento a convocação deixa de existir.
+  - **Histórico sem conteúdo:** a ação `LOSS_REPORT_UPDATED` registra só os campos alterados; o detalhe é secreto (RF14) e o histórico é lido pelo administrador. O `LossReportUpdatedEvent` não leva descrição nem detalhe.
+  - **Edição sem mudança não grava:** devolve 200 com a mesma versão, sem histórico e sem evento.
+  - **O cruzamento não é refeito** na edição, e o prazo de validade não muda (só a renovação o muda, PER-06). Recalcular as sugestões a partir do `LossReportUpdatedEvent` fica para um card futuro.
+- **Motivo:** reaproveita o `@Version` que já protege a convocação e o limite de registros (D25), sem lock novo, e mantém o histórico imutável sem vazar o detalhe.
+- **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 6.
+- **Situação:** fechada.
+
 ## D34 — Prova do registro de perda: foto pela PhotoStorage, sem PDF, e lida também pelo funcionário
 - **Origem:** o PER-05 (RF15) pede que o estudante anexe foto antiga, nota fiscal ou número de série, e que o funcionário use a prova na conferência (RF23).
 - **Decisão (22/11/2026):**
@@ -417,6 +429,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
 - **22/11/2026 — D31 registrada:** modo demonstração com o profile `demo`, login direto por porta (`DirectSignIn`) só nesse profile, dados de exemplo pelas portas de cadastro de achados e perdas e e-mails no Mailpit, na implementação do DEM-01.
 - **23/11/2026 — D39 registrada:** categorias gerenciáveis pelo administrador e prazos configuráveis lidos na hora, na implementação do ADM-04.

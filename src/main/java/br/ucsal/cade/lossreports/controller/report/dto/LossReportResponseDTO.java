@@ -40,7 +40,10 @@ public record LossReportResponseDTO(
                 example = "/loss-reports/{id}/proof")
         String proofPath,
         @Schema(description = "Número de série da prova; nulo quando não há (RF15).", example = "SN-123456")
-        String proofSerialNumber) {
+        String proofSerialNumber,
+        @Schema(description = "Versão do registro; envie-a na correção (`PUT /loss-reports/{id}`), para a API recusar "
+                + "uma correção feita sobre uma versão antiga.", example = "0")
+        long version) {
 
     static final String UNKNOWN_LOCATION = "Local não informado";
     static final String UNKNOWN_SHIFT = "Turno não informado";
@@ -58,7 +61,7 @@ public record LossReportResponseDTO(
                 report.hasPhoto() ? "/loss-reports/" + report.getId() + "/photo" : null,
                 report.getRegisteredAt(), report.getExpiresAt(),
                 report.hasProofPhoto() ? "/loss-reports/" + report.getId() + "/proof" : null,
-                report.getProofSerialNumber());
+                report.getProofSerialNumber(), report.getVersion());
     }
 
     private static String locationsLabel(List<LossLocationResponseDTO> locations) {

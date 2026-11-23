@@ -60,6 +60,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
 | Quem trouxe o objeto (RF07) | `FoundItem.broughtBy`; campo `broughtBy` do cadastro e rota `PUT /found-items/{id}/brought-by` |
 | Objeto identificado: nome, e-mail ou documento encontrado nele (RF08) | `FoundItem.identify`, `identifiedName`, `identifiedEmail`, `identifiedDocument`; rotas `PUT` e `DELETE /found-items/{id}/identification` |
+| Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |
 | Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
 | Meus registros (RF16) | `LossReportService.listOf`; rota `GET /loss-reports/mine` (estudante) |
 | Situação em linguagem simples | `LossReportStatus.description()`, devolvida em `statusDescription` |

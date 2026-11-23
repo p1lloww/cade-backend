@@ -69,13 +69,18 @@ public record SuggestionResponseDTO(
             @Schema(example = "Fone JBL preto") String description,
             @Schema(example = "Adesivo de estrela no estojo") String secretDetail,
             @Schema(example = "Aberto") String statusLabel,
-            Instant registeredAt) {
+            Instant registeredAt,
+            @Schema(description = "Número de série da prova que o estudante enviou (RF15); nulo se não enviou.",
+                    example = "SN-123456") String proofSerialNumber,
+            @Schema(description = "Caminho da foto da prova, para pedir com o token de funcionário; nulo se o "
+                    + "estudante não anexou foto.", example = "/loss-reports/{id}/proof") String proofPath) {
 
         static LossReportSide from(ComparableLossReport report) {
             List<Location> locations = report.locations().stream().map(Location::from).toList();
             return new LossReportSide(report.id(), report.categoryName(), report.lostFrom(), report.lostUntil(),
                     report.shift(), locations, report.description(), report.secretDetail(), report.status(),
-                    report.registeredAt());
+                    report.registeredAt(), report.proofSerialNumber(),
+                    report.hasProofPhoto() ? "/loss-reports/" + report.id() + "/proof" : null);
         }
     }
 

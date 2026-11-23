@@ -10,6 +10,7 @@ import br.ucsal.cade.lossreports.persistence.status.LossReportStatus;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
+import br.ucsal.cade.shared.settings.Deadlines;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +45,7 @@ public class LossReportLifecycleService implements LossReportInfoRequests {
     static final String INFO_OVERDUE_REASON =
             "Passaram 5 dias sem resposta ao pedido de informações; o registro volta a ficar aberto (RN13).";
     static final String RENEWED_ACTION = "LOSS_REPORT_RENEWED";
-    static final String RENEWED_REASON = "Registro renovado pelo estudante por mais 30 dias (RN14).";
+    static final String RENEWED_REASON = "Registro renovado pelo estudante por mais %d dias (RN14).";
     static final String EXPIRED_ACTION = "LOSS_REPORT_EXPIRED";
     static final String EXPIRED_REASON = "O registro passou de 30 dias sem renovação (RN14).";
 
@@ -51,13 +53,15 @@ public class LossReportLifecycleService implements LossReportInfoRequests {
 
     private final LossReportRepository reports;
     private final LossReportProperties properties;
+    private final Deadlines deadlines;
     private final EventPublisher events;
     private final Clock clock;
 
-    LossReportLifecycleService(LossReportRepository reports, LossReportProperties properties, EventPublisher events,
-                               Clock clock) {
+    LossReportLifecycleService(LossReportRepository reports, LossReportProperties properties, Deadlines deadlines,
+                               EventPublisher events, Clock clock) {
         this.reports = reports;
         this.properties = properties;
+        this.deadlines = deadlines;
         this.events = events;
         this.clock = clock;
     }
@@ -88,14 +92,18 @@ public class LossReportLifecycleService implements LossReportInfoRequests {
         return report;
     }
 
-    /** Mais 30 dias a partir de agora, enquanto o registro está Aberto ou Aguardando informações (RN14). */
+    /**
+     * Mais um prazo de validade a partir de agora, enquanto o registro está Aberto ou Aguardando informações (RN14). O
+     * prazo é o que vale hoje (RF45), não o do registro original.
+     */
     @Transactional
     public LossReport renew(UUID reportId, UUID studentId) {
         LossReport report = ownedBy(reportId, studentId);
         Instant now = clock.instant();
-        change(report, r -> r.renew(now), "Renewal");
+        Duration validity = deadlines.reportValidity();
+        change(report, r -> r.renew(now, validity), "Renewal");
         reports.saveAndFlush(report);
-        audit(studentId, RENEWED_ACTION, reportId, RENEWED_REASON);
+        audit(studentId, RENEWED_ACTION, reportId, RENEWED_REASON.formatted(validity.toDays()));
         log.info("Loss report {} renewed by student {} until {}", reportId, studentId, report.getExpiresAt());
         return report;
     }

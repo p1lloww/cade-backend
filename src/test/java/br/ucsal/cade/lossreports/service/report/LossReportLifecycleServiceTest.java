@@ -21,6 +21,9 @@ import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.RiskLevel;
 import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
 import br.ucsal.cade.shared.mail.EmailSender;
+import br.ucsal.cade.shared.settings.DeadlineSettings;
+import br.ucsal.cade.shared.settings.DeadlineSettingsRepository;
+import br.ucsal.cade.shared.settings.DeadlineValues;
 import br.ucsal.cade.shared.storage.TestPhotos;
 import br.ucsal.cade.shared.time.MutableClock;
 import br.ucsal.cade.shared.time.MutableClockConfiguration;
@@ -84,6 +87,9 @@ class LossReportLifecycleServiceTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private DeadlineSettingsRepository settings;
 
     @Autowired
     private MutableClock clock;
@@ -235,6 +241,21 @@ class LossReportLifecycleServiceTest {
         job.applyDeadlines();
         assertThat(statusOf(report)).isEqualTo(LossReportStatus.OPEN);
         assertThat(actionsOf(report, student)).contains("LOSS_REPORT_RENEWED");
+    }
+
+    @Test
+    void renewingUsesTheValidityTheAdministratorConfigured() {
+        UUID student = UUID.randomUUID();
+        UUID report = lose(student);
+        jdbc.update("DELETE FROM deadline_settings");
+        settings.saveAndFlush(new DeadlineSettings(new DeadlineValues(90, 7, 10), clock.instant(), UUID.randomUUID()));
+        try {
+            LossReport renewed = lifecycle.renew(report, student);
+
+            assertThat(renewed.getExpiresAt()).isEqualTo(clock.instant().plus(Duration.ofDays(10)));
+        } finally {
+            jdbc.update("DELETE FROM deadline_settings");
+        }
     }
 
     private LossReportStatus statusOf(UUID report) {

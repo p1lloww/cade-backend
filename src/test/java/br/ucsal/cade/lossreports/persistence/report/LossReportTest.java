@@ -190,7 +190,7 @@ class LossReportTest {
         LossReport report = register(rooms(1));
         Instant later = NOW.plusSeconds(20 * 24 * 3600L);
 
-        report.renew(later);
+        report.renew(later, LossReport.VALIDITY);
 
         assertThat(report.getExpiresAt()).isEqualTo(later.plus(LossReport.VALIDITY));
     }
@@ -203,7 +203,7 @@ class LossReportTest {
             ReflectionTestUtils.setField(report, "status", locked);
             Instant expiresAt = report.getExpiresAt();
 
-            assertThatThrownBy(() -> report.renew(NOW)).as(locked.code())
+            assertThatThrownBy(() -> report.renew(NOW, LossReport.VALIDITY)).as(locked.code())
                     .isInstanceOf(InvalidStatusTransitionException.class);
             assertThat(report.getExpiresAt()).isEqualTo(expiresAt);
         }

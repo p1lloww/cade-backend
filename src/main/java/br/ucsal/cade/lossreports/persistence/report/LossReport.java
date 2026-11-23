@@ -156,14 +156,15 @@ public class LossReport {
     }
 
     /**
-     * Estende a validade por mais 30 dias a partir de {@code now} (RN14). Só enquanto o registro está Aberto ou
-     * Aguardando informações: um registro Convocado não vence enquanto a convocação corre, e os finais não voltam.
+     * Estende a validade a partir de {@code now} (RN14), pela validade em vigor, que o administrador pode ter mudado
+     * (RF45). Só enquanto o registro está Aberto ou Aguardando informações: um registro Convocado não vence enquanto a
+     * convocação corre, e os finais não voltam.
      */
-    public void renew(Instant now) {
+    public void renew(Instant now, Duration validity) {
         if (!status.isEditable()) {
             throw new InvalidStatusTransitionException("renovar", "um registro de perda", status.label());
         }
-        this.expiresAt = Objects.requireNonNull(now).plus(VALIDITY);
+        this.expiresAt = Objects.requireNonNull(now).plus(Objects.requireNonNull(validity));
     }
 
     private void closeInfoRequest() {

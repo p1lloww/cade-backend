@@ -93,5 +93,7 @@ cade:
       loss-report-notice-enabled: false
   pickup:
     # O que o estudante recebe na convocação (RF26). O prazo da convocação (RN15) é configurado pelo administrador.
+    # De quanto em quanto tempo a tarefa procura convocações vencidas (RF27).
+    expiry-interval: 1h
     place: Sala de achados e perdidos da UCSal
     hours: Das 7h às 21h50

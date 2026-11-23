@@ -12,6 +12,9 @@ public interface SummonsRepository extends JpaRepository<Summons, UUID> {
     /** As que vencem primeiro no topo, para o balcão atender antes quem está perto do prazo (RN15). */
     List<Summons> findByStatusOrderByExpiresAtAsc(SummonsStatus status);
 
+    /** As convocações cujo prazo já passou, das mais antigas para as mais novas (RF27). */
+    List<Summons> findByStatusAndExpiresAtLessThanEqualOrderByExpiresAtAsc(SummonsStatus status, Instant now);
+
     List<Summons> findByStudentIdAndStatusOrderByExpiresAtAsc(UUID studentId, SummonsStatus status);
 
     List<Summons> findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqualOrderByExpiresAtAsc(

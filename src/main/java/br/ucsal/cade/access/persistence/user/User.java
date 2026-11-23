@@ -50,6 +50,14 @@ public class User {
         return new User(email, Role.STUDENT, now);
     }
 
+    /**
+     * Conta de funcionário já criada com o perfil, só para o modo demonstração (RF47). No uso normal, o perfil é dado
+     * pelo administrador a uma conta existente (RF03).
+     */
+    public static User newStaff(String email, Instant now) {
+        return new User(email, Role.STAFF, now);
+    }
+
     /** Conta de administrador, criada na instalação. */
     public static User newAdmin(String email, Instant now) {
         return new User(email, Role.ADMIN, now);

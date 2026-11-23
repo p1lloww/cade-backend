@@ -1,5 +1,6 @@
 package br.ucsal.cade.matching.service.suggestion;
 
+import br.ucsal.cade.matching.api.ExpiredSuggestion;
 import br.ucsal.cade.matching.api.RefusedSuggestion;
 import br.ucsal.cade.matching.api.SuggestionPair;
 import br.ucsal.cade.matching.api.SuggestionSummons;
@@ -34,6 +35,9 @@ class SuggestionSummonsService implements SuggestionSummons {
     static final String REFUSED_REASON = "A verificação falhou no balcão.";
     static final String RESUMED_ACTION = "MATCH_RESUMED";
     static final String RESUMED_REASON = "A convocação do mesmo objeto foi recusada; a sugestão volta a valer (RN18).";
+    static final String EXPIRED_ACTION = "MATCH_EXPIRED";
+    static final String EXPIRED_REASON = "O estudante não retirou o objeto no prazo da convocação (RN15).";
+    static final String EXPIRED_RESUMED_REASON = "A convocação do mesmo objeto venceu; a sugestão volta a valer (RN18).";
     static final String CLOSED_ACTION = "MATCH_CLOSED";
     static final String CLOSED_REASON = "A perda foi encerrada pela recusa no balcão.";
     static final String CLOSED_BY_PICKUP_REASON = "A perda foi concluída com a retirada de outro objeto.";
@@ -106,6 +110,23 @@ class SuggestionSummonsService implements SuggestionSummons {
         log.debug("Suggestion {} refused by {}; {} suggestion(s) of the item resumed, {} of the report closed",
                 suggestionId, staffId, onHold.size(), ofTheReport.size());
         return new RefusedSuggestion(ids(onHold), ids(ofTheReport));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ExpiredSuggestion expire(UUID suggestionId, UUID actorId) {
+        MatchSuggestion suggestion = load(suggestionId);
+        change(suggestion, MatchSuggestion::expire, "Expiry");
+        audit(actorId, EXPIRED_ACTION, suggestion, EXPIRED_REASON);
+
+        List<MatchSuggestion> onHold = suggestions.findByFoundItemIdAndStatusAndIdNot(suggestion.getFoundItemId(),
+                SuggestionStatus.ON_HOLD, suggestion.getId());
+        onHold.forEach(other -> {
+            other.resume();
+            audit(actorId, RESUMED_ACTION, other, EXPIRED_RESUMED_REASON);
+        });
+        log.debug("Suggestion {} expired; {} suggestion(s) of the item resumed", suggestionId, onHold.size());
+        return new ExpiredSuggestion(ids(onHold));
     }
 
     /** As outras sugestões Novas ou Em espera da perda, encerradas porque a perda se encerrou (seção 6.3, D26). */

@@ -104,6 +104,11 @@ public class MatchSuggestion {
         status = status.refuse();
     }
 
+    /** Convocada → Vencida: o estudante não retirou o objeto no prazo (RF27). */
+    public void expire() {
+        status = status.expire();
+    }
+
     /** Nova ou Em espera → Encerrada: a perda ou o objeto desta sugestão não está mais em jogo. */
     public void close() {
         status = status.close();

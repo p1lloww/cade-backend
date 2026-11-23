@@ -97,7 +97,6 @@ cade:
     info-response-deadline: 5d
     expiry-interval: 1h
   pickup:
-    # Quanto tempo o objeto fica reservado depois da convocação (RN15) e o que o estudante recebe (RF26).
-    deadline: 7d
+    # O que o estudante recebe na convocação (RF26). O prazo da convocação (RN15) é configurado pelo administrador.
     place: Sala de achados e perdidos da UCSal
     hours: Das 7h às 21h50

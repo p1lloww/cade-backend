@@ -61,6 +61,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Cancelar, responder ao pedido de informações e renovar o registro (RF17, RF18, RN14) | `LossReportLifecycleService.cancel`, `respond`, `renew`; rotas `POST /loss-reports/{id}/cancel`, `/info-response` e `/renew` |
 | Pedir mais informações (RF24) | `SuggestionService.requestInfo`, rota `POST /suggestions/{id}/info-request`; `LossReportInfoRequests`; aviso `INFO_REQUESTED` |
 | Vencimento do registro de perda e do pedido sem resposta (RN14, RN13) | tarefa `LossReportExpiryJob`; eventos `LossReportClosedEvent` e `LossReportInfoOverdueEvent` |
+| Categorias gerenciáveis: nome, risco padrão e perguntas de conferência (RF44) | `Category.change`, `Category.verificationQuestions`, `CategoryAdminService`; rotas `POST /categories` e `PUT /categories/{id}` (administrador) |
+| Prazos configuráveis: guarda, retirada e validade do registro (RF45) | `DeadlineSettings` (uma linha), `DeadlineValues`, `Deadlines` (leitura, `shared.settings`), `DeadlineSettingsService`; rotas `GET` e `PUT /settings/deadlines` (administrador) |
 | Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |
 | Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
 | Meus registros (RF16) | `LossReportService.listOf`; rota `GET /loss-reports/mine` (estudante) |

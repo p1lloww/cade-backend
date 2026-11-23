@@ -76,6 +76,10 @@ public interface FoundItemRepository extends JpaRepository<FoundItem, UUID> {
     @EntityGraph(attributePaths = "category")
     List<FoundItem> findWithCategoryByIdIn(Collection<UUID> ids);
 
+    @Query(nativeQuery = true, value = "SELECT f.status AS status, c.name AS category, count(*) AS total"
+            + " FROM found_items f JOIN categories c ON c.id = f.category_id GROUP BY f.status, c.name")
+    List<CountByStatusAndCategory> countByStatusAndCategory();
+
     @Query(nativeQuery = true, value = "SELECT c.name AS category, to_char(f.found_on, 'YYYY-MM') AS month,"
             + " count(*) AS total FROM found_items f JOIN categories c ON c.id = f.category_id"
             + " WHERE f.status IN (:statuses) GROUP BY c.name, to_char(f.found_on, 'YYYY-MM')")

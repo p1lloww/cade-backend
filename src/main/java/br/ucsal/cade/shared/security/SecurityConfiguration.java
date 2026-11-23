@@ -31,9 +31,13 @@ public class SecurityConfiguration {
      *
      * <p>Cada rota é listada sozinha, nunca com curinga como {@code /auth/**}: uma rota criada depois no mesmo caminho
      * precisa exigir token, a menos que alguém a libere aqui de propósito.
+     *
+     * <p>As rotas {@code /demo/*} (RF47) só têm controller no profile {@code demo}; sem ele, o que está aqui responde
+     * 404, e não 401.
      */
     static final String[] PUBLIC_ROUTES = {
-            "/auth/login-code", "/auth/token", "/public/found-item-counts", "/actuator/health", "/error",
+            "/auth/login-code", "/auth/token", "/demo/accounts", "/demo/login", "/public/found-item-counts",
+            "/actuator/health", "/error",
             "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"};
 
     @Bean

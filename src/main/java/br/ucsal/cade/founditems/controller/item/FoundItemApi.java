@@ -2,6 +2,7 @@ package br.ucsal.cade.founditems.controller.item;
 
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.FoundItemResponseDTO;
+import br.ucsal.cade.founditems.controller.item.dto.FoundItemUpdateRequestDTO;
 import br.ucsal.cade.founditems.controller.item.dto.StorageBoxSuggestionResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +41,34 @@ public interface FoundItemApi {
             content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = ProblemDetail.class)))
     ResponseEntity<FoundItemResponseDTO> register(FoundItemRequestDTO form, @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Corrigir os dados de um objeto",
+            description = """
+                    Só para funcionários. Corrige categoria, local, data, caixa, risco e os textos internos de um \
+                    objeto (a foto não muda). Envie os mesmos campos do cadastro, o **motivo** e a `version` da \
+                    última resposta. Só vale para objeto **Disponível** ou **Não reclamado**: Reservado (há uma \
+                    convocação em andamento), Devolvido e Destinado respondem 409. Se o objeto mudou desde que o \
+                    funcionário o recebeu (por exemplo, foi reservado no mesmo instante), a resposta é 409 e nada é \
+                    gravado. O risco nunca fica abaixo do da categoria (RN04). A correção vai para o histórico com o \
+                    motivo e o que mudou (campo, antes e depois); descrição interna e detalhes reservados aparecem só \
+                    pelo nome. Se nada mudou, nada é gravado.""")
+    @ApiResponse(responseCode = "200", description = "Objeto corrigido, com a nova `version`.",
+            content = @Content(schema = @Schema(implementation = FoundItemResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = """
+            Campo obrigatório ausente, categoria inexistente, data no futuro, risco menor que o da categoria ou \
+            motivo ausente.""",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Objeto não encontrado.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "409", description = """
+            O objeto não está Disponível nem Não reclamado, ou foi alterado depois da versão enviada.""",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    FoundItemResponseDTO update(@Parameter(description = "Id do objeto.") UUID id, FoundItemUpdateRequestDTO request,
+                                @Parameter(hidden = true) Jwt token);
 
     @Operation(summary = "Ver um objeto", description = "Todos os dados do objeto, inclusive os reservados.")
     @ApiResponse(responseCode = "200", description = "O objeto.")

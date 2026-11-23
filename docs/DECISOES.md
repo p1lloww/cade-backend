@@ -383,6 +383,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** menor mudança que atende o critério de aceite e reaproveita o armazenamento e o padrão de privacidade que já existem.
 - **Consequências:** quem trocar a foto perde a anterior (apagada depois do commit). Dois funcionários veem a mesma prova.
 - **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 8.
+- **Situação:** fechada.
 
 ## D35 — Retirada: confirmação do estudante como registro à parte e aviso neutro das sugestões encerradas
 - **Origem:** o RET-06 pede que o estudante confirme a retirada no celular (RF30) e que, ao entregar o objeto, as outras sugestões dele sejam encerradas e os estudantes avisados (RF33).
@@ -396,6 +397,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - A equipe pode desligar o aviso por configuração se achar que o risco da RN03 não compensa.
   - A retirada por atalho (D29) não tem estudante com conta, então não tem confirmação.
 - **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md), seção 10.
+- **Situação:** fechada.
+
+## D36 — Correção de dados do objeto: só Disponível e Não reclamado, versão e motivo no pedido
+- **Origem:** o ACH-07 (RF11) pede que o funcionário corrija os dados de um objeto, com cada alteração no histórico. A D21 (complemento) já dizia que o risco pode subir e descer, nunca abaixo do da categoria, e que a mudança é proibida com o objeto Reservado.
+- **Decisão (22/11/2026):**
+  - **Situações:** só **Disponível** e **Não reclamado** (`FoundItemStatus.isEditable`). Reservado fica de fora porque há uma convocação em andamento e o risco e o local definem a conferência do balcão (D21); Devolvido e Destinado já saíram da sala. Nesses casos, 409.
+  - **`PUT /found-items/{id}` (JSON, funcionário):** os mesmos campos do cadastro, menos a foto, mais o **motivo** (obrigatório) e a **`version`** (obrigatória), como no PER-07 (D32). Versão velha ou perda da corrida contra a reserva: 409, nada gravado.
+  - **Histórico com o que mudou:** a ação `FOUND_ITEM_UPDATED` grava o motivo e as mudanças campo a campo ("bloco: A → B") no `reason` (até 1000 caracteres, cortado se passar), porque o `AuditRecord` não tem colunas de antes e depois. **Descrição interna e detalhes reservados aparecem só pelo nome**, nunca o conteúdo: o histórico é lido pelo administrador, e os detalhes reservados conferem o dono no balcão.
+  - **Risco:** segue a RN04 (nunca abaixo do da categoria); sem risco informado, vale o padrão da categoria, então corrigir sem mandar o risco pode **baixá-lo** ao padrão. Mudar de categoria revalida o risco.
+  - **Sem mudança, nada é gravado:** 200 com a mesma versão, sem histórico e sem evento. O `FoundItemUpdatedEvent` não leva foto, descrição nem detalhes (RN03). O cruzamento não é refeito.
+- **Motivo:** repete o desenho do PER-07, para o front tratar as duas correções do mesmo jeito.
 - **Situação:** fechada.
 
 ## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
@@ -460,6 +472,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
 - **22/11/2026 — D35 registrada:** confirmação da retirada pelo estudante como registro à parte, encerramento das outras sugestões do objeto e aviso neutro e desligável aos estudantes, na implementação do RET-06.
+- **22/11/2026 — D36 registrada:** correção dos dados do objeto achado (só Disponível e Não reclamado, versão e motivo no pedido, histórico com campos alterados e sem os textos reservados), na implementação do ACH-07.
 - **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
 - **22/11/2026 — D33 registrada:** ciclo de vida do registro de perda (cancelar, pedir e responder informações pela sugestão, renovar, vencer só o Aberto, descarte e encerramento por evento) e lembrete de vencimento ligado, na implementação do PER-06.

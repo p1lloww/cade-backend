@@ -18,6 +18,7 @@ import br.ucsal.cade.pickup.persistence.summons.SummonsRepository;
 import br.ucsal.cade.pickup.service.verification.VerificationRules;
 import br.ucsal.cade.shared.audit.AuditEvent;
 import br.ucsal.cade.shared.event.EventPublisher;
+import br.ucsal.cade.shared.settings.Deadlines;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -53,18 +54,20 @@ public class SummonsService implements SummonsDeadlines {
     private final FoundItemReservations foundItems;
     private final LossReportSummons lossReports;
     private final PickupProperties properties;
+    private final Deadlines deadlines;
     private final VerificationRules rules;
     private final EventPublisher events;
     private final Clock clock;
 
     SummonsService(SummonsRepository repository, SuggestionSummons suggestions, FoundItemReservations foundItems,
-                   LossReportSummons lossReports, PickupProperties properties, VerificationRules rules,
-                   EventPublisher events, Clock clock) {
+                   LossReportSummons lossReports, PickupProperties properties, Deadlines deadlines,
+                   VerificationRules rules, EventPublisher events, Clock clock) {
         this.repository = repository;
         this.suggestions = suggestions;
         this.foundItems = foundItems;
         this.lossReports = lossReports;
         this.properties = properties;
+        this.deadlines = deadlines;
         this.rules = rules;
         this.events = events;
         this.clock = clock;
@@ -86,7 +89,7 @@ public class SummonsService implements SummonsDeadlines {
 
         Instant now = clock.instant();
         Summons summons = repository.save(Summons.issue(new NewSummons(pair.suggestionId(), pair.foundItemId(),
-                pair.lossReportId(), report.studentId(), staffId, item.risk()), now, now.plus(properties.deadline())));
+                pair.lossReportId(), report.studentId(), staffId, item.risk()), now, now.plus(deadlines.summonsPeriod())));
         PickupInstructions instructions = instructionsFor(summons);
 
         events.publish(new AuditEvent(staffId, CREATED_ACTION, Summons.class.getSimpleName(), summons.getId(),

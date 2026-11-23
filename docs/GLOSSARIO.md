@@ -70,6 +70,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Objetos que entram no cruzamento (Disponível, Não reclamado) | `MatchableFoundItems` (`founditems.api`), `FoundItemStatus.MATCHABLE` |
 | Perdas que entram no cruzamento (Aberto, Aguardando informações) | `MatchableLossReports` (`lossreports.api`), `LossReportStatus.MATCHABLE` |
 | Sugestão criada (histórico) | ação `MATCH_SUGGESTED`, autor `AuditEvent.SYSTEM_ACTOR` |
+| IA como critério da compatibilidade (RF25) | `AiSimilarityCriterion`, porta `AiTextSimilarity`, `PersonalDataRedactor`; propriedades `cade.matching.ai.*` (desligada por padrão) |
 | Compatibilidade (nota de 0 a 100) | `Compatibility` (`score`), calculada pelo `CompatibilityScorer` |
 | Faixa da compatibilidade (alta, média, baixa) | `CompatibilityBand` (`HIGH`, `MEDIUM`, `LOW`) |
 | Par objeto × perda avaliado pelo cruzamento | `MatchCandidate` (`FoundItemProfile`, `LossReportProfile`, `Place`) |

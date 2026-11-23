@@ -342,6 +342,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
+## D40 — A IA como critério extra do cruzamento: opcional, atrás de uma porta e sem dado pessoal
+- **Origem:** o CRU-05 (RF25, RNF04) pede um critério que compare as descrições em texto livre com IA, sem afetar a nota dos outros e sem enviar dado pessoal. É o primeiro item do plano de corte.
+- **Decisão (23/11/2026):**
+  - **Um critério a mais, não uma mudança no cálculo:** `AiSimilarityCriterion` implementa `CompatibilityCriterion` e entra na mesma `SumOfCriteria`, atrás da porta da categoria (RN07, D22). Os outros três critérios e a soma limitada a 100 ficam como estão.
+  - **Atrás de uma porta, `AiTextSimilarity`:** o projeto **não traz nenhum serviço de IA nem chave de API**. Desligada por padrão (`cade.matching.ai.enabled: false`); ligada sem um bean da porta, só registra um aviso e a IA fica fora. Quem quiser usar fornece o bean; a decisão de qual serviço usar é da equipe e entra na declaração de IA.
+  - **Tempo limite em Virtual Thread (D05):** cada par chama a IA numa Virtual Thread e o critério espera até `cade.matching.ai.timeout` (2 s). Falha, demora ou resposta inválida valem 0 pontos e um aviso no log: a nota dos outros critérios e o cruzamento nunca dependem da IA.
+  - **Sem dado pessoal (RNF04):** só vão as descrições (a do estudante é a pública, nunca o detalhe reservado), e antes passam pelo `PersonalDataRedactor`, que troca e-mails e números de cinco dígitos ou mais (telefone, matrícula, documento) por `[removido]`. Categoria diferente zera a nota antes e a IA nem é chamada.
+  - **Pontos:** a semelhança de 0 a 1 vira até `cade.matching.ai.max-points` (15) pontos.
+- **Motivo:** cumprir o critério de aceite sem criar dependência de terceiro no caminho do cadastro, que é o fluxo principal.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -364,3 +375,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **23/11/2026 — D40 registrada:** IA como critério extra do cruzamento, opcional, atrás de uma porta e sem dado pessoal, na implementação do CRU-05.

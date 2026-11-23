@@ -416,6 +416,13 @@ Três garantias:
 
 Nenhuma outra classe muda: a soma, a porta e o `CompatibilityScorer` continuam iguais.
 
+**A IA como critério (CRU-05, D40):** já está pronta, **desligada** e sem serviço de IA no projeto. Para ligá-la:
+1. Crie um bean que implemente `AiTextSimilarity` (recebe as duas descrições, já sem e-mails e números longos, e devolve de 0 a 1).
+2. Ponha `cade.matching.ai.enabled: true` (o `timeout` de 2 s e o `max-points` de 15 também ficam aí).
+3. Registre o serviço usado na `declaracao-ia-terceiros.md`.
+
+A chamada roda numa Virtual Thread e o critério espera só até o `timeout`; falha ou demora valem 0 pontos, e a nota dos outros critérios não muda. Ligada sem o bean, a aplicação sobe e só registra um aviso.
+
 **Uma decisão nova sobre a sugestão** (por exemplo, concluir, na RET-03):
 1. A transição já existe no `SuggestionStatus` (`complete()`).
 2. Crie um método na entidade `MatchSuggestion`, como o `discard()`.
@@ -430,6 +437,7 @@ Nenhuma outra classe muda: a soma, a porta e o `CompatibilityScorer` continuam i
 | `score/CompatibilityScorerTest` | Os exemplos da RN07 com os pesos reais do `application.yml` |
 | `persistence/status/SuggestionStatusTest` | As 9 transições permitidas e as 55 proibidas |
 | `persistence/suggestion/MatchSuggestionTest` | Criação, nota fora de 0 a 100, descarte e segundo descarte recusado, convocação e espera |
+| `service/score/AiSimilarityCriterionTest` | A IA como critério: pontos, tempo limite, falha isolada, sem dado pessoal, categoria diferente sem chamar a IA |
 | `service/matching/MatchingServiceTest` | Cruzamento de ponta a ponta, depois do commit e numa Virtual Thread |
 | `service/suggestion/SuggestionServiceTest` | Ordem por nota, descartadas fora da lista, motivo no histórico, `@Version`, 404 e 409 |
 | `controller/suggestion/SuggestionControllerTest` | As rotas com MockMvc: 200, 400, 401, 403, 404 e 409, e a perda sem o estudante |

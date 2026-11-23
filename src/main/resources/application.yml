@@ -76,6 +76,12 @@ cade:
     bands:
       high: 70
       medium: 40
+    # A IA como critério extra (CRU-05, RF25): desligada por padrão e sem nenhuma chave no projeto. Ligar exige um
+    # bean AiTextSimilarity (veja docs/tecnico/modulo-cruzamento.md). Passou do tempo limite, o critério vale 0.
+    ai:
+      enabled: false
+      timeout: 2s
+      max-points: 15
   notifications:
     # Caixa de saída dos avisos (D30): tentativas, espera depois da 1ª falha (cresce a cada falha), de quanto em
     # quanto tempo o reenvio roda e quantos avisos ele pega por rodada.

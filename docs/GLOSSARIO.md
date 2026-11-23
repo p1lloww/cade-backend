@@ -87,6 +87,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Objeto e perda como o funcionário os compara (RF23) | `ComparableFoundItems` (`founditems.api`), `ComparableLossReports` (`lossreports.api`) |
 | Sugestão descartada (histórico) | ação `MATCH_DISCARDED`, com o motivo do funcionário |
 | Convocação | `Summons` (tabela `summons`; uma por sugestão), criada pelo `SummonsService.summon`; rota `POST /suggestions/{id}/summon` (funcionário) |
+| Modo demonstração, contas fictícias e login direto (RF47) | profile `demo`; `DemoAccount`, `DemoDataSeeder`; `DirectSignIn` e `SignedIn` (porta em `access.api`, só no profile); `FoundItemRegistration` e `LossReportRegistration` (portas de cadastro por código) |
 | Situação da convocação (Ativa, Concluída, Recusada, Vencida) | `SummonsStatus` (`ACTIVE`, `COMPLETED`, `REFUSED`, `EXPIRED`); ações `complete`, `refuse`, `expire` |
 | Convocar (a parte de cada módulo) | `FoundItemReservations.reserve` (`founditems.api`), `LossReportSummons.summon` (`lossreports.api`), `SuggestionSummons.pairOf` e `summon` (`matching.api`); `FoundItem.reserve`, `LossReport.summon`, `MatchSuggestion.summon` e `putOnHold` |
 | Local, horário, prazo e o que levar (RF26) | `PickupInstructions` (`pickup.api`); valores de `cade.pickup.*` (`PickupProperties`) e texto por risco em `VerificationRule.whatToBring` |

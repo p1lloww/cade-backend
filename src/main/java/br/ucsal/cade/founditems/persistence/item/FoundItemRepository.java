@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -72,6 +73,13 @@ public interface FoundItemRepository extends JpaRepository<FoundItem, UUID> {
 
     @EntityGraph(attributePaths = "category")
     List<FoundItem> findWithCategoryByCategoryIdAndStatusIn(UUID categoryId, Collection<FoundItemStatus> statuses);
+
+    /** Os objetos de uma situação que entraram na sala até {@code cutoff}, os mais antigos primeiro (RN16). */
+    List<FoundItem> findByStatusAndRegisteredAtLessThanEqualOrderByRegisteredAtAsc(FoundItemStatus status,
+                                                                                   Instant cutoff);
+
+    @EntityGraph(attributePaths = "category")
+    List<FoundItem> findWithCategoryByStatusOrderByStorageBoxAscFoundOnAscRegisteredAtAsc(FoundItemStatus status);
 
     @EntityGraph(attributePaths = "category")
     List<FoundItem> findWithCategoryByIdIn(Collection<UUID> ids);

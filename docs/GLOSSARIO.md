@@ -130,7 +130,9 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Fim da convocação (a parte de cada módulo) | `FoundItemReservations.handOver` e `release`, `LossReportSummons.complete`, `refuse` e `release` (este para o vencimento), `SuggestionSummons.complete`, `refuse` (`RefusedSuggestion`) e `expire` (`ExpiredSuggestion`); tarefa `SummonsExpiryJob` (vencimento da convocação, RF27) |
 | Evento retirada.registrada | `PickupRegisteredEvent` (`pickup.api.event`) |
 | Balcão no histórico | ações `SUMMONS_COMPLETED`, `PICKUP_REGISTERED`, `FOUND_ITEM_HANDED_OVER`, `LOSS_REPORT_COMPLETED`, `MATCH_COMPLETED`; na recusa, `SUMMONS_REFUSED`, `FOUND_ITEM_RELEASED`, `LOSS_REPORT_REFUSED`, `MATCH_REFUSED`, `MATCH_RESUMED`, `MATCH_CLOSED`, `STUDENT_REFUSAL_RECORDED` e `STUDENT_BLOCKED` |
-| Destino de não reclamado (bazar, descarte, outro) | `Disposal` |
+| Destino de não reclamado (bazar, descarte, outro) | `Disposal`, `DisposalDestination` (`BAZAAR`, `DISCARD`, `OTHER`); rota `POST /unclaimed-items/{id}/disposal` (administrador) |
+| Tarefa de não reclamados (RF37, RN16) | `UnclaimedJob`, `UnclaimedMarkingService`; porta `UnclaimedFoundItems` (`founditems.api`) |
+| Lista de não reclamados por caixa de mês (RF39) | `DisposalService.listByBox`, rota `GET /unclaimed-items` (funcionário) |
 | Histórico | `AuditEvent` (contrato em `shared.audit`) |
 | Perfil de funcionário dado ou retirado (no histórico) | ações `STAFF_ROLE_GRANTED` e `STAFF_ROLE_REVOKED`, com o motivo informado pelo administrador |
 | E-mail (destinatário, assunto e texto) | `EmailMessage` (`shared.mail`) |

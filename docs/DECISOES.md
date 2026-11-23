@@ -421,6 +421,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** rastreabilidade pedida pelo administrador (A1) sem espalhar dados pessoais de terceiros.
 - **Situação:** fechada.
 
+## D38 — Não reclamados: tarefa por objeto, porta em achados e destino em tabela própria
+- **Origem:** o PRA-01 (RF37, RF38, RF39) pede a tarefa dos 90 dias, o destino do objeto e a lista por caixa.
+- **Decisão (23/11/2026):**
+  - **O prazo conta da entrada na sala** (`registeredAt`, RN16), não da data em que o objeto foi achado. O prazo é o que o administrador configurou (`Deadlines.storagePeriod()`, 90 dias de início, D39), e a tarefa roda de hora em hora (`cade.retention.interval`), pelo mesmo motivo das outras: uma rodada perdida é coberta pela seguinte.
+  - **Só o Disponível vence.** Reservado fica como está (RN18): a convocação decide; se ela vencer, o objeto volta a Disponível e a próxima rodada o vê.
+  - **Uma transação por objeto**, na porta `UnclaimedFoundItems` (`founditems.api`): uma falha não desfaz as outras. A mudança é gravada na hora, com o `@Version`, para perder a corrida contra uma convocação. O histórico leva `SYSTEM_ACTOR`.
+  - **O destino é uma entidade do `retention`** (`Disposal`: objeto, destino, observação, data e administrador), sem chave estrangeira para o objeto (D10). Sem destino no corpo, vale o bazar; "outro" exige dizer qual. A mudança do objeto para Destinado e a gravação do destino acontecem na mesma transação; um objeto só é destinado uma vez.
+  - **Rotas:** `GET /unclaimed-items` (funcionário; agrupado pela `storageBox`, a caixa do mês) e `POST /unclaimed-items/{id}/disposal` (administrador).
+- **Motivo:** o `retention` só pode depender de `founditems` (D10), e uma porta pequena mantém a regra de situação onde ela já mora.
+- **Situação:** fechada.
+
 ## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
 - **Origem:** o DEM-01 (RF47) pede contas fictícias, login direto sem código e dados de exemplo, ativos só no modo de demonstração, para a mostra funcionar sem internet e sem cadastro na hora.
 - **Decisão (22/11/2026):**
@@ -445,7 +456,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
   - **Prazos:** uma tabela de uma linha (`deadline_settings`) em `shared.settings`, lida na hora por `Deadlines`, sem cache, para a mudança valer logo. Sem a linha, valem os valores iniciais (90, 7 e 30 dias). O administrador grava os três juntos em `PUT /settings/deadlines`, dentro de limites (guarda 30 a 365, retirada 1 a 30, validade 7 a 90 dias) para um erro de digitação não vencer tudo na hora. Cada mudança vai para o histórico com o que mudou.
   - **Mudança vale para o que vem depois:** a convocação e o registro já criados guardam o prazo com que nasceram. Por isso `cade.pickup.deadline` saiu do `application.yml`: o prazo da convocação vem só de `Deadlines`.
   - **Onde ficam as leituras:** `Deadlines` fica em `shared` (e não em `administration`) porque achados, perdas e retirada leem os mesmos prazos e não podem depender de outro módulo (D10); só `administration` grava.
-  - **Guarda:** o valor fica gravado e exposto por `Deadlines.storagePeriod()`. A tarefa de não reclamados (PRA-01, D38) passa a lê-lo quando as duas entregas estiverem na `main`: troca `RetentionProperties.storagePeriod` por essa leitura.
+  - **Guarda:** o valor fica gravado e exposto por `Deadlines.storagePeriod()`. A tarefa de não reclamados (PRA-01, D38) o lê a cada rodada, no lugar do antigo `RetentionProperties.storagePeriod` (feito ao mesclar o PRA-01, 23/11/2026).
 - **Motivo:** configurar sem reiniciar nem redeployar, com o mínimo de peças novas e sem abrir dependência entre módulos.
 - **Situação:** fechada.
 
@@ -485,6 +496,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **22/11/2026 — D35 registrada:** confirmação da retirada pelo estudante como registro à parte, encerramento das outras sugestões do objeto e aviso neutro e desligável aos estudantes, na implementação do RET-06.
 - **22/11/2026 — D36 registrada:** correção dos dados do objeto achado (só Disponível e Não reclamado, versão e motivo no pedido, histórico com campos alterados e sem os textos reservados), na implementação do ACH-07.
 - **22/11/2026 — D37 registrada:** quem trouxe o objeto e objeto identificado (campos só de funcionários, fora do histórico), na implementação do ACH-06.
+- **23/11/2026 — D38 registrada:** tarefa de não reclamados por objeto, porta `UnclaimedFoundItems` e destino em tabela própria, na implementação do PRA-01.
 - **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
 - **22/11/2026 — D33 registrada:** ciclo de vida do registro de perda (cancelar, pedir e responder informações pela sugestão, renovar, vencer só o Aberto, descarte e encerramento por evento) e lembrete de vencimento ligado, na implementação do PER-06.

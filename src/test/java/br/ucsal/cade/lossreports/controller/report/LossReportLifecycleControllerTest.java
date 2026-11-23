@@ -74,13 +74,17 @@ class LossReportLifecycleControllerTest {
     private EmailSender emailSender;
 
     private UUID student;
-    private UUID category;
+    private UUID itemCategory;
+    private UUID reportCategory;
 
     @BeforeEach
     void setUp() {
         when(emailSender.send(any())).thenReturn(true);
         student = UUID.randomUUID();
-        category = categories.saveAndFlush(new Category("Teste " + UUID.randomUUID(), RiskLevel.LOW)).getId();
+        // Categorias diferentes para o objeto e a perda: o cruzamento automático, que roda depois do commit, dá nota
+        // zero e não grava a sugestão que o teste grava (o par é único).
+        itemCategory = newCategory();
+        reportCategory = newCategory();
     }
 
     @Test
@@ -131,14 +135,18 @@ class LossReportLifecycleControllerTest {
     }
 
     private UUID find() {
-        return foundItemService.register(new RegisterFoundItem(TestPhotos.jpeg(), category, "Bloco 400", "Sala 421",
+        return foundItemService.register(new RegisterFoundItem(TestPhotos.jpeg(), itemCategory, "Bloco 400", "Sala 421",
                 LocalDate.now(clock), null, null, "Garrafa azul", null), UUID.randomUUID()).getId();
     }
 
     private UUID lose() {
-        return lossReportService.register(new RegisterLossReport(category, "Garrafa azul", null,
+        return lossReportService.register(new RegisterLossReport(reportCategory, "Garrafa azul", null,
                 List.of(LossLocation.of("Bloco 400", "Sala 421")), LocalDate.now(clock), null, null, null),
                 student).getId();
+    }
+
+    private UUID newCategory() {
+        return categories.saveAndFlush(new Category("Teste " + UUID.randomUUID(), RiskLevel.LOW)).getId();
     }
 
     private String studentBearer(UUID id) {

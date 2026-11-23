@@ -76,6 +76,10 @@ cade:
     bands:
       high: 70
       medium: 40
+  retention:
+    # De quanto em quanto tempo a tarefa procura os objetos vencidos (RF37). O prazo de guarda (RN16) é configurado
+    # pelo administrador (RF45, D39).
+    interval: 1h
   notifications:
     # Caixa de saída dos avisos (D30): tentativas, espera depois da 1ª falha (cresce a cada falha), de quanto em
     # quanto tempo o reenvio roda e quantos avisos ele pega por rodada.

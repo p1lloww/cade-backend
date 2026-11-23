@@ -365,3 +365,24 @@ O `GET` não traz descrição interna, detalhes reservados nem foto: o funcioná
   - o histórico com o funcionário como autor;
   - atalho e convocação simultâneos, em Virtual Threads, dos quais só um passa.
 - [`WalkInControllerTest`](../../src/test/java/br/ucsal/cade/pickup/controller/walkin/WalkInControllerTest.java): rotas com 200, 201, 400, 401, 403, 404 e 409.
+
+## 10. Confirmação do estudante e encerramento das outras sugestões (RET-06)
+
+### Encerramento das outras sugestões do objeto (RF33)
+
+Na mesma transação da retirada, o `CounterService.registerPickup` chama `FoundItemSuggestions.closeOthersOf`: as sugestões **Novas e Em espera** do objeto passam a **Encerradas**, cada uma no histórico (`MATCH_CLOSED`, "retirado pela convocação de outra sugestão"). A sugestão convocada já está Concluída, as Descartadas ficam como estão e as de outros objetos não são tocadas. Se houve alguma, o balcão publica o `OtherSuggestionsClosedEvent`.
+
+**Aviso aos estudantes (D35):** o `ClosedSuggestionNoticeListener` põe na caixa de saída um e-mail `SUGGESTION_CLOSED` para o dono de cada sugestão encerrada, **no máximo um por estudante e por retirada**, em nome da referência da sugestão. O texto é **neutro** de propósito: não diz qual objeto, como ele é nem para quem foi: só que uma análise foi encerrada e que o registro continua aberto (RN03). Pode ser desligado com `cade.notifications.closed-suggestion-notice-enabled=false`. O atalho de balcão (D29) continua sem aviso.
+
+### Confirmação no celular (RF30)
+
+| Rota | O que faz |
+|---|---|
+| `GET /pickups/mine` | as retiradas que o funcionário registrou para o estudante, da mais recente para a mais antiga, cada uma com `confirmed` e `confirmedAt`; não traz nada do objeto |
+| `POST /pickups/{id}/confirmation` | o estudante confirma a retirada, no lugar da assinatura no papel |
+
+- **Registro à parte:** a confirmação é a `PickupConfirmation`, que só se grava; a `Pickup` continua intacta (RN19). A coluna `pickupId` é única, então duas confirmações simultâneas terminam com exatamente uma e as outras recebem 409.
+- **Só o próprio estudante:** retirada de outro estudante responde 404 (RF14). Retirada do atalho de balcão (D29) não tem conta e, portanto, não tem confirmação.
+- **No histórico:** `PICKUP_CONFIRMED`, com o estudante como autor.
+
+Testes: `PickupConfirmationTest` (encerramento, aviso único e neutro, confirmação, retirada intacta, 409 duplo, corrida em Virtual Threads) e `StudentPickupControllerTest` (rotas, campos devolvidos, perfis).

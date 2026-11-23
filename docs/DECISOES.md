@@ -342,6 +342,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/avisos.md`](tecnico/avisos.md).
 - **Situação:** fechada.
 
+## D39 — Categorias gerenciáveis e prazos configuráveis lidos na hora
+- **Origem:** o ADM-04 (RF44, RF45, RNF11) pede categorias com risco e perguntas de conferência e prazos ajustáveis sem mudar código.
+- **Decisão (23/11/2026):**
+  - **Categorias:** o administrador cria (`POST /categories`) e altera (`PUT /categories/{id}`) nome, risco padrão e até 10 perguntas de conferência; a lista continua em `GET /categories`, agora com as perguntas. **Não há exclusão**: objetos e perdas já registrados apontam para a categoria. O nome é único sem diferenciar maiúsculas (409). O risco novo vale para os próximos objetos: os que já estão na sala guardam o que tinham (RN04). As perguntas **complementam** as regras por risco do balcão (D26), não as substituem.
+  - **Prazos:** uma tabela de uma linha (`deadline_settings`) em `shared.settings`, lida na hora por `Deadlines`, sem cache, para a mudança valer logo. Sem a linha, valem os valores iniciais (90, 7 e 30 dias). O administrador grava os três juntos em `PUT /settings/deadlines`, dentro de limites (guarda 30 a 365, retirada 1 a 30, validade 7 a 90 dias) para um erro de digitação não vencer tudo na hora. Cada mudança vai para o histórico com o que mudou.
+  - **Mudança vale para o que vem depois:** a convocação e o registro já criados guardam o prazo com que nasceram. Por isso `cade.pickup.deadline` saiu do `application.yml`: o prazo da convocação vem só de `Deadlines`.
+  - **Onde ficam as leituras:** `Deadlines` fica em `shared` (e não em `administration`) porque achados, perdas e retirada leem os mesmos prazos e não podem depender de outro módulo (D10); só `administration` grava.
+  - **Guarda:** o valor fica gravado e exposto por `Deadlines.storagePeriod()`. A tarefa de não reclamados (PRA-01, D38) passa a lê-lo quando as duas entregas estiverem na `main`: troca `RetentionProperties.storagePeriod` por essa leitura.
+- **Motivo:** configurar sem reiniciar nem redeployar, com o mínimo de peças novas e sem abrir dependência entre módulos.
+- **Situação:** fechada.
+
 ## D41 — Painel do administrador: o `administration` passa a depender de `founditems`
 - **Origem:** o ADM-06 (RF46) pede contagens de objetos por situação e categoria, devoluções no mês, tempo médio até a devolução e não reclamados. A tabela da D10 só deixava o `administration` depender de `access`.
 - **Decisão (23/11/2026):**
@@ -375,4 +386,5 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **23/11/2026 — D39 registrada:** categorias gerenciáveis pelo administrador e prazos configuráveis lidos na hora, na implementação do ADM-04.
 - **23/11/2026 — D41 registrada:** o `administration` passa a depender de `founditems` pela `api`, para o painel do ADM-06 (complemento à D10).

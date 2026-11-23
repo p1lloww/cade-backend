@@ -92,8 +92,7 @@ cade:
       # Desligado até o PER-06: hoje o registro de perda ainda não vence nem é renovado (D30).
       loss-report-notice-enabled: false
   pickup:
-    # Quanto tempo o objeto fica reservado depois da convocação (RN15) e o que o estudante recebe (RF26).
-    deadline: 7d
+    # O que o estudante recebe na convocação (RF26). O prazo da convocação (RN15) é configurado pelo administrador.
     # De quanto em quanto tempo a tarefa procura convocações vencidas (RF27).
     expiry-interval: 1h
     place: Sala de achados e perdidos da UCSal

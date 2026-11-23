@@ -4,6 +4,7 @@ import br.ucsal.cade.notifications.persistence.outbox.NotificationKind;
 import br.ucsal.cade.notifications.service.outbox.enqueue.Outbox;
 import br.ucsal.cade.pickup.api.event.PickupRegisteredEvent;
 import br.ucsal.cade.pickup.api.event.SummonsCreatedEvent;
+import br.ucsal.cade.pickup.api.event.SummonsExpiredEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -14,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 
 /**
- * Põe na caixa de saída os e-mails da convocação e da retirada (RF34, D30).
+ * Põe na caixa de saída os e-mails da convocação, do vencimento dela e da retirada (RF34, D30).
  *
  * <p>O ouvinte é síncrono e exige a transação de quem publicou ({@code MANDATORY}), como o histórico: o aviso é
  * gravado junto com a convocação ou a retirada, e some se ela for desfeita. O envio fica para depois do commit, no
@@ -47,5 +48,13 @@ class PickupNoticeListener {
         outbox.enqueue(NotificationKind.PICKUP_REGISTERED, event.pickupId(), event.studentId(),
                 PickupRegisteredNotice.at(clock.instant()));
         log.debug("Pickup e-mail queued: pickup={}, student={}", event.pickupId(), event.studentId());
+    }
+
+    @EventListener
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void on(SummonsExpiredEvent event) {
+        outbox.enqueue(NotificationKind.SUMMONS_EXPIRED, event.summonsId(), event.studentId(),
+                SummonsExpiredNotice.create());
+        log.debug("Summons expiry e-mail queued: summons={}, student={}", event.summonsId(), event.studentId());
     }
 }

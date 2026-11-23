@@ -13,6 +13,8 @@ public enum NotificationKind {
 
     /** Uma análise de objeto para o registro foi encerrada porque o objeto foi entregue; a referência é a sugestão (RF33). */
     SUGGESTION_CLOSED,
+    /** A convocação venceu sem retirada; a referência é a convocação (RF27). */
+    SUMMONS_EXPIRED,
 
     /** Retirada registrada; a referência é a retirada (RF34). */
     PICKUP_REGISTERED,

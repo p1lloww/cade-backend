@@ -59,6 +59,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
 | Corrigir os dados do objeto (RF11, ACH-07) | `FoundItem.update`, `FoundItemService.update`, rota `PUT /found-items/{id}` (funcionário); evento `FoundItemUpdatedEvent`; `FoundItemStatus.isEditable` |
+| Corrigir o registro de perda (PER-07) | `LossReport.edit`, `LossReportService.update`, rota `PUT /loss-reports/{id}` (estudante); evento `LossReportUpdatedEvent` |
+| Prova do registro de perda: foto antiga, nota fiscal, número de série (RF15) | `LossReport.attachProof`, `LossReportService.attachProof` e `proofOf`; rotas `POST` e `GET /loss-reports/{id}/proof` |
 | Categorias gerenciáveis: nome, risco padrão e perguntas de conferência (RF44) | `Category.change`, `Category.verificationQuestions`, `CategoryAdminService`; rotas `POST /categories` e `PUT /categories/{id}` (administrador) |
 | Prazos configuráveis: guarda, retirada e validade do registro (RF45) | `DeadlineSettings` (uma linha), `DeadlineValues`, `Deadlines` (leitura, `shared.settings`), `DeadlineSettingsService`; rotas `GET` e `PUT /settings/deadlines` (administrador) |
 | Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |

@@ -43,6 +43,6 @@ class ComparableLossReportsService implements ComparableLossReports {
         return new ComparableLossReport(report.getId(), report.getCategory().getName(),
                 report.getPeriod().lostFrom(), report.getPeriod().lostUntil(), shift, locations,
                 report.getDescription(), report.getSecretDetail(), report.getStatus().label(),
-                report.getRegisteredAt());
+                report.getRegisteredAt(), report.getProofSerialNumber(), report.hasProofPhoto());
     }
 }

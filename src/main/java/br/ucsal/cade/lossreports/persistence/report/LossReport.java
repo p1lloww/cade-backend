@@ -34,6 +34,7 @@ public class LossReport {
 
     public static final int MAX_TEXT_LENGTH = 500;
     public static final int MAX_LOCATIONS = 5;
+    public static final int MAX_SERIAL_NUMBER_LENGTH = 60;
 
     /** Validade inicial do registro (RN14); o administrador pode mudá-la (RF45). */
     public static final Duration VALIDITY = Duration.ofDays(30);
@@ -75,6 +76,12 @@ public class LossReport {
     @Column(nullable = false)
     private Instant expiresAt;
 
+    /** Chave da foto da prova (foto antiga, nota fiscal) na {@code PhotoStorage}; nula quando não há (RF15). */
+    private String proofKey;
+
+    @Column(length = MAX_SERIAL_NUMBER_LENGTH)
+    private String proofSerialNumber;
+
     @Version
     private long version;
 
@@ -103,6 +110,29 @@ public class LossReport {
     /** Com a validade que o administrador configurou (RF45); {@link #VALIDITY} é o valor inicial. */
     public static LossReport register(NewLossReport data, UUID studentId, Instant registeredAt, Duration validity) {
         return new LossReport(data, studentId, registeredAt, validity);
+    }
+
+    /**
+     * O estudante anexa ou troca a prova: uma foto (foto antiga do objeto, nota fiscal) e/ou o número de série (RF15).
+     * Vale em qualquer situação que não seja final: a prova é do próprio dono e é lida pelo funcionário na conferência.
+     * Quem não envia um dos dois mantém o que já tinha.
+     *
+     * @param proofKey     chave da nova foto, ou nula para manter a atual
+     * @param serialNumber número de série novo, ou nulo para manter o atual
+     * @return a chave da foto que saiu do lugar, para quem chamou apagar do armazenamento; nula se não havia
+     */
+    public String attachProof(String proofKey, String serialNumber) {
+        if (status.isFinal()) {
+            throw new InvalidStatusTransitionException("anexar prova a", "um registro de perda", status.label());
+        }
+        String replaced = proofKey == null ? null : this.proofKey;
+        if (proofKey != null) {
+            this.proofKey = proofKey;
+        }
+        if (serialNumber != null) {
+            this.proofSerialNumber = serialNumber.strip();
+        }
+        return replaced;
     }
 
     /**
@@ -222,6 +252,18 @@ public class LossReport {
 
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public boolean hasProofPhoto() {
+        return proofKey != null;
+    }
+
+    public String getProofKey() {
+        return proofKey;
+    }
+
+    public String getProofSerialNumber() {
+        return proofSerialNumber;
     }
 
     public long getVersion() {

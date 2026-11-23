@@ -11,6 +11,9 @@ public enum NotificationKind {
     /** Falta menos de 1 dia para a convocação vencer; a referência é a convocação (RF34). */
     SUMMONS_EXPIRING,
 
+    /** A convocação venceu sem retirada; a referência é a convocação (RF27). */
+    SUMMONS_EXPIRED,
+
     /** Retirada registrada; a referência é a retirada (RF34). */
     PICKUP_REGISTERED,
 

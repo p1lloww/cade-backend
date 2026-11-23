@@ -49,4 +49,16 @@ public interface SuggestionSummons {
      * @throws InvalidStatusTransitionException se a sugestão não está Convocada
      */
     RefusedSuggestion refuse(UUID suggestionId, UUID staffId);
+
+    /**
+     * Convocada → Vencida: o prazo da retirada passou (RF27). As sugestões Em espera do mesmo objeto voltam a Nova
+     * (RN18), para o funcionário convocar a próxima. Diferente da recusa, a perda não se encerra: ela volta a Aberto, e
+     * as outras sugestões dela continuam como estão. Cada mudança vai para o histórico (RF43). Só roda dentro da
+     * transação de quem libera.
+     *
+     * @param actorId id do funcionário, ou {@code AuditEvent.SYSTEM_ACTOR} numa tarefa agendada
+     * @throws NotFoundException se a sugestão não existe
+     * @throws InvalidStatusTransitionException se a sugestão não está Convocada
+     */
+    ExpiredSuggestion expire(UUID suggestionId, UUID actorId);
 }

@@ -264,6 +264,7 @@ O lembrete de **registro de perda perto de vencer** (RF35, `LossReportDeadlines`
 |---|---|---|---|
 | `SUMMONS_CREATED` | na convocação (RF34) | a convocação | onde, horário, até quando e o que levar |
 | `SUMMONS_EXPIRING` | menos de 1 dia para a convocação vencer (RF34) | a convocação | os mesmos dados, com o prazo em destaque |
+| `SUMMONS_EXPIRED` | a convocação venceu sem retirada (RF27, RET-02) | a convocação | o prazo terminou, o objeto deixou de ficar reservado e o registro continua aberto; não cita o objeto |
 | `PICKUP_REGISTERED` | na retirada (RF34) | a retirada | data e hora; "se não foi você, procure a sala" |
 | `INFO_REQUESTED` | o funcionário pede mais informações (RF35, PER-06) | o pedido (um por pedido, não por registro) | a pergunta do funcionário e o prazo de 5 dias; o funcionário é orientado a não citar o objeto (RN03) |
 | `LOSS_REPORT_EXPIRING` | 3 dias antes de o registro vencer (RF35) | o registro | a descrição do próprio estudante e a data |
@@ -272,6 +273,7 @@ Nenhum e-mail fala do objeto achado: nem foto, nem descrição interna, nem deta
 
 **Fora deste card:**
 - **E-mail da convocação vencida:** o vencimento é o RET-02.
+- **E-mail do pedido de mais informações (RF35):** o pedido ainda não existe; entra no PER-06.
 - **Aviso das sugestões encerradas pelo atalho de balcão (D29):** não existe de propósito. O estudante nunca vê as sugestões, e avisar que uma foi encerrada revelaria que apareceu na sala um objeto parecido com o dele (RN03). Quem ainda procura é lembrado pelo aviso de registro perto de vencer.
 
 ## 10. Onde está testado

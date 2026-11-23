@@ -356,6 +356,23 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md), seção 10.
 - **Situação:** fechada.
 
+## D31 — Modo demonstração: profile `demo`, login direto por porta e e-mails no Mailpit
+- **Origem:** o DEM-01 (RF47) pede contas fictícias, login direto sem código e dados de exemplo, ativos só no modo de demonstração, para a mostra funcionar sem internet e sem cadastro na hora.
+- **Decisão (22/11/2026):**
+  - **Profile `demo`:** tudo do modo demonstração só existe com `SPRING_PROFILES_ACTIVE=demo`: o controller `/demo/*`, o `DemoDataSeeder` e a implementação da porta `access.api.DirectSignIn`. Sem o profile não há bean que emita token sem o código de e-mail, então a D02 continua valendo no uso real. É o primeiro uso de `@Profile` no projeto.
+  - **Login direto é uma porta, não um atalho no `AuthController`:** `DirectSignIn.signIn(email, role)` fica em `access.api` e só tem implementação no profile; o `demo` a usa pela `api`, sem quebrar a D10 (o `demo` continua dependendo só de `access`, `founditems` e `lossreports`).
+  - **Rotas:** `GET /demo/accounts` e `POST /demo/login` entram em `SecurityConfiguration.PUBLIC_ROUTES`, porque não há token antes do login. Como o controller só existe no profile, sem ele as rotas respondem 404 (e não 401).
+  - **Dados de exemplo pelas mesmas portas do uso real:** `FoundItemRegistration` (achados) e `LossReportRegistration` (perdas) cadastram por código passando pelos serviços de sempre, então histórico, limite de registros e cruzamento funcionam como no uso real. A semente roda uma vez: se o estudante de demonstração já tem registros, não cria nada.
+  - **Contas fictícias:** `estudante.demo@`, `funcionario.demo@` e `admin.demo@ucsal.edu.br`. Se uma delas já existir com outro perfil, vale o perfil que ela tem.
+  - **"Caixa interna com cópia dos e-mails" (RF47) = Mailpit:** o Mailpit já faz parte do `compose.yaml`, roda na própria máquina e captura todo e-mail enviado, então funciona sem internet. Não foi criada uma caixa nova dentro do back-end; se a equipe quiser uma tela dentro do front, é um card à parte.
+  - **Fotos de degradê geradas na hora** (`DemoPhotos`), para o repositório não guardar imagem e não haver foto de pessoa nem de objeto real.
+- **Motivo:** a mostra precisa de um conjunto estável de dados e de um login que não dependa de e-mail nem de internet (manual do POOALAB, plano de contingência), sem abrir uma porta dos fundos no uso real.
+- **Consequências:**
+  - Quem ligar o profile `demo` num ambiente real dispensa o código de login: o README, o `.env.example` e o `demo/README.md` avisam.
+  - O banco "sujo" vale também aqui: os dados de exemplo entram só uma vez; para recomeçar, `docker compose down -v`.
+- **Detalhes:** [`demo/README.md`](../demo/README.md).
+- **Situação:** fechada.
+
 ## D39 — Categorias gerenciáveis e prazos configuráveis lidos na hora
 - **Origem:** o ADM-04 (RF44, RF45, RNF11) pede categorias com risco e perguntas de conferência e prazos ajustáveis sem mudar código.
 - **Decisão (23/11/2026):**
@@ -401,5 +418,6 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
 - **22/11/2026 — D35 registrada:** confirmação da retirada pelo estudante como registro à parte, encerramento das outras sugestões do objeto e aviso neutro e desligável aos estudantes, na implementação do RET-06.
+- **22/11/2026 — D31 registrada:** modo demonstração com o profile `demo`, login direto por porta (`DirectSignIn`) só nesse profile, dados de exemplo pelas portas de cadastro de achados e perdas e e-mails no Mailpit, na implementação do DEM-01.
 - **23/11/2026 — D39 registrada:** categorias gerenciáveis pelo administrador e prazos configuráveis lidos na hora, na implementação do ADM-04.
 - **23/11/2026 — D41 registrada:** o `administration` passa a depender de `founditems` pela `api`, para o painel do ADM-06 (complemento à D10).

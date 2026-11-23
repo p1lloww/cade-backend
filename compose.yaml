@@ -30,6 +30,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/cade
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       PHOTOS_DIR: /app/data/photos
+      # Vazio por padrão. Com SPRING_PROFILES_ACTIVE=demo no .env, sobe o modo demonstração (RF47).
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
     volumes:
       - photos-data:/app/data/photos
     ports:

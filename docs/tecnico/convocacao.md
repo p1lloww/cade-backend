@@ -1,4 +1,4 @@
-# Convocação (RET-01)
+# Convocação (RET-01 e RET-02)
 
 Como o `SummonsService` (`pickup.service.summons`) convoca o estudante a partir de uma sugestão (RF26): o objeto fica Reservado, o registro de perda Convocado e a sugestão Convocada, na mesma transação (seção 7.1), e um objeto nunca tem duas convocações ativas (RN18), mesmo quando dois funcionários convocam ao mesmo tempo. As escolhas que os requisitos não definiam estão na D25.
 
@@ -150,5 +150,25 @@ Uma perda Aguardando informações também é recusada: a seção 6.2 só permit
 - [`SummonsServiceTest`](../../src/test/java/br/ucsal/cade/pickup/service/summons/SummonsServiceTest.java): as três transições e a convocação gravada, o histórico com o funcionário como autor, as outras sugestões em espera (e as de outros objetos intactas), a descrição travada, o prazo e o que levar, o evento, as recusas sem nada gravado e as convocações simultâneas em Virtual Threads (6 sugestões do mesmo objeto e 3 cliques na mesma sugestão terminam com exatamente uma convocação).
 - [`SummonsControllerTest`](../../src/test/java/br/ucsal/cade/pickup/controller/summons/SummonsControllerTest.java): a rota com MockMvc, 201, 404, 409, 403 e 401.
 - [`SummonsStatusTest`](../../src/test/java/br/ucsal/cade/pickup/persistence/status/SummonsStatusTest.java): situações da convocação. O texto do que levar por risco é testado em [`VerificationRulesTest`](../../src/test/java/br/ucsal/cade/pickup/service/verification/VerificationRulesTest.java) desde o RET-03.
+
+## 6. Vencimento (RET-02)
+
+Sem retirada em 7 dias (RN15), a convocação vence. Uma tarefa agendada, o [`SummonsExpiryJob`](../../src/main/java/br/ucsal/cade/pickup/service/expiry/SummonsExpiryJob.java), roda de `cade.pickup.expiry-interval` em `cade.pickup.expiry-interval` (de hora em hora) e vence cada convocação na própria transação, pelo [`SummonsExpiryService`](../../src/main/java/br/ucsal/cade/pickup/service/expiry/SummonsExpiryService.java):
+
+| Quem | Muda | Histórico (autor: sistema) |
+|---|---|---|
+| `Summons` | Ativa → Vencida (gravada primeiro, como na retirada e na recusa) | `SUMMONS_EXPIRED` |
+| `FoundItem` | Reservado → Disponível | `FOUND_ITEM_RELEASED` |
+| `MatchSuggestion` convocada | Convocada → Vencida | `MATCH_EXPIRED` |
+| `MatchSuggestion` em espera do mesmo objeto | Em espera → Nova (RN18) | `MATCH_RESUMED` |
+| `LossReport` | Convocado → Aberto | `LOSS_REPORT_RELEASED` |
+
+Diferente da recusa (D26), o vencimento **não** encerra a perda: ela volta a Aberto e as outras sugestões dela continuam como estão, porque o estudante não fez nada de errado. Por isso o registro volta a ser editável (`isEditable()`).
+
+- **Corrida com o balcão:** o `@Version` da convocação decide. Se a retirada ou a recusa ganhou, o vencimento vê a convocação fora de Ativa e não faz nada (`expire` devolve `false`); se o vencimento ganhou, o balcão recebe 409.
+- **Uma transação por convocação:** se uma falha (por exemplo, a perda foi cancelada à força), o vencimento dela é desfeito por inteiro e registrado no log; a próxima rodada tenta de novo, e as outras convocações da rodada não são afetadas.
+- **Aviso ao estudante:** o `SummonsExpiredEvent` entra na caixa de saída como `SUMMONS_EXPIRED` ([`avisos.md`](avisos.md)).
+
+Testes em [`SummonsExpiryJobTest`](../../src/test/java/br/ucsal/cade/pickup/service/expiry/SummonsExpiryJobTest.java), com o `MutableClock`: antes, no instante e depois do prazo, as sugestões em espera, a rodada repetida, a retirada que chega primeiro, a falha isolada, o histórico em nome do sistema e o e-mail.
 
 O que acontece depois, no balcão (retirada e recusa), está em [`retirada.md`](retirada.md).

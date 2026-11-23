@@ -383,6 +383,21 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Motivo:** menor mudança que atende o critério de aceite e reaproveita o armazenamento e o padrão de privacidade que já existem.
 - **Consequências:** quem trocar a foto perde a anterior (apagada depois do commit). Dois funcionários veem a mesma prova.
 - **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 8.
+- **Situação:** fechada.
+
+## D35 — Retirada: confirmação do estudante como registro à parte e aviso neutro das sugestões encerradas
+- **Origem:** o RET-06 pede que o estudante confirme a retirada no celular (RF30) e que, ao entregar o objeto, as outras sugestões dele sejam encerradas e os estudantes avisados (RF33).
+- **Decisão (22/11/2026):**
+  - **A confirmação é uma entidade à parte** (`PickupConfirmation`, só se grava, uma por retirada pela coluna única), e não um campo da `Pickup`: a retirada continua imutável (RN19) e a confirmação é um ato do estudante, não do funcionário. Rotas do estudante: `GET /pickups/mine` e `POST /pickups/{id}/confirmation`; a lista não traz nada do objeto (RN03). Confirmar duas vezes responde 409, inclusive em corrida.
+  - **O encerramento das outras sugestões entra no mesmo commit da retirada**, pelo `FoundItemSuggestions.closeOthersOf`, que devolve também o registro de perda de cada uma (`ClosedSuggestion`).
+  - **O aviso aos estudantes (RF33) é neutro e desligável.** A D29 decidiu **não** avisar no atalho de balcão, porque dizer "uma sugestão foi encerrada" revelaria que apareceu na sala um objeto parecido com o do estudante (RN03). Para cumprir o critério de aceite do RET-06 sem abrir mão da RN03, o aviso desta retirada diz só que "uma análise foi encerrada porque o objeto foi entregue e o registro continua aberto", sem objeto, local nem descrição, e vai no máximo uma vez por estudante e por retirada. O que ele ainda revela (que havia um candidato) está registrado como risco aceito; `cade.notifications.closed-suggestion-notice-enabled=false` o desliga. **A D29 não muda:** o atalho continua sem aviso.
+  - **Nova porta `lossreports.api.LossReportOwners`** (registro → estudante), para o `notifications` saber a quem avisar sem conhecer o conteúdo do registro.
+- **Motivo:** cumpre RF30 e RF33 sem tocar na imutabilidade da retirada e sem expor mais do que o mínimo ao estudante.
+- **Consequências:**
+  - A equipe pode desligar o aviso por configuração se achar que o risco da RN03 não compensa.
+  - A retirada por atalho (D29) não tem estudante com conta, então não tem confirmação.
+- **Detalhes:** [`docs/tecnico/retirada.md`](tecnico/retirada.md), seção 10.
+- **Situação:** fechada.
 
 ## D36 — Correção de dados do objeto: só Disponível e Não reclamado, versão e motivo no pedido
 - **Origem:** o ACH-07 (RF11) pede que o funcionário corrija os dados de um objeto, com cada alteração no histórico. A D21 (complemento) já dizia que o risco pode subir e descer, nunca abaixo do da categoria, e que a mudança é proibida com o objeto Reservado.
@@ -456,6 +471,7 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D29 registrada:** atalho de balcão com entidade própria (`WalkInPickup`), estudante ou pessoa sem conta sem ligação com a conta, objeto Reservado recusado, mesmo lock do objeto, sugestões do objeto encerradas e o registro de perda intocado; aviso por e-mail para o AVI-02, na implementação do RET-04.
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
+- **22/11/2026 — D35 registrada:** confirmação da retirada pelo estudante como registro à parte, encerramento das outras sugestões do objeto e aviso neutro e desligável aos estudantes, na implementação do RET-06.
 - **22/11/2026 — D36 registrada:** correção dos dados do objeto achado (só Disponível e Não reclamado, versão e motivo no pedido, histórico com campos alterados e sem os textos reservados), na implementação do ACH-07.
 - **22/11/2026 — D32 registrada:** correção do registro de perda com a versão no pedido, histórico só com os campos alterados, registro devolvido a Aberto volta a ser editável e cruzamento não refeito, na implementação do PER-07.
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.

@@ -58,6 +58,8 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Local da perda (bloco e sala) | `LossLocation` |
 | Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
+| Confirmação da retirada pelo estudante, no celular (RF30) | `PickupConfirmation`, `PickupConfirmationService`; rotas `GET /pickups/mine` e `POST /pickups/{id}/confirmation` |
+| Encerrar as outras sugestões do objeto entregue (RF33) | `FoundItemSuggestions.closeOthersOf` (`ClosedSuggestion`); evento `OtherSuggestionsClosedEvent`; aviso `SUGGESTION_CLOSED` |
 | Corrigir os dados do objeto (RF11, ACH-07) | `FoundItem.update`, `FoundItemService.update`, rota `PUT /found-items/{id}` (funcionário); evento `FoundItemUpdatedEvent`; `FoundItemStatus.isEditable` |
 | Corrigir o registro de perda (PER-07) | `LossReport.edit`, `LossReportService.update`, rota `PUT /loss-reports/{id}` (estudante); evento `LossReportUpdatedEvent` |
 | Prova do registro de perda: foto antiga, nota fiscal, número de série (RF15) | `LossReport.attachProof`, `LossReportService.attachProof` e `proofOf`; rotas `POST` e `GET /loss-reports/{id}/proof` |

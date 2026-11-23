@@ -61,6 +61,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Confirmação da retirada pelo estudante, no celular (RF30) | `PickupConfirmation`, `PickupConfirmationService`; rotas `GET /pickups/mine` e `POST /pickups/{id}/confirmation` |
 | Encerrar as outras sugestões do objeto entregue (RF33) | `FoundItemSuggestions.closeOthersOf` (`ClosedSuggestion`); evento `OtherSuggestionsClosedEvent`; aviso `SUGGESTION_CLOSED` |
 | Corrigir o registro de perda (PER-07) | `LossReport.edit`, `LossReportService.update`, rota `PUT /loss-reports/{id}` (estudante); evento `LossReportUpdatedEvent` |
+| Prova do registro de perda: foto antiga, nota fiscal, número de série (RF15) | `LossReport.attachProof`, `LossReportService.attachProof` e `proofOf`; rotas `POST` e `GET /loss-reports/{id}/proof` |
 | Categorias gerenciáveis: nome, risco padrão e perguntas de conferência (RF44) | `Category.change`, `Category.verificationQuestions`, `CategoryAdminService`; rotas `POST /categories` e `PUT /categories/{id}` (administrador) |
 | Prazos configuráveis: guarda, retirada e validade do registro (RF45) | `DeadlineSettings` (uma linha), `DeadlineValues`, `Deadlines` (leitura, `shared.settings`), `DeadlineSettingsService`; rotas `GET` e `PUT /settings/deadlines` (administrador) |
 | Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |

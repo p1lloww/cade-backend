@@ -38,7 +38,7 @@ class ModuleBoundariesTest {
             Map.entry("notifications", Set.of("access", "lossreports", "pickup")),
             Map.entry("retention", Set.of("founditems")),
             Map.entry("publicpage", Set.of("founditems")),
-            Map.entry("administration", Set.of("access")),
+            Map.entry("administration", Set.of("access", "founditems")),
             Map.entry("demo", Set.of("access", "founditems", "lossreports")));
 
     /** Um módulo só alcança outro pelo pacote {@code api}. */

@@ -59,6 +59,7 @@ O código do back-end é em inglês (D11). Esta tabela liga os termos de [requis
 | Data ou período da perda, turno | `LostPeriod`, `Shift` (`MORNING`, `AFTERNOON`, `EVENING`) |
 | Registro de perda (ação) | `LossReportService.register`, rota `POST /loss-reports` |
 | Prova do registro de perda: foto antiga, nota fiscal, número de série (RF15) | `LossReport.attachProof`, `LossReportService.attachProof` e `proofOf`; rotas `POST` e `GET /loss-reports/{id}/proof` |
+| Painel com contagens do serviço (RF46) | `DashboardService` (`administration`), porta `FoundItemOverview` (`founditems.api`); rota `GET /dashboard` (administrador) |
 | Foto do registro de perda | `photoKey`, rota `GET /loss-reports/{id}/photo` (só o dono) |
 | Meus registros (RF16) | `LossReportService.listOf`; rota `GET /loss-reports/mine` (estudante) |
 | Situação em linguagem simples | `LossReportStatus.description()`, devolvida em `statusDescription` |

@@ -356,6 +356,17 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **Detalhes:** [`docs/tecnico/registro-perda.md`](tecnico/registro-perda.md), seção 8.
 - **Situação:** fechada.
 
+## D41 — Painel do administrador: o `administration` passa a depender de `founditems`
+- **Origem:** o ADM-06 (RF46) pede contagens de objetos por situação e categoria, devoluções no mês, tempo médio até a devolução e não reclamados. A tabela da D10 só deixava o `administration` depender de `access`.
+- **Decisão (23/11/2026):**
+  - **Complemento à D10:** `administration` pode depender de `founditems`, **só pela `api`**. A tabela do `CLAUDE.md`, do `README.md` e o `ModuleBoundariesTest` mudam no mesmo PR. As outras direções continuam como estavam.
+  - **Uma porta de leitura**, `FoundItemOverview` (`founditems.api`), devolve as contagens por situação e categoria. Nenhum dado de objeto (foto, descrição, local) sai por ela, nem por rota: o painel só mostra números.
+  - **Devoluções e tempo médio vêm do histórico (RF43)**, que é do próprio `administration` e já guarda a hora de cada devolução (`FOUND_ITEM_HANDED_OVER` e `FOUND_ITEM_HANDED_OVER_AT_COUNTER`) e do registro do objeto: não foi preciso uma coluna nova no objeto. O mês é o corrente no fuso de Salvador, e a média conta todas as devoluções que têm o registro no histórico (nula se não houve nenhuma).
+  - **Collections e Streams** montam as contagens (`groupingBy`, `summingLong`, `average`), como pede o conteúdo de POOA do card.
+- **Limite conhecido:** o histórico não tem as devoluções feitas antes de o ADM-01 existir, e uma ação nova com outro nome não entra na conta até ser listada em `DashboardService.RETURN_ACTIONS`.
+- **Motivo:** o menor acoplamento que entrega o painel: uma porta de leitura e a fonte de verdade das datas que já existe.
+- **Situação:** fechada.
+
 ---
 
 ## Histórico de mudanças
@@ -379,3 +390,4 @@ Toda decisão nova entra aqui com a data. Se uma decisão mudar, não apague a a
 - **21/11/2026 — D30 registrada:** avisos por e-mail com Transactional Outbox (aviso gravado na transação da ação, relay logo após o commit e a cada minuto, unicidade por tipo e referência, `SKIP LOCKED`, até 5 tentativas), lembretes de prazo pela mesma caixa e o lembrete de registro desligado até o PER-06, na implementação do AVI-02.
 - **21/11/2026 — Nota na D26:** a liberação do estudante bloqueado pelo administrador entrou no ADM-07 (rotas `/blocked-students`, recusas zeradas, histórico com motivo).
 - **22/11/2026 — D34 registrada:** prova do registro de perda (foto pela `PhotoStorage`, número de série, sem PDF, lida pelo dono e pelo funcionário e presente na comparação), na implementação do PER-05.
+- **23/11/2026 — D41 registrada:** o `administration` passa a depender de `founditems` pela `api`, para o painel do ADM-06 (complemento à D10).

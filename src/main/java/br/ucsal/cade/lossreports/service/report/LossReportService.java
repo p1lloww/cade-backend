@@ -13,6 +13,7 @@ import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.UnknownCategoryException;
 import br.ucsal.cade.shared.event.EventPublisher;
+import br.ucsal.cade.shared.settings.Deadlines;
 import br.ucsal.cade.shared.exception.PhotoNotFoundException;
 import br.ucsal.cade.shared.storage.PhotoStorage;
 import br.ucsal.cade.shared.storage.StoredPhoto;
@@ -44,15 +45,18 @@ public class LossReportService {
     private final PhotoStorage photos;
     private final EventPublisher events;
     private final Clock clock;
+    private final Deadlines deadlines;
 
     LossReportService(LossReportRepository reports, LossReporterRepository reporters, CategoryRepository categories,
-                      PhotoStorage photos, EventPublisher events, Clock clock) {
+                      PhotoStorage photos, EventPublisher events, Clock clock,
+                      Deadlines deadlines) {
         this.reports = reports;
         this.reporters = reporters;
         this.categories = categories;
         this.photos = photos;
         this.events = events;
         this.clock = clock;
+        this.deadlines = deadlines;
     }
 
     /**
@@ -75,7 +79,8 @@ public class LossReportService {
 
         NewLossReport data = new NewLossReport(category, request.description(), request.secretDetail(),
                 request.locations(), period, photoKey);
-        LossReport report = reports.save(LossReport.register(data, studentId, clock.instant()));
+        LossReport report = reports.save(LossReport.register(data, studentId, clock.instant(),
+                deadlines.reportValidity()));
 
         events.publish(new AuditEvent(studentId, REGISTERED_ACTION, LossReport.class.getSimpleName(),
                 report.getId(), REGISTERED_REASON));

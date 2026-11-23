@@ -1,6 +1,7 @@
 package br.ucsal.cade.matching.controller.suggestion;
 
 import br.ucsal.cade.matching.controller.suggestion.dto.SuggestionDiscardRequestDTO;
+import br.ucsal.cade.matching.controller.suggestion.dto.SuggestionInfoRequestDTO;
 import br.ucsal.cade.matching.controller.suggestion.dto.SuggestionResponseDTO;
 import br.ucsal.cade.matching.service.suggestion.SuggestionService;
 import br.ucsal.cade.shared.security.Role;
@@ -44,6 +45,15 @@ class SuggestionController implements SuggestionApi {
     @GetMapping("/suggestions/{id}")
     public SuggestionResponseDTO find(@PathVariable UUID id) {
         return SuggestionResponseDTO.from(service.find(id));
+    }
+
+    @Override
+    @PostMapping(path = "/suggestions/{id}/info-request", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public SuggestionResponseDTO requestInfo(@PathVariable UUID id,
+                                             @Valid @RequestBody SuggestionInfoRequestDTO request,
+                                             @AuthenticationPrincipal Jwt token) {
+        return SuggestionResponseDTO.from(service.requestInfo(id, request.reason(),
+                UUID.fromString(token.getSubject())));
     }
 
     @Override

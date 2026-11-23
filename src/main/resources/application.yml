@@ -89,8 +89,13 @@ cade:
       interval: 1h
       summons-notice: 1d
       loss-report-notice: 3d
-      # Desligado até o PER-06: hoje o registro de perda ainda não vence nem é renovado (D30).
-      loss-report-notice-enabled: false
+      # Ligado desde o PER-06, que faz o registro de perda vencer e ser renovado (D30).
+      loss-report-notice-enabled: true
+  loss-reports:
+    # Quanto tempo o estudante tem para responder a um pedido de mais informações (RN13) e de quanto em quanto tempo a
+    # tarefa procura registros vencidos (RN14) e pedidos sem resposta.
+    info-response-deadline: 5d
+    expiry-interval: 1h
   pickup:
     # O que o estudante recebe na convocação (RF26). O prazo da convocação (RN15) é configurado pelo administrador.
     # De quanto em quanto tempo a tarefa procura convocações vencidas (RF27).

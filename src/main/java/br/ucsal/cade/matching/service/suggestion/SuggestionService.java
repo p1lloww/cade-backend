@@ -6,6 +6,7 @@ import br.ucsal.cade.founditems.api.ComparableFoundItem;
 import br.ucsal.cade.founditems.api.ComparableFoundItems;
 import br.ucsal.cade.lossreports.api.ComparableLossReport;
 import br.ucsal.cade.lossreports.api.ComparableLossReports;
+import br.ucsal.cade.lossreports.api.LossReportInfoRequests;
 import br.ucsal.cade.matching.persistence.status.SuggestionStatus;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestionRepository;
@@ -37,14 +38,17 @@ public class SuggestionService {
     private final ComparableFoundItems foundItems;
     private final ComparableLossReports lossReports;
     private final CompatibilityScorer scorer;
+    private final LossReportInfoRequests infoRequests;
     private final EventPublisher events;
 
     SuggestionService(MatchSuggestionRepository suggestions, ComparableFoundItems foundItems,
-                      ComparableLossReports lossReports, CompatibilityScorer scorer, EventPublisher events) {
+                      ComparableLossReports lossReports, CompatibilityScorer scorer,
+                      LossReportInfoRequests infoRequests, EventPublisher events) {
         this.suggestions = suggestions;
         this.foundItems = foundItems;
         this.lossReports = lossReports;
         this.scorer = scorer;
+        this.infoRequests = infoRequests;
         this.events = events;
     }
 
@@ -88,6 +92,26 @@ public class SuggestionService {
         events.publish(new AuditEvent(staffId, DISCARDED_ACTION, MatchSuggestion.class.getSimpleName(),
                 suggestion.getId(), reason));
         log.info("Suggestion {} discarded by {}", suggestionId, staffId);
+        return compareOne(suggestion);
+    }
+
+    /**
+     * Pede mais informações ao estudante a partir da sugestão (RF24): o registro de perda passa a Aguardando
+     * informações, com o motivo no histórico e no e-mail ao estudante (RF35). A sugestão continua Nova; se o estudante
+     * não responder em 5 dias, ela é descartada (RN13). Só uma sugestão Nova admite o pedido.
+     *
+     * @param staffId id do funcionário (claim {@code sub} do token)
+     */
+    @Transactional
+    public ComparedSuggestion requestInfo(UUID suggestionId, String reason, UUID staffId) {
+        MatchSuggestion suggestion = load(suggestionId);
+        if (suggestion.getStatus() != SuggestionStatus.NEW) {
+            log.info("Info request refused for suggestion {}: status is {}", suggestionId,
+                    suggestion.getStatus().code());
+            throw new InvalidStatusTransitionException("pedir informações sobre", "uma sugestão",
+                    suggestion.getStatus().label());
+        }
+        infoRequests.request(suggestion.getLossReportId(), suggestion.getId(), reason, staffId);
         return compareOne(suggestion);
     }
 

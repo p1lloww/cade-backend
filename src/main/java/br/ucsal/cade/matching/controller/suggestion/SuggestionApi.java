@@ -1,6 +1,7 @@
 package br.ucsal.cade.matching.controller.suggestion;
 
 import br.ucsal.cade.matching.controller.suggestion.dto.SuggestionDiscardRequestDTO;
+import br.ucsal.cade.matching.controller.suggestion.dto.SuggestionInfoRequestDTO;
 import br.ucsal.cade.matching.controller.suggestion.dto.SuggestionResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -72,4 +73,23 @@ public interface SuggestionApi {
                               "instance": "/suggestions/6f1c2a1e-0000-4000-8000-000000000003/discard"
                             }""")))
     SuggestionResponseDTO discard(UUID id, SuggestionDiscardRequestDTO request, @Parameter(hidden = true) Jwt token);
+
+    @Operation(
+            summary = "Pedir mais informações ao estudante",
+            description = """
+                    O funcionário não consegue decidir só com o que o estudante escreveu e pergunta mais (RF24). O                     registro de perda passa a **Aguardando informações**, o estudante recebe o pedido por e-mail                     (RF35) e a sugestão continua Nova. Se o estudante não responder em 5 dias, o registro volta a                     Aberto e a sugestão é descartada (RN13). O texto vai ao estudante e ao histórico: não cite o                     objeto achado (RN03). Só uma sugestão Nova admite o pedido, e o registro precisa estar Aberto.""")
+    @ApiResponse(responseCode = "200", description = "Pedido feito; o registro está Aguardando informações.",
+            content = @Content(schema = @Schema(implementation = SuggestionResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Pedido ausente ou longo demais.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Sugestão não encontrada.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "409",
+            description = "A sugestão não está Nova, o registro não está Aberto (por exemplo, já Aguardando "
+                    + "informações), ou outra alteração foi gravada ao mesmo tempo.",
+            content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemDetail.class)))
+    SuggestionResponseDTO requestInfo(UUID id, SuggestionInfoRequestDTO request, @Parameter(hidden = true) Jwt token);
 }

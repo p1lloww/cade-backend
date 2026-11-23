@@ -102,7 +102,6 @@ public sealed interface FoundItemStatus {
         throw refused("destinar");
     }
 
-    /** Se a situação encerra o ciclo de vida do objeto. */
     /**
      * Se os dados do objeto podem ser corrigidos (ACH-07): só Disponível e Não reclamado. Reservado não, porque há uma
      * convocação em andamento e o risco e o local definem a conferência no balcão (D21); Devolvido e Destinado já
@@ -115,6 +114,7 @@ public sealed interface FoundItemStatus {
         };
     }
 
+    /** Se a situação encerra o ciclo de vida do objeto. */
     default boolean isFinal() {
         return switch (this) {
             case Returned _, Disposed _ -> true;

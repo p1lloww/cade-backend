@@ -93,8 +93,7 @@ cade-backend/
 │   ├── entrega/                    documentos do manual: validação, MVP, POOA e declaração de IA
 │   └── imagens/                    figuras usadas nos documentos
 ├── demo/
-│   ├── README.md                   modo demonstração: contas fictícias, dados e roteiro
-│   └── roteiro-gravacao.md         roteiro da gravação de contingência
+│   └── README.md                   modo demonstração: contas fictícias, dados e roteiro
 ├── .github/
 │   ├── workflows/ci.yml            CI: ./mvnw verify em todo PR para a main
 │   ├── workflows/project-dependencies.yml   atualiza as dependências dos cards no Project
@@ -192,7 +191,7 @@ Com o modo `demo` ligado (seção acima), o fluxo principal, de ponta a ponta, e
 4. **Balcão:** confere pelo risco e registra a retirada (`POST /summons/{id}/pickup`).
 5. **Caso do "iPhone" genérico:** a sugestão sai com nota baixa e, se convocada, a verificação falha no balcão e a recusa fica registrada (`POST /summons/{id}/refusal`).
 
-Cada rota, com os perfis e os exemplos, está no [demo/README.md](demo/README.md) e no Swagger. O roteiro da gravação de contingência está em [demo/roteiro-gravacao.md](demo/roteiro-gravacao.md).
+Cada rota, com os perfis e os exemplos, está no [demo/README.md](demo/README.md) e no Swagger.
 
 ## Limitações conhecidas e próximos passos
 

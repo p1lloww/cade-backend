@@ -54,7 +54,7 @@ Declaramos que as informações acima são completas e verdadeiras; que revisamo
 | Reynan Ferreira Correia | |
 | Robson Santos Cardoso Filho | |
 | Carlos Henrique Madureira Santos | |
-| Erick Reis Santos de Jesus | |
+| Erick Reis Santos de Jesus |X|
 | Enzo José Rodrigues Sacramento | |
 
 **Data:** 23/11/2026

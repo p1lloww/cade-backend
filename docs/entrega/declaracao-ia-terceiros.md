@@ -54,7 +54,7 @@ Declaramos que as informações acima são completas e verdadeiras; que revisamo
 | Reynan Ferreira Correia | Ciente em 23/11/2026 |
 | Robson Santos Cardoso Filho | Ciente em 23/11/2026 |
 | Carlos Henrique Madureira Santos | Ciente em 23/11/2026 |
-| Erick Reis Santos de Jesus | Ciente em 23/11/2026 |
+| Erick Reis Santos de Jesus |X|
 | Enzo José Rodrigues Sacramento | |
 
 **Data:** 23/11/2026

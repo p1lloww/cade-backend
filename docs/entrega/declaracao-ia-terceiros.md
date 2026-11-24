@@ -18,7 +18,7 @@ Houve uso de IA? (X) Sim ( ) Não
 | Claude (chat do claude.ai) | Histórico imutável (ADM-01): desenho, geração do código e revisão independente, em conversas separadas | `shared.audit`, `administration` | Código conferido pelo integrante e por uma revisão independente; `./mvnw verify` executado |
 | Claude (Claude Code) | Revisão e integração das últimas PRs (23/11): correção de dois erros (a renovação do registro e o prazo de guarda ignoravam os prazos configurados pelo administrador), resolução de conflitos e correção de dois testes instáveis | PRs #83 e #86 a #92 | Testes novos para cada correção; CI verde antes de cada merge; aprovação registrada no PR |
 | Claude (Claude Code) | Reorganização dos pacotes por assunto dentro de cada módulo (complemento da D10) | `src/main` e `src/test` | `./mvnw verify` completo, incluindo o teste de fronteiras entre módulos (ArchUnit) |
-| Claude (Claude Code) | Documentação: documentos técnicos com diagramas, decisões, glossário, README, roteiro da gravação, redação da validação e da definição do MVP a partir das evidências registradas pela equipe, e o pitch | `docs/`, `demo/`, `README.md`, pitch | Revisado pela equipe; a validação usa só as evidências das conversas de campo (29/10 e 04/11) |
+| Claude (Claude Code) | Documentação: documentos técnicos com diagramas, decisões, glossário, README, redação da validação e da definição do MVP a partir das evidências registradas pela equipe, e o pitch | `docs/`, `demo/`, `README.md`, pitch | Revisado pela equipe; a validação usa só as evidências das conversas de campo (29/10 e 04/11) |
 
 **Observações sobre o uso de IA:** a IA não gerou evidências de validação: as evidências vêm das conversas de campo feitas pela equipe. Todo código passou por PR, pelo CI e pela revisão de um integrante, e cada integrante é capaz de explicar as partes feitas com apoio de IA. A tabela traz exemplos; o histórico completo está nos PRs do repositório.
 
@@ -51,9 +51,9 @@ Declaramos que as informações acima são completas e verdadeiras; que revisamo
 
 | Nome completo | Assinatura ou registro de ciência |
 |---|---|
-| Reynan Ferreira Correia | |
-| Robson Santos Cardoso Filho | |
-| Carlos Henrique Madureira Santos | |
+| Reynan Ferreira Correia | Ciente em 23/11/2026 |
+| Robson Santos Cardoso Filho | Ciente em 23/11/2026 |
+| Carlos Henrique Madureira Santos | Ciente em 23/11/2026 |
 | Erick Reis Santos de Jesus |X|
 | Enzo José Rodrigues Sacramento | |
 

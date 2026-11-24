@@ -272,9 +272,11 @@ O lembrete de **registro de perda perto de vencer** (RF35, `LossReportDeadlines`
 
 Nenhum e-mail fala do objeto achado: nem foto, nem descrição interna, nem detalhes reservados, nem local (RN03). Os testes conferem que esses dados não aparecem no texto.
 
-**Fora deste card:**
-- **E-mail da convocação vencida:** o vencimento é o RET-02.
-- **E-mail do pedido de mais informações (RF35):** o pedido ainda não existe; entra no PER-06.
+**Feitos depois deste card:**
+- **E-mail da convocação vencida:** entrou com o vencimento, no RET-02 (`SUMMONS_EXPIRED`).
+- **E-mail do pedido de mais informações (RF35):** entrou com o pedido, no PER-06 (`INFO_REQUESTED`).
+
+**Fora de propósito:**
 - **Aviso das sugestões encerradas pelo atalho de balcão (D29):** não existe de propósito. O estudante nunca vê as sugestões, e avisar que uma foi encerrada revelaria que apareceu na sala um objeto parecido com o dele (RN03). Quem ainda procura é lembrado pelo aviso de registro perto de vencer.
 
 ## 10. Onde está testado

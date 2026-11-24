@@ -1,9 +1,9 @@
 package br.ucsal.cade.pickup.service.summons;
 
-import br.ucsal.cade.founditems.api.FoundItemReservations;
-import br.ucsal.cade.founditems.api.ReservedFoundItem;
-import br.ucsal.cade.lossreports.api.LossReportSummons;
-import br.ucsal.cade.lossreports.api.SummonedLossReport;
+import br.ucsal.cade.founditems.api.reservation.FoundItemReservations;
+import br.ucsal.cade.founditems.api.reservation.ReservedFoundItem;
+import br.ucsal.cade.lossreports.api.summons.LossReportSummons;
+import br.ucsal.cade.lossreports.api.summons.SummonedLossReport;
 import br.ucsal.cade.matching.api.SuggestionPair;
 import br.ucsal.cade.matching.api.SuggestionSummons;
 import br.ucsal.cade.matching.api.SummonedSuggestion;

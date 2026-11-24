@@ -2,6 +2,7 @@ package br.ucsal.cade.founditems.service.item;
 
 import br.ucsal.cade.founditems.api.event.FoundItemRegisteredEvent;
 import br.ucsal.cade.founditems.api.event.FoundItemUpdatedEvent;
+import br.ucsal.cade.founditems.exception.FoundItemNotFoundException;
 import br.ucsal.cade.founditems.persistence.item.FoundItem;
 import br.ucsal.cade.founditems.persistence.item.FoundItemRepository;
 import br.ucsal.cade.founditems.persistence.item.NewFoundItem;
@@ -11,7 +12,6 @@ import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.event.EventPublisher;
 import br.ucsal.cade.shared.exception.BadRequestException;
 import br.ucsal.cade.shared.exception.InvalidStatusTransitionException;
-import br.ucsal.cade.shared.exception.NotFoundException;
 import br.ucsal.cade.shared.storage.PhotoStorage;
 import br.ucsal.cade.shared.storage.StoredPhoto;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -38,7 +38,6 @@ public class FoundItemService {
     static final String IDENTIFICATION_CLEARED_ACTION = "FOUND_ITEM_IDENTIFICATION_CLEARED";
     static final String UPDATED_ACTION = "FOUND_ITEM_UPDATED";
     static final String UNKNOWN_CATEGORY_MESSAGE = "Categoria não encontrada.";
-    static final String NOT_FOUND_MESSAGE = "Objeto não encontrado.";
 
     private final FoundItemRepository items;
     private final CategoryRepository categories;
@@ -93,7 +92,7 @@ public class FoundItemService {
      */
     @Transactional
     public FoundItem recordBroughtBy(UUID id, String broughtBy, UUID staffId) {
-        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new FoundItemNotFoundException());
         item.recordBroughtBy(broughtBy);
         items.saveAndFlush(item);
         events.publish(new AuditEvent(staffId, BROUGHT_BY_ACTION, FoundItem.class.getSimpleName(), id,
@@ -107,7 +106,7 @@ public class FoundItemService {
      */
     @Transactional
     public FoundItem identify(UUID id, IdentifyFoundItem request, UUID staffId) {
-        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new FoundItemNotFoundException());
         item.identify(request.name(), request.email(), request.document(), staffId, clock.instant());
         items.saveAndFlush(item);
         List<String> fields = new ArrayList<>();
@@ -128,7 +127,7 @@ public class FoundItemService {
     /** Desfaz a marcação de identificado (por exemplo, feita no objeto errado), com o registro no histórico. */
     @Transactional
     public FoundItem clearIdentification(UUID id, UUID staffId) {
-        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new FoundItemNotFoundException());
         if (!item.isIdentified()) {
             return item;
         }
@@ -149,7 +148,7 @@ public class FoundItemService {
      */
     @Transactional
     public FoundItem update(UUID id, UpdateFoundItem request, UUID staffId) {
-        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        FoundItem item = items.findWithCategoryById(id).orElseThrow(() -> new FoundItemNotFoundException());
         if (item.getVersion() != request.version()) {
             throw new ObjectOptimisticLockingFailureException(FoundItem.class, id);
         }
@@ -179,14 +178,14 @@ public class FoundItemService {
     /** O objeto com todos os dados, para o funcionário. */
     @Transactional(readOnly = true)
     public FoundItem find(UUID id) {
-        return items.findWithCategoryById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        return items.findWithCategoryById(id).orElseThrow(() -> new FoundItemNotFoundException());
     }
 
     /** A foto do objeto, servida só ao funcionário (RN03). */
     @Transactional(readOnly = true)
     public StoredPhoto photoOf(UUID id) {
-        FoundItem item = items.findById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
-        return photos.load(item.getPhotoKey()).orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        FoundItem item = items.findById(id).orElseThrow(() -> new FoundItemNotFoundException());
+        return photos.load(item.getPhotoKey()).orElseThrow(() -> new FoundItemNotFoundException());
     }
 
     private void deleteOnRollback(String photoKey) {

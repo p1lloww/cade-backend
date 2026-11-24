@@ -126,7 +126,7 @@ public @interface RequiresRole { Role[] value(); }
 
 **Como.** O `FoundItem` tem `@Version`. A convocação reserva o objeto e grava essa mudança antes de mexer nas sugestões e na perda; a segunda convocação espera a linha do objeto, encontra a versão já alterada, falha e é desfeita inteira (409). Gravar o objeto primeiro dá uma ordem fixa de travas, sem deadlock entre as sugestões.
 
-**Onde:** [`SummonsService.java`](../../src/main/java/br/ucsal/cade/pickup/service/summons/SummonsService.java), [`FoundItemReservationsService.java`](../../src/main/java/br/ucsal/cade/founditems/service/item/FoundItemReservationsService.java); fluxo em [`convocacao.md`](../tecnico/convocacao.md); teste em [`SummonsServiceTest.java`](../../src/test/java/br/ucsal/cade/pickup/service/summons/SummonsServiceTest.java) (6 convocações simultâneas do mesmo objeto em Virtual Threads terminam com exatamente uma).
+**Onde:** [`SummonsService.java`](../../src/main/java/br/ucsal/cade/pickup/service/summons/SummonsService.java), [`FoundItemReservationsService.java`](../../src/main/java/br/ucsal/cade/founditems/service/port/FoundItemReservationsService.java); fluxo em [`convocacao.md`](../tecnico/convocacao.md); teste em [`SummonsServiceTest.java`](../../src/test/java/br/ucsal/cade/pickup/service/summons/SummonsServiceTest.java) (6 convocações simultâneas do mesmo objeto em Virtual Threads terminam com exatamente uma).
 
 **Perguntas prováveis**
 - *Por que a versão do objeto, e não uma restrição única no banco?* A restrição precisaria valer só para convocações ativas (índice parcial), que o `ddl-auto` não cria (D06). A linha do objeto já muda de situação na convocação, então a versão dela resolve sem tabela nova.

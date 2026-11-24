@@ -1,6 +1,6 @@
 package br.ucsal.cade.publicpage.service.counts;
 
-import br.ucsal.cade.founditems.api.CategoryMonthCount;
+import br.ucsal.cade.founditems.api.count.CategoryMonthCount;
 import org.junit.jupiter.api.Test;
 
 import java.time.YearMonth;

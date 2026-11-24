@@ -1,7 +1,7 @@
 package br.ucsal.cade.notifications.service.deadline;
 
-import br.ucsal.cade.lossreports.api.ExpiringLossReport;
-import br.ucsal.cade.lossreports.api.LossReportDeadlines;
+import br.ucsal.cade.lossreports.api.deadline.ExpiringLossReport;
+import br.ucsal.cade.lossreports.api.deadline.LossReportDeadlines;
 import br.ucsal.cade.notifications.persistence.outbox.NotificationKind;
 import br.ucsal.cade.notifications.service.outbox.enqueue.Outbox;
 import br.ucsal.cade.pickup.api.ExpiringSummons;

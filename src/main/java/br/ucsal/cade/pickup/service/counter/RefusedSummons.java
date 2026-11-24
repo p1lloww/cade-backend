@@ -1,6 +1,6 @@
 package br.ucsal.cade.pickup.service.counter;
 
-import br.ucsal.cade.lossreports.api.RecordedRefusal;
+import br.ucsal.cade.lossreports.api.summons.RecordedRefusal;
 import br.ucsal.cade.matching.api.RefusedSuggestion;
 import br.ucsal.cade.pickup.persistence.summons.Summons;
 

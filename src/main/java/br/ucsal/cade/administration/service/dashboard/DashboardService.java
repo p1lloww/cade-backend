@@ -2,8 +2,8 @@ package br.ucsal.cade.administration.service.dashboard;
 
 import br.ucsal.cade.administration.persistence.audit.AuditRecord;
 import br.ucsal.cade.administration.persistence.audit.AuditRecordRepository;
-import br.ucsal.cade.founditems.api.FoundItemOverview;
-import br.ucsal.cade.founditems.api.StatusCategoryCount;
+import br.ucsal.cade.founditems.api.count.FoundItemOverview;
+import br.ucsal.cade.founditems.api.count.StatusCategoryCount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

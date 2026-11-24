@@ -108,7 +108,7 @@ sequenceDiagram
     C-->>F: 201 com a retirada
 ```
 
-O `PickupRegisteredEvent` é o `retirada.registrada` da seção 7.2. Quem vai ouvi-lo depois do commit são o encerramento das outras sugestões do objeto (RF33, RET-06) e o e-mail de confirmação (AVI-02). Nenhum dos dois é deste card.
+O `PickupRegisteredEvent` é o `retirada.registrada` da seção 7.2. Quem vai ouvi-lo depois do commit são o encerramento das outras sugestões do objeto (RF33, RET-06) e o e-mail de confirmação (AVI-02). Os dois entraram depois: o encerramento no RET-06 (seção 10) e o e-mail no AVI-02 ([avisos](avisos.md)).
 
 ## 4. Recusa (RF31)
 
@@ -356,7 +356,7 @@ O `GET` não traz descrição interna, detalhes reservados nem foto: o funcioná
 ### 9.6 Onde está testado
 
 - [`FoundItemStatusTest`](../../src/test/java/br/ucsal/cade/founditems/persistence/status/FoundItemStatusTest.java): a ação "entregar sem convocação" entra na tabela de transições permitidas e proibidas.
-- [`FoundItemWalkInsServiceTest`](../../src/test/java/br/ucsal/cade/founditems/service/item/FoundItemWalkInsServiceTest.java): entrega de Disponível e Não reclamado com histórico, Reservado recusado e a exigência de transação.
+- [`FoundItemWalkInsServiceTest`](../../src/test/java/br/ucsal/cade/founditems/service/port/FoundItemWalkInsServiceTest.java): entrega de Disponível e Não reclamado com histórico, Reservado recusado e a exigência de transação.
 - [`FoundItemSuggestionsServiceTest`](../../src/test/java/br/ucsal/cade/matching/service/suggestion/FoundItemSuggestionsServiceTest.java): só as Novas e Em espera do objeto são encerradas.
 - [`WalkInServiceTest`](../../src/test/java/br/ucsal/cade/pickup/service/walkin/WalkInServiceTest.java):
   - estudante e pessoa sem conta (sem matrícula);

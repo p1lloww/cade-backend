@@ -1,7 +1,7 @@
 package br.ucsal.cade.pickup.service.expiry;
 
-import br.ucsal.cade.founditems.api.FoundItemReservations;
-import br.ucsal.cade.lossreports.api.LossReportSummons;
+import br.ucsal.cade.founditems.api.reservation.FoundItemReservations;
+import br.ucsal.cade.lossreports.api.summons.LossReportSummons;
 import br.ucsal.cade.matching.api.ExpiredSuggestion;
 import br.ucsal.cade.matching.api.SuggestionSummons;
 import br.ucsal.cade.pickup.api.event.SummonsExpiredEvent;

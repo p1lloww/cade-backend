@@ -1,7 +1,7 @@
 package br.ucsal.cade.founditems.service.count;
 
-import br.ucsal.cade.founditems.api.AvailableItemCounts;
-import br.ucsal.cade.founditems.api.CategoryMonthCount;
+import br.ucsal.cade.founditems.api.count.AvailableItemCounts;
+import br.ucsal.cade.founditems.api.count.CategoryMonthCount;
 import br.ucsal.cade.founditems.persistence.item.FoundItemRepository;
 import br.ucsal.cade.founditems.persistence.status.FoundItemStatus;
 import org.springframework.stereotype.Service;

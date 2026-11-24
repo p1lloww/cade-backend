@@ -1,6 +1,6 @@
 package br.ucsal.cade.notifications.service.deadline;
 
-import br.ucsal.cade.lossreports.api.ExpiringLossReport;
+import br.ucsal.cade.lossreports.api.deadline.ExpiringLossReport;
 import br.ucsal.cade.notifications.service.outbox.enqueue.NotificationContent;
 import br.ucsal.cade.pickup.api.PickupInstructions;
 import org.junit.jupiter.api.Test;

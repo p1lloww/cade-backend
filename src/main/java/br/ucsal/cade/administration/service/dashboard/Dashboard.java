@@ -1,6 +1,6 @@
 package br.ucsal.cade.administration.service.dashboard;
 
-import br.ucsal.cade.founditems.api.StatusCategoryCount;
+import br.ucsal.cade.founditems.api.count.StatusCategoryCount;
 
 import java.time.Instant;
 import java.util.List;

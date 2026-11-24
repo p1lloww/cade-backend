@@ -2,10 +2,10 @@ package br.ucsal.cade.matching.service.suggestion;
 
 import br.ucsal.cade.matching.exception.SuggestionNotFoundException;
 
-import br.ucsal.cade.founditems.api.ComparableFoundItem;
-import br.ucsal.cade.founditems.api.ComparableFoundItems;
-import br.ucsal.cade.lossreports.api.ComparableLossReport;
-import br.ucsal.cade.lossreports.api.ComparableLossReports;
+import br.ucsal.cade.founditems.api.candidate.ComparableFoundItem;
+import br.ucsal.cade.founditems.api.candidate.ComparableFoundItems;
+import br.ucsal.cade.lossreports.api.candidate.ComparableLossReport;
+import br.ucsal.cade.lossreports.api.candidate.ComparableLossReports;
 import br.ucsal.cade.lossreports.api.LossReportInfoRequests;
 import br.ucsal.cade.matching.persistence.status.SuggestionStatus;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;

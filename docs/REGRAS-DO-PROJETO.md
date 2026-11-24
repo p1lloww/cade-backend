@@ -6,8 +6,7 @@ testes. Em caso de conflito, vale a ordem: **decisão (`DECISOES.md`) > requisit
 
 ## 1. O que é o projeto
 
-Back-end do **Cadê?**, sistema de achados e perdidos da UCSal, feito para o POOALAB 2026.2 (manual em
-[PooaLAB_2026-2.pdf](PooaLAB_2026-2.pdf), quando presente). A entrega é um **MVP executável, estável no fluxo
+Back-end do **Cadê?**, sistema de achados e perdidos da UCSal, feito para o POOALAB 2026.2 (manual do professor, publicado no Google Classroom). A entrega é um **MVP executável, estável no fluxo
 principal, reproduzível e documentado**. A banca avalia mais um recorte menor e completo do que um projeto amplo e
 instável.
 

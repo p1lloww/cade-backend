@@ -1,5 +1,7 @@
 package br.ucsal.cade.founditems.persistence.item;
 
+import br.ucsal.cade.founditems.persistence.count.CountByCategoryAndMonth;
+import br.ucsal.cade.founditems.persistence.count.CountByStatusAndCategory;
 import br.ucsal.cade.founditems.persistence.status.FoundItemStatus;
 import br.ucsal.cade.shared.category.Category;
 import org.springframework.data.domain.Page;

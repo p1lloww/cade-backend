@@ -18,7 +18,7 @@ import br.ucsal.cade.pickup.exception.PickupNotFoundException;
 import br.ucsal.cade.pickup.persistence.pickup.CounterCheck;
 import br.ucsal.cade.pickup.persistence.pickup.IdDocumentType;
 import br.ucsal.cade.pickup.persistence.pickup.Pickup;
-import br.ucsal.cade.pickup.persistence.pickup.PickupConfirmationRepository;
+import br.ucsal.cade.pickup.persistence.confirmation.PickupConfirmationRepository;
 import br.ucsal.cade.pickup.persistence.pickup.PickupRepository;
 import br.ucsal.cade.pickup.persistence.pickup.VerificationMethod;
 import br.ucsal.cade.pickup.persistence.summons.Summons;

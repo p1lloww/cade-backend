@@ -1,7 +1,7 @@
 package br.ucsal.cade.publicpage.service.counts;
 
-import br.ucsal.cade.founditems.api.AvailableItemCounts;
-import br.ucsal.cade.founditems.api.CategoryMonthCount;
+import br.ucsal.cade.founditems.api.count.AvailableItemCounts;
+import br.ucsal.cade.founditems.api.count.CategoryMonthCount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -51,7 +51,7 @@ Declaramos que as informações acima são completas e verdadeiras; que revisamo
 
 | Nome completo | Assinatura ou registro de ciência |
 |---|---|
-| Reynan Ferreira Correia | |
+| Reynan Ferreira Correia | Ciente em 23/11/2026 |
 | Robson Santos Cardoso Filho | |
 | Carlos Henrique Madureira Santos | |
 | Erick Reis Santos de Jesus | |

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/p1lloww/cade-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/p1lloww/cade-backend/actions/workflows/ci.yml)
 
-> **Status:** em desenvolvimento (POOALAB 2026.2). As seções marcadas com _A preencher_ são completadas ao longo do projeto.
+> **Status:** versão de entrega do POOALAB 2026.2 (23/11/2026). Mostra e pitch em 03/12 (BES).
 
 O Cadê? liga o estudante que perdeu um objeto à sala de achados e perdidos da UCSal. O estudante registra a perda online, a sala cadastra o que chega e o sistema cruza os dois lados, sugerindo ao funcionário só os pares prováveis. A conferência e a entrega continuam presenciais, no balcão.
 
@@ -18,7 +18,13 @@ Detalhes e evidências em [docs/entrega/problema-validacao.md](docs/entrega/prob
 
 ## Integrantes e turma
 
-_A preencher:_ nome completo e turma de cada integrante.
+Turma: Bacharelado em Engenharia de Software (BES), Programação Orientada a Objetos Avançada (POOA), T1, quinta-feira.
+
+- Reynan Ferreira Correia
+- Robson Santos Cardoso Filho
+- Carlos Henrique Madureira Santos
+- Erick Reis Santos de Jesus
+- Enzo José Rodrigues Sacramento
 
 ## Tecnologias
 
@@ -65,7 +71,70 @@ Para zerar o banco local: `docker compose down -v`.
 
 O esquema é gerado pelo Hibernate (`ddl-auto: update`), que só **acrescenta** tabelas e colunas: um campo removido ou renomeado deixa a coluna antiga no banco. Se aparecer um erro de banco estranho depois de puxar mudanças (por exemplo, `null value in column ...`), zere o banco com o comando acima. Antes de uma demonstração, suba o banco do zero.
 
-## Estrutura do código
+## Estrutura do projeto
+
+```
+cade-backend/
+├── src/
+│   ├── main/
+│   │   ├── java/br/ucsal/cade/     código-fonte, um pacote por módulo (veja abaixo)
+│   │   └── resources/
+│   │       └── application.yml     configuração; segredos vêm de variáveis de ambiente
+│   └── test/
+│       ├── java/br/ucsal/cade/     testes, nos mesmos pacotes do código testado
+│       │   └── architecture/       ModuleBoundariesTest (fronteiras entre módulos)
+│       └── resources/config/       configuração só dos testes (chave JWT de teste)
+├── docs/
+│   ├── requisitos.md               RF, RN e RNF (v3), estados e plano de corte
+│   ├── DECISOES.md                 decisões de stack, arquitetura e processo (D01 em diante)
+│   ├── GLOSSARIO.md                termos dos requisitos ↔ nomes do código
+│   ├── REGRAS-DO-PROJETO.md        regras para quem escreve código no repositório
+│   ├── tecnico/                    como as partes importantes funcionam por dentro, com diagramas
+│   ├── entrega/                    documentos do manual: validação, MVP, POOA e declaração de IA
+│   └── imagens/                    figuras usadas nos documentos
+├── demo/
+│   ├── README.md                   modo demonstração: contas fictícias, dados e roteiro
+│   └── roteiro-gravacao.md         roteiro da gravação de contingência
+├── .github/
+│   ├── workflows/ci.yml            CI: ./mvnw verify em todo PR para a main
+│   ├── workflows/project-dependencies.yml   atualiza as dependências dos cards no Project
+│   └── scripts/                    script usado por esse workflow
+├── compose.yaml                    PostgreSQL, Mailpit e back-end com um comando
+├── Dockerfile                      imagem do back-end
+├── .env.example                    modelo das variáveis de ambiente (o .env não é versionado)
+└── pom.xml, mvnw                   build Maven (o ./mvnw baixa o Maven sozinho)
+```
+
+### Dentro de cada módulo
+
+Todos os módulos seguem o mesmo desenho. Dentro de cada camada, um subpacote por assunto. Exemplo do módulo de perdas:
+
+```
+lossreports/
+├── api/                    o único pacote que outros módulos podem usar
+│   ├── candidate/          o que o cruzamento lê das perdas
+│   ├── summons/            o que a convocação e o balcão usam (convocar, recusar)
+│   ├── deadline/           prazos lidos pelos avisos
+│   ├── registration/       cadastro usado pelo modo demonstração
+│   └── event/              eventos publicados (perda registrada, encerrada...)
+├── controller/             rotas HTTP; cada assunto tem a interface XxxApi (Swagger) e o XxxController
+│   └── report/dto/         RequestDTO (o que chega) e ResponseDTO (o que sai)
+├── service/                regras que dependem de outros registros ou módulos
+│   ├── report/             registrar e corrigir a perda
+│   ├── lifecycle/          cancelar, pedir informações, renovar e vencer
+│   ├── reporter/           o estudante: limite de registros e bloqueio
+│   └── port/               implementações da api, chamadas pelos outros módulos
+├── persistence/            entidades JPA com as regras do próprio estado, e repositórios
+│   ├── report/  status/  period/  location/  reporter/
+└── exception/              erros do módulo (estendem os de shared.exception)
+```
+
+- **`api`:** interfaces, records e eventos. Outro módulo nunca importa `service` nem `persistence` de fora (D10).
+- **`service/port`:** quando um módulo precisa de outro, ele chama uma interface da `api`, e a implementação fica aqui.
+- **`persistence`:** as transições de situação ficam na própria entidade (padrão State em `status/`).
+- **`shared`:** o que todos usam e que não pertence a nenhum módulo: `audit` (histórico), `category`, `event`, `exception`, `mail`, `security`, `settings` (prazos), `storage` (fotos), `time` (relógio) e `web` (erros e Swagger).
+
+## Módulos e dependências
 
 Monólito modular (D10). Cada módulo dos requisitos é um pacote em `br.ucsal.cade`, com as camadas `api` (o único pacote visível para outros módulos), `controller`, `service` e `persistence`. O código é em inglês (D11); a correspondência com os termos dos requisitos está no [glossário](docs/GLOSSARIO.md).
 
@@ -123,14 +192,17 @@ Com o modo `demo` ligado (seção acima), o fluxo principal, de ponta a ponta, e
 4. **Balcão:** confere pelo risco e registra a retirada (`POST /summons/{id}/pickup`).
 5. **Caso do "iPhone" genérico:** a sugestão sai com nota baixa e, se convocada, a verificação falha no balcão e a recusa fica registrada (`POST /summons/{id}/refusal`).
 
-Cada rota, com os perfis e os exemplos, está no [demo/README.md](demo/README.md) e no Swagger.
+Cada rota, com os perfis e os exemplos, está no [demo/README.md](demo/README.md) e no Swagger. O roteiro da gravação de contingência está em [demo/roteiro-gravacao.md](demo/roteiro-gravacao.md).
 
 ## Limitações conhecidas e próximos passos
 
-- O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`), sem migrations versionadas; o próximo passo seria o Flyway, com o esquema atual como primeira versão.
+- O esquema do banco é gerado pelo Hibernate (`ddl-auto: update`), sem migrations versionadas: ele só acrescenta tabelas e colunas, e um valor novo numa situação (enum) esbarra na restrição antiga do banco. Um banco já existente precisa subir do zero (`docker compose down -v`) depois dessas mudanças. O próximo passo seria o Flyway, com o esquema atual como primeira versão.
 - O bloqueio contra tentativas erradas é por e-mail: quem sabe o e-mail de alguém pode bloqueá-lo por 15 minutos (D18).
-- Os eventos ficam na memória da aplicação: se o back-end cair entre o commit e o processamento, aquele evento se perde.
-- E-mail que falha no envio só é registrado no log, sem nova tentativa (RNF08): no login, a pessoa pede outro código depois de 1 minuto.
+- O cruzamento é disparado por evento na memória da aplicação: se o back-end cair entre o commit e o cruzamento, aquele cadastro não é cruzado com o que já existia; ele só aparece em sugestões quando chegar um cadastro novo do outro lado. Os e-mails não têm esse problema, porque passam pela caixa de saída gravada no banco (D30).
+- O e-mail com o código de login não é reenviado se o envio falhar, porque o código não fica gravado (D30): a pessoa pede outro depois de 1 minuto. Os demais e-mails são reenviados.
+- A prova anexada ao registro de perda aceita só foto (JPEG, PNG ou WebP); nota fiscal em PDF precisa virar foto (D34).
+- Corrigir um registro de perda não refaz o cruzamento: as sugestões já criadas mantêm a nota (D32).
+- Os prazos (guarda, retirada e validade do registro) são configuráveis pelo administrador; os valores iniciais vêm das conversas com a sala e o administrador, mas só o de guarda foi validado com eles.
 
 ## Fontes, licenças, componentes de terceiros e uso de IA
 

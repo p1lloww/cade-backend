@@ -157,7 +157,7 @@ O registro publica dois eventos, e cada um é ouvido de um jeito:
 | Evento | Quem ouve | Quando | Se o ouvinte falhar |
 |---|---|---|---|
 | `AuditEvent` | `AuditRecorder` (`administration`) | Na hora, na **mesma transação** | O registro é desfeito: nenhuma ação sem histórico (RF43) |
-| `LossReportRegisteredEvent` | Cruzamento (CRU-02, ainda não implementado) | **Depois do commit**, em outra thread (`@Async`, Virtual Threads) | O registro continua salvo: o cruzamento nunca desfaz nem atrasa o estudante (D05) |
+| `LossReportRegisteredEvent` | Cruzamento (CRU-02) | **Depois do commit**, em outra thread (`@Async`, Virtual Threads) | O registro continua salvo: o cruzamento nunca desfaz nem atrasa o estudante (D05) |
 
 Por que evento e não chamada direta: pela D10, `lossreports` não depende de ninguém. Quem conhece as perdas é o `matching` (e o `administration` conhece só o `AuditEvent` do `shared`). O evento deixa o registro sem saber quem reage, e um ouvinte novo (um aviso por e-mail, por exemplo) entra sem mudar o `LossReportService`.
 
@@ -247,7 +247,7 @@ Testes: `LossReportTest` (campos que mudam, texto normalizado, situações edit�
 
 ## 7. Cancelar, pedir informações, renovar e vencer (PER-06)
 
-O resto da seção 6.2 dos requisitos, no [`LossReportLifecycleService`](../../src/main/java/br/ucsal/cade/lossreports/service/report/LossReportLifecycleService.java), com as rotas no `LossReportLifecycleController` (estudante) e no `SuggestionController` (funcionário).
+O resto da seção 6.2 dos requisitos, no [`LossReportLifecycleService`](../../src/main/java/br/ucsal/cade/lossreports/service/lifecycle/LossReportLifecycleService.java), com as rotas no `LossReportLifecycleController` (estudante) e no `SuggestionController` (funcionário).
 
 ```mermaid
 stateDiagram-v2

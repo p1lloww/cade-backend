@@ -1,6 +1,6 @@
 package br.ucsal.cade.pickup.controller.walkin.dto;
 
-import br.ucsal.cade.founditems.api.WalkInFoundItem;
+import br.ucsal.cade.founditems.api.reservation.WalkInFoundItem;
 import br.ucsal.cade.pickup.controller.counter.dto.VerificationOptionResponseDTO;
 import br.ucsal.cade.pickup.service.verification.VerificationRule;
 import br.ucsal.cade.pickup.service.walkin.WalkInAtCounter;

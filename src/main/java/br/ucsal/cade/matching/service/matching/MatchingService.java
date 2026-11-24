@@ -1,9 +1,9 @@
 package br.ucsal.cade.matching.service.matching;
 
-import br.ucsal.cade.founditems.api.MatchableFoundItem;
-import br.ucsal.cade.founditems.api.MatchableFoundItems;
-import br.ucsal.cade.lossreports.api.MatchableLossReport;
-import br.ucsal.cade.lossreports.api.MatchableLossReports;
+import br.ucsal.cade.founditems.api.candidate.MatchableFoundItem;
+import br.ucsal.cade.founditems.api.candidate.MatchableFoundItems;
+import br.ucsal.cade.lossreports.api.candidate.MatchableLossReport;
+import br.ucsal.cade.lossreports.api.candidate.MatchableLossReports;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestionRepository;
 import br.ucsal.cade.matching.service.score.result.Compatibility;

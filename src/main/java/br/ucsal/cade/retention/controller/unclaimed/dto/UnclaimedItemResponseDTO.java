@@ -1,6 +1,6 @@
 package br.ucsal.cade.retention.controller.unclaimed.dto;
 
-import br.ucsal.cade.founditems.api.UnclaimedFoundItem;
+import br.ucsal.cade.founditems.api.unclaimed.UnclaimedFoundItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;

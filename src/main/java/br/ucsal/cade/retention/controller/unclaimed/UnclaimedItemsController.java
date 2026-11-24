@@ -3,7 +3,7 @@ package br.ucsal.cade.retention.controller.unclaimed;
 import br.ucsal.cade.retention.controller.unclaimed.dto.DisposalRequestDTO;
 import br.ucsal.cade.retention.controller.unclaimed.dto.DisposalResponseDTO;
 import br.ucsal.cade.retention.controller.unclaimed.dto.UnclaimedBoxResponseDTO;
-import br.ucsal.cade.retention.service.DisposalService;
+import br.ucsal.cade.retention.service.disposal.DisposalService;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
 import jakarta.validation.Valid;

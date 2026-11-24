@@ -1,7 +1,7 @@
 package br.ucsal.cade.lossreports.service.reporter;
 
-import br.ucsal.cade.lossreports.api.RecordedRefusal;
-import br.ucsal.cade.lossreports.api.StudentRefusals;
+import br.ucsal.cade.lossreports.api.summons.RecordedRefusal;
+import br.ucsal.cade.lossreports.api.summons.StudentRefusals;
 import br.ucsal.cade.lossreports.persistence.reporter.LossReporter;
 import br.ucsal.cade.lossreports.persistence.reporter.LossReporterRepository;
 import br.ucsal.cade.shared.audit.AuditEvent;

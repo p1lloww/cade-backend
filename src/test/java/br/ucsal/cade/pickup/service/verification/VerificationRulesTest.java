@@ -1,5 +1,6 @@
 package br.ucsal.cade.pickup.service.verification;
 
+import br.ucsal.cade.pickup.exception.VerificationNotAcceptedException;
 import br.ucsal.cade.pickup.persistence.pickup.VerificationMethod;
 import br.ucsal.cade.shared.category.RiskLevel;
 import org.junit.jupiter.api.Test;

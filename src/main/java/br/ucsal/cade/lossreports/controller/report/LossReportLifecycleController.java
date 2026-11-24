@@ -2,7 +2,7 @@ package br.ucsal.cade.lossreports.controller.report;
 
 import br.ucsal.cade.lossreports.controller.report.dto.LossReportAnswerRequestDTO;
 import br.ucsal.cade.lossreports.controller.report.dto.LossReportResponseDTO;
-import br.ucsal.cade.lossreports.service.report.LossReportLifecycleService;
+import br.ucsal.cade.lossreports.service.lifecycle.LossReportLifecycleService;
 import br.ucsal.cade.shared.security.Role;
 import br.ucsal.cade.shared.security.authorization.RequiresRole;
 import jakarta.validation.Valid;

@@ -1,6 +1,6 @@
 package br.ucsal.cade.retention.controller.unclaimed.dto;
 
-import br.ucsal.cade.retention.service.UnclaimedItemsByBox;
+import br.ucsal.cade.retention.service.disposal.UnclaimedItemsByBox;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;

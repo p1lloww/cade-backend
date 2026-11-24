@@ -1,5 +1,6 @@
 package br.ucsal.cade.lossreports.persistence.reporter;
 
+import br.ucsal.cade.lossreports.exception.StudentNotBlockedException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

@@ -1,9 +1,9 @@
 package br.ucsal.cade.pickup.service.counter;
 
-import br.ucsal.cade.founditems.api.FoundItemReservations;
-import br.ucsal.cade.lossreports.api.LossReportSummons;
-import br.ucsal.cade.lossreports.api.RecordedRefusal;
-import br.ucsal.cade.lossreports.api.StudentRefusals;
+import br.ucsal.cade.founditems.api.reservation.FoundItemReservations;
+import br.ucsal.cade.lossreports.api.summons.LossReportSummons;
+import br.ucsal.cade.lossreports.api.summons.RecordedRefusal;
+import br.ucsal.cade.lossreports.api.summons.StudentRefusals;
 import br.ucsal.cade.matching.api.ClosedSuggestion;
 import br.ucsal.cade.matching.api.FoundItemSuggestions;
 import br.ucsal.cade.matching.api.RefusedSuggestion;

@@ -2,6 +2,9 @@ package br.ucsal.cade.lossreports.service.report;
 
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
 import br.ucsal.cade.lossreports.api.event.LossReportUpdatedEvent;
+import br.ucsal.cade.lossreports.exception.LossReportNotFoundException;
+import br.ucsal.cade.lossreports.exception.StudentBlockedException;
+import br.ucsal.cade.lossreports.exception.TooManyActiveReportsException;
 import br.ucsal.cade.lossreports.persistence.period.LostPeriod;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;
 import br.ucsal.cade.lossreports.persistence.report.LossReportRepository;

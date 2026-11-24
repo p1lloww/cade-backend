@@ -1,12 +1,13 @@
 package br.ucsal.cade.lossreports.service.reporter;
 
 import br.ucsal.cade.TestcontainersConfiguration;
-import br.ucsal.cade.lossreports.api.StudentRefusals;
+import br.ucsal.cade.lossreports.api.summons.StudentRefusals;
+import br.ucsal.cade.lossreports.exception.LossReporterNotFoundException;
 import br.ucsal.cade.lossreports.persistence.reporter.LossReporter;
-import br.ucsal.cade.lossreports.persistence.reporter.StudentNotBlockedException;
+import br.ucsal.cade.lossreports.exception.StudentNotBlockedException;
 import br.ucsal.cade.lossreports.service.report.LossReportService;
 import br.ucsal.cade.lossreports.service.report.RegisterLossReport;
-import br.ucsal.cade.lossreports.service.report.StudentBlockedException;
+import br.ucsal.cade.lossreports.exception.StudentBlockedException;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.exception.ConflictException;
 import br.ucsal.cade.shared.exception.NotFoundException;

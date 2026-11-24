@@ -2,6 +2,8 @@ package br.ucsal.cade.lossreports.service.report;
 
 import br.ucsal.cade.TestcontainersConfiguration;
 import br.ucsal.cade.lossreports.api.event.LossReportRegisteredEvent;
+import br.ucsal.cade.lossreports.exception.StudentBlockedException;
+import br.ucsal.cade.lossreports.exception.TooManyActiveReportsException;
 import br.ucsal.cade.lossreports.persistence.location.LossLocation;
 import br.ucsal.cade.lossreports.persistence.period.Shift;
 import br.ucsal.cade.lossreports.persistence.report.LossReport;

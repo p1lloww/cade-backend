@@ -2,10 +2,10 @@ package br.ucsal.cade.demo.service;
 
 import br.ucsal.cade.access.api.DirectSignIn;
 import br.ucsal.cade.access.api.SignedIn;
-import br.ucsal.cade.founditems.api.FoundItemData;
-import br.ucsal.cade.founditems.api.FoundItemRegistration;
-import br.ucsal.cade.lossreports.api.LossReportData;
-import br.ucsal.cade.lossreports.api.LossReportRegistration;
+import br.ucsal.cade.founditems.api.registration.FoundItemData;
+import br.ucsal.cade.founditems.api.registration.FoundItemRegistration;
+import br.ucsal.cade.lossreports.api.registration.LossReportData;
+import br.ucsal.cade.lossreports.api.registration.LossReportRegistration;
 import br.ucsal.cade.shared.category.Category;
 import br.ucsal.cade.shared.category.CategoryRepository;
 import br.ucsal.cade.shared.category.RiskLevel;

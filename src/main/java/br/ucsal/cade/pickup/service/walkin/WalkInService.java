@@ -1,9 +1,10 @@
 package br.ucsal.cade.pickup.service.walkin;
 
-import br.ucsal.cade.founditems.api.FoundItemWalkIns;
-import br.ucsal.cade.founditems.api.WalkInFoundItem;
+import br.ucsal.cade.founditems.api.reservation.FoundItemWalkIns;
+import br.ucsal.cade.founditems.api.reservation.WalkInFoundItem;
 import br.ucsal.cade.matching.api.FoundItemSuggestions;
 import br.ucsal.cade.pickup.api.event.WalkInPickupRegisteredEvent;
+import br.ucsal.cade.pickup.exception.EnrollmentRequiredException;
 import br.ucsal.cade.pickup.persistence.pickup.CounterCheck;
 import br.ucsal.cade.pickup.persistence.walkin.WalkInHolder;
 import br.ucsal.cade.pickup.persistence.walkin.WalkInPickup;

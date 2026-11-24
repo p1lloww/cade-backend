@@ -1,8 +1,8 @@
 package br.ucsal.cade.matching.controller.suggestion.dto;
 
-import br.ucsal.cade.founditems.api.ComparableFoundItem;
-import br.ucsal.cade.lossreports.api.ComparableLossReport;
-import br.ucsal.cade.lossreports.api.MatchableLossReport;
+import br.ucsal.cade.founditems.api.candidate.ComparableFoundItem;
+import br.ucsal.cade.lossreports.api.candidate.ComparableLossReport;
+import br.ucsal.cade.lossreports.api.candidate.MatchableLossReport;
 import br.ucsal.cade.matching.persistence.suggestion.MatchSuggestion;
 import br.ucsal.cade.matching.service.score.result.CompatibilityBand;
 import br.ucsal.cade.matching.service.suggestion.ComparedSuggestion;

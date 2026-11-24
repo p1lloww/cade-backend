@@ -16,6 +16,11 @@ Este é o repositório do **back-end**. O front-end está em [cade-frontend](htt
 
 Detalhes e evidências em [docs/entrega/problema-validacao.md](docs/entrega/problema-validacao.md) e [docs/entrega/definicao-mvp.md](docs/entrega/definicao-mvp.md).
 
+Gravação curta do fluxo principal, do registro da perda até a retirada no balcão:
+[Assistir no YouTube](https://youtu.be/zeGMRuIDiHo)
+
+O vídeo é apenas apoio. O MVP executável é o item principal da entrega e pode ser executado seguindo as seções abaixo.
+
 ## Integrantes e turma
 
 Turma: Bacharelado em Engenharia de Software (BES), Programação Orientada a Objetos Avançada (POOA), T1, quinta-feira.
